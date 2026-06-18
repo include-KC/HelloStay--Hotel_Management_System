@@ -13,6 +13,11 @@ This document stores technical concepts learned while building HelloStay.
 
 ---
 
+# NOTE:
+Make Sure to Learn about Git from the DEVELOPER_HANDBOOK.md docs.
+
+---
+
 # Package Manager
 >npm
 It helps in installing dependencies.
