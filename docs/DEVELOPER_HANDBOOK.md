@@ -3020,12 +3020,30 @@ No extra commit is created.
 ---
 
 ## Changing Commit Message
-
 ```bash
 git commit --amend -m "Implement Invoice Module"
 ```
 
 The previous commit message is replaced.
+
+---
+
+## Steps of changing Commit message
+- These steps changes the message of the recent commit made by you.
+
+1. Use:
+
+```bash 
+git commit --amend -m "New mesage"
+```
+
+2.  After that you need to forcefully push the change to the github:
+
+```bash
+git push origin main -f
+```
+
+This will change message of the **recent commit**.
 
 ---
 
