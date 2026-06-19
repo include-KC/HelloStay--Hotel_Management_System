@@ -972,7 +972,34 @@ One commit should represent one meaningful change.
 
 ---
 
-## git status
+## GitHub Commit Verification
+
+### Verified Badge
+- GitHub shows a **Verified** badge when it can cryptographically confirm the commit author.
+- This requires commits signed with a GPG or SSH key uploaded to your GitHub account.
+
+### Why Some Commits Are Not Verified
+- Commit not signed.
+- Commit email doesn’t match GitHub account email.
+- Public key not uploaded to GitHub.
+- Different machine setup or Git config.
+- Wrong signing key used.
+
+### Your GPG Key
+- Key ID: `B5690EEEBB952194`
+- Commits signed with this key and matching your GitHub account show the **Verified** badge.
+
+### Configure Automatic Signing
+1. __Enable signing globally__
+git config --global commit.gpgsign true
+
+2. __Set your signing key__
+git config --global user.signingkey B5690EEEBB952194
+
+3. __Ensure your email matches GitHub__
+git config --global user.email "your-email@example.com"
+
+4. __git status__
 >Definition
 Displays the current state of the Git repository.
 
@@ -991,6 +1018,34 @@ Usually the first Git command developers run before committing.
 
 ### HelloStay Usage
 Used to verify project changes before commits.
+
+## Signing Methods
+Automatic signing (recommended): With commit.gpgsign=true, all commits are signed automatically.
+
+>Manual signing (per commit): Use the -S flag when committing:
+```bash
+git commit -S -m "My signed commit"
+🔍 Verify Setup
+Check config:
+```
+
+```bash
+git config --global --list
+```
+Look for:
+```bash
+commit.gpgsign=true
+user.signingkey=B5690EEEBB952194
+user.email=your-email@example.com
+```
+Verify latest commit locally:
+```bash
+git log --show-signature -1
+```
+→ Should display your GPG key ID and “Good signature.”
+
+Push and check on GitHub:
+→ Commit should show Verified badge.
 
 ---
 
