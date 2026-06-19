@@ -1,5 +1,9 @@
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column 
+from sqlalchemy.orm import relationship
+
+from app.models.guest_stay import GuestStay
+
 
 from app.database.base import Base
 
@@ -38,5 +42,7 @@ class Guest(Base):
         nullable = False,
         unique = True
     )
-
-
+    
+    guest_stays: Mapped[list["GuestStay"]] = relationship(
+        back_populates="guest"
+    )

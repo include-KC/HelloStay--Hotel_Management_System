@@ -7,6 +7,7 @@ import app.models.system_info
 import app.models.room
 import app.models.guest
 import app.models.stay
+import app.models.guest_stay
 
 from app.api.system_info import router as system_info_router
 from app.api.room import router as room_router

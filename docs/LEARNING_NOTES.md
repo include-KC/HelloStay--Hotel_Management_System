@@ -1761,6 +1761,547 @@ A foreign key is working only if the database rejects invalid references.
 
 ---
 
+## SQLAlchemy `relationship()`
+
+### What is `relationship()`?
+`relationship()` is an ORM feature provided by SQLAlchemy that allows one Python object to access another related Python object directly.
+
+A **Foreign Key** creates a relationship **inside the database**, whereas **`relationship()`** creates a relationship **inside the Python application**.
+
+### Foreign Key vs Relationship
+| Foreign Key                    | Relationship                    |
+| ------------------------------ | ------------------------------- |
+| Database-level connection      | ORM-level connection            |
+| Stored as a database column    | Not stored as a database column |
+| Enforces referential integrity | Allows object navigation        |
+| Used by the database           | Used by SQLAlchemy ORM          |
+
+
+### Why is `relationship()` needed?
+Without `relationship()`, SQLAlchemy only knows that two tables are connected through a Foreign Key.
+
+To access related data, you would have to manually write another query.
+
+With `relationship()`, SQLAlchemy automatically loads the related object.
+
+>Example:
+Instead of manually querying the Guest table using `guest_id`, you can directly access:
+
+stay.guest
+
+This returns the complete `Guest` object.
+
+### Does `relationship()` create a database column?
+No.
+`relationship()` **does not create any database column**.
+
+Only `mapped_column()` creates database columns.
+
+>Example:
+guest_id = mapped_column(ForeignKey("guests.id"))
+
+creates a database column.
+
+__Whereas__:
+guest = relationship(...)
+
+creates only an ORM object reference.
+
+### Object Navigation
+__Without `relationship()`__:
+Stay
+↓
+guest_id
+↓
+Manual SQL Query
+↓
+Guest
+
+__With `relationship()`__:
+Stay
+↓
+guest
+↓
+Guest Object
+
+The ORM performs the SQL query automatically.
+
+### What is `back_populates`?
+`back_populates` connects two relationship definitions together.
+
+It creates a **bidirectional relationship**.
+
+>Example:
+Guest
+↓
+GuestStay
+↓
+Stay
+
+and
+
+Stay
+↓
+GuestStay
+↓
+Guest
+
+Both directions become accessible.
+
+
+### Why use `back_populates`?
+Without `back_populates`, navigation works in only one direction.
+
+With `back_populates`, both related models remain synchronized and SQLAlchemy understands that they represent opposite sides of the same relationship.
+
+### Relationship is Different from Foreign Key
+Suppose a Stay has:
+guest_id = 5
+
+The Foreign Key stores only the number `5`.
+
+_When you access_:
+stay.guest
+
+SQLAlchemy automatically converts that foreign key into a complete `Guest` object.
+
+### Many-to-Many Relationship
+A many-to-many relationship cannot be created using only two tables.
+
+It requires a junction (association) table.
+
+>Example:
+Guest
+↓
+GuestStay
+↓
+Stay
+
+Each row in `GuestStay` represents one Guest participating in one Stay.
+
+### Why is `GuestStay` required?
+__Without `GuestStay__`:
+One Stay
+↓
+One Guest
+
+Only one guest can be assigned to a stay.
+
+__With `GuestStay`__:
+One Stay
+↓
+Many Guests
+
+Multiple guests can share the same stay.
+
+### Real-Life Analogy
+Consider a railway reservation system
+Passenger Table
+↓
+Ticket Table
+↓
+Train Table
+
+A passenger can travel on many trains.
+
+A train can have many passengers.
+
+The Ticket table stores the relationship.
+Similarly:
+Guest
+↓
+GuestStay
+↓
+Stay
+
+
+### Common Mistakes
+1. Thinking `relationship()` creates a database column.
+
+2. Using `relationship()` without an appropriate Foreign Key.
+
+3. Using incorrect `back_populates` names.
+
+4. Mixing different SQLAlchemy ORM styles (`Column()` and `mapped_column()`) within the same project.
+
+### Interview Questions
+**Q. What is the purpose of `relationship()`?**
+It allows SQLAlchemy ORM models to navigate between related Python objects without manually writing SQL queries.
+
+**Q. Does `relationship()` create a database column?**
+No.
+Only `mapped_column()` creates database columns.
+
+**Q. Why is a Foreign Key still required if `relationship()` exists?**
+The Foreign Key establishes the relationship in the database, while `relationship()` allows SQLAlchemy to navigate that relationship in Python.
+
+**Q. What does `back_populates` do?**
+It creates a bidirectional relationship by linking relationship attributes on two related models.
+
+---
+
+## Structure of a Relationship
+>Example:
+```python
+guest: Mapped["Guest"] = relationship(
+    back_populates="guest_stays"
+)
+```
+
+This statement can be divided into four parts.
+
+### 1. Relationship Attribute Name
+guest
+
+This is the name of the Python attribute.
+
+It allows us to access the related object.
+
+>Example:
+guest_stay.guest
+
+This returns the complete `Guest` object.
+
+Without `relationship()`, only the foreign key value is available.
+
+>Example:
+guest_stay.guest_id
+
+returns
+5
+
+Whereas
+```python
+guest_stay.guest
+```
+
+returns
+```text
+Guest(
+    id=5,
+    guest_name="Krishna"
+)
+```
+
+### 2. `Mapped["Guest"]`
+```python
+Mapped["Guest"]
+```
+
+This is a type annotation.
+
+It tells SQLAlchemy and the IDE that this attribute stores one `Guest` object.
+
+It behaves similarly to normal Python type hints.
+
+>Example:
+```python
+age: int
+```
+
+means
+
+```python
+age = 25
+```
+
+Similarly,
+```python
+guest: Mapped["Guest"]
+```
+
+means
+
+```python
+guest = Guest(...)
+```
+
+### 3. Why are Quotes Used?
+```python
+Mapped["Guest"]
+```
+
+instead of
+```python
+Mapped[Guest]
+```
+
+This is called a **Forward Reference**.
+
+When Python reads the file, the `Guest` class may not have been fully loaded yet.
+
+Using quotation marks delays the evaluation until SQLAlchemy resolves it later.
+
+---
+
+### 4. `relationship()`
+
+```python
+relationship(...)
+```
+
+This tells SQLAlchemy to automatically retrieve the related object.
+
+Without `relationship()`:
+guest_stay.guest
+
+would not exist.
+
+SQLAlchemy internally performs a query similar to:
+
+```sql
+SELECT *
+FROM guests
+WHERE id = guest_id;
+```
+and returns the complete object.
+
+### Understanding `back_populates`
+>Example:
+```python
+relationship(
+    back_populates="guest_stays"
+)
+```
+
+`back_populates` connects two relationship definitions together.
+
+It creates a **bidirectional relationship**.
+
+It must reference the **relationship attribute name** on the opposite model.
+
+It is **not**:
+* a table name
+* a class name
+* a database column
+
+It is the name of another `relationship()`.
+
+>Example:
+Guest model
+guest_stays = relationship(...)
+
+GuestStay model
+```python
+guest = relationship(
+    back_populates="guest_stays"
+)
+```
+
+Both represent opposite sides of the same relationship.
+
+### Relationship Direction
+
+#### Many-to-One Relationship
+```python
+guest: Mapped["Guest"]
+```
+
+Read as:
+> One GuestStay belongs to one Guest.
+
+Since only one object is returned, the attribute name should be singular.
+
+>Examples:
+guest
+room
+stay
+
+#### One-to-Many Relationship
+```python
+guest_stays: Mapped[list["GuestStay"]]
+```
+
+Read as:
+> One Guest owns multiple GuestStay records.
+
+Since multiple objects are returned, the attribute name should be plural.
+
+>Examples:
+guest_stays
+rooms
+bookings
+payments
+
+### Singular vs Plural Rule
+Use **singular** when the relationship returns exactly one object.
+
+>Example:
+stay.guest
+
+Use **plural** when the relationship returns multiple objects.
+
+>Example:
+guest.guest_stays
+
+### Database vs ORM
+Database Relationship
+Stay
+↓
+guest_id
+↓
+Guest
+
+ORM Relationship
+Stay
+↓
+guest
+↓
+Guest Object
+
+The ORM converts the Foreign Key into a Python object automatically.
+
+### Important Facts
+* `relationship()` does not create a database column.
+* Only `mapped_column()` creates database columns.
+* Foreign Keys establish relationships in the database.
+* `relationship()` establishes relationships inside Python objects.
+* `back_populates` connects both sides of a relationship.
+* Relationship names should describe the object they return.
+* Singular names represent one object.
+* Plural names represent multiple objects.
+
+### Easy Way to Remember
+When you see:
+```python
+Mapped["Guest"]
+```
+
+Read it as:
+> "This attribute stores one Guest object."
+
+When you see:
+```python
+Mapped[list["GuestStay"]]
+```
+
+Read it as:
+> "This attribute stores multiple GuestStay objects."
+
+### Interview Questions
+
+**Q1** What is the purpose of `relationship()`?
+It allows SQLAlchemy ORM models to navigate between related Python objects without manually writing SQL queries.
+
+**Q2** Does `relationship()` create a database column?
+No.
+Only `mapped_column()` creates database columns.
+
+**Q3** Why do we need both Foreign Key and `relationship()`?
+A Foreign Key establishes the relationship inside the database.
+`relationship()` allows SQLAlchemy to navigate that relationship using Python objects.
+
+**Q4** What does `back_populates` do?
+It creates a bidirectional relationship by connecting two relationship definitions on opposite models.
+
+**Q5** Why is `Mapped["Guest"]` singular while `Mapped[list["GuestStay"]]` is plural?
+A singular relationship returns exactly one object.
+
+A plural relationship returns a collection of objects.
+
+---
+
+## Circular Imports in SQLAlchemy Models
+As projects grow, ORM models often need relationships with each other.
+
+>Example:
+Room  ←────→  Stay
+
+The `Stay` model needs to know about the `Room` model, while the `Room` model also needs to know about the `Stay` model.
+
+A naïve implementation imports both models into each other:
+
+```python
+# room.py
+from app.models.stay import Stay
+
+# stay.py
+from app.models.room import Room
+```
+
+This creates a **circular import**.
+
+### What is a Circular Import?
+A circular import occurs when two or more Python modules depend on each other during import.
+
+>Example:
+Room.py
+    ↓ imports
+Stay.py
+    ↓ imports
+Room.py
+
+Python executes files from top to bottom.
+
+If `Room.py` imports `Stay.py` before the `Room` class has been created, and `Stay.py` immediately imports `Room.py`, Python tries to access a class that does not yet exist.
+
+This commonly results in:
+- `ImportError`
+- `NameError`
+- Partially initialized modules
+
+### Why String Type Hints Are Used
+Instead of:
+```python
+Mapped[Room]
+```
+
+SQLAlchemy models often use:
+
+```python
+Mapped["Room"]
+```
+
+The quotation marks create a **forward reference**.
+
+Instead of evaluating `Room` immediately, Python stores the text `"Room"`.
+
+After all models have been loaded, SQLAlchemy resolves the string into the actual model class.
+
+This helps avoid circular dependency problems.
+
+### SQLAlchemy Model Registry
+During application startup, SQLAlchemy registers every ORM model.
+
+Conceptually:
+"Guest"      → Guest class
+"Room"       → Room class
+"Stay"       → Stay class
+"GuestStay"  → GuestStay class
+
+Later, when SQLAlchemy encounters:
+```python
+relationship("Room")
+```
+
+or
+
+```python
+Mapped["Room"]
+```
+
+it looks up `"Room"` inside this registry and links it to the actual class.
+
+### Professional SQLAlchemy Import Strategy
+Large SQLAlchemy projects usually avoid importing related models directly.
+
+Instead, they use one of these techniques:
+
+- `from __future__ import annotations`
+- `from typing import TYPE_CHECKING`
+
+These approaches:
+- improve static type checking,
+- prevent circular imports,
+- keep ORM models loosely coupled.
+
+### Current HelloStay Strategy
+During the learning phase, direct imports are kept because they make relationships easier to understand.
+
+After all ORM models are complete, the project will be refactored to use the professional import strategy.
+
+---
+
 ## Engine
 >Definition
 The SQLAlchemy component responsible for connecting the application to the database.
@@ -2537,6 +3078,81 @@ A Primary Key uniquely identifies each record in a table.
 id
 
 Business values such as room_number should not be used as primary keys because they may change in the future.
+
+### Composite Unique Constraint
+A **Composite Unique Constraint** ensures that a **combination of multiple columns** remains unique, even if each individual column is allowed to contain duplicate values.
+
+### Why It Is Needed
+Sometimes uniqueness cannot be enforced on a single column.
+
+>Example:
+GuestStay
+---------
+guest_id
+stay_id
+
+__Business Rule__:
+- A guest can stay multiple times.
+- A stay can contain multiple guests.
+- The same guest must not be assigned to the same stay twice.
+
+### Incorrect Approaches
+Making `guest_id` unique:
+guest_id
+
+Incorrect because a guest can check in again in the future.
+
+Making `stay_id` unique:
+stay_id
+
+Incorrect because one stay may contain multiple guests.
+
+### Correct Approach
+Make the combination unique.
+
+(guest_id, stay_id)
+
+__Allowed__:
+| guest_id | stay_id |
+|----------:|---------:|
+| 1 | 25 |
+| 2 | 25 |
+| 3 | 25 |
+| 1 | 30 |
+
+__Not Allowed__:
+| guest_id | stay_id |
+|----------:|---------:|
+| 1 | 25 |
+| 1 | 25 |
+
+### Why Database Constraints Matter
+Business rules should be enforced at the database level whenever possible.
+
+This ensures that:
+- Backend APIs
+- Mobile applications
+- Admin panels
+- SQL scripts
+
+cannot insert invalid data.
+
+The database becomes the final authority for maintaining data integrity.
+
+### Common Real-World Examples
+Student Enrollment
+(student_id, course_id)
+
+Shopping Cart
+(cart_id, product_id)
+
+Hotel Management
+(guest_id, stay_id)
+
+User Roles
+(user_id, role_id)
+
+Composite unique constraints are one of the most common techniques used in relational database design to enforce business rules.
 
 ---
 

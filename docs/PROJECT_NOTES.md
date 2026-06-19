@@ -1419,6 +1419,87 @@ A dedicated Stay entity was introduced containing:
 
 ---
 
+## Architecture Decision 44: 
+__Title__:
+Normalize Guest–Stay Relationship Using a Junction Table
+
+**Status:** Accepted
+
+### Context
+A hotel room can be occupied by multiple guests during a single stay.
+
+>Examples:
+- Family bookings
+- Business groups
+- Friends sharing one room
+
+A simple `guest_id` foreign key inside the `Stay` table cannot represent this relationship.
+
+### Decision
+Introduce a dedicated junction table:
+Guest
+   │
+GuestStay
+   │
+Stay
+
+The `GuestStay` table stores:
+- guest_id
+- stay_id
+- is_primary_guest
+
+### Consequences
+__Advantages__:
+- Supports multiple guests per stay.
+- Supports multiple stays for a single guest.
+- Eliminates duplicate relationship data.
+- Maintains database normalization.
+- Provides a natural place to store guest-specific stay information.
+- Allows one guest to be designated as the Primary Guest for billing.
+
+__Trade-offs__:
+- Slightly more complex queries.
+- Additional ORM relationships are required.
+- CRUD operations require handling the junction table.
+
+This design was chosen because it is scalable and accurately models real-world hotel occupancy.
+
+---
+
+## Architecture Decision 2: 
+__Title__:
+Keep Direct Model Imports During Learning Phase
+
+**Status:** Temporary
+
+### Context
+SQLAlchemy projects often use advanced techniques such as:
+
+- `TYPE_CHECKING`
+- `from __future__ import annotations`
+- String-based relationship declarations
+
+These techniques reduce circular imports but introduce additional Python concepts.
+
+### Decision
+During the learning phase, model files will continue using direct imports to make ORM relationships easier to understand.
+
+After the ORM layer is complete, all models will be refactored to the professional SQLAlchemy import strategy.
+
+### Consequences
+__Advantages__:
+- Easier to understand ORM relationships.
+- Simplifies debugging while learning.
+- Reduces cognitive load.
+
+___Trade-offs___:
+- Temporary circular import risk.
+- Not the final production structure.
+
+This decision is educational rather than architectural. It will be revisited once the ORM layer is complete.
+
+---
+
 # Milestone History
 
 ## Milestone 0 - Project Planning & Documentation

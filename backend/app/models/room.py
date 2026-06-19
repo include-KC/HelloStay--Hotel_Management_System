@@ -1,7 +1,9 @@
 from decimal import Decimal
 
 from sqlalchemy import Integer, String, Numeric
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.stay import Stay
 
 from app.database.base import Base
 
@@ -46,3 +48,6 @@ class Room(Base):
         nullable = False
     )
 
+    stays: Mapped[list["Stay"]] = relationship(
+        back_populates="room"
+    )
