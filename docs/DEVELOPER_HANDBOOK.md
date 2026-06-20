@@ -963,6 +963,24 @@ git commit -m "Updated stuff"
 >Example
 git commit -m "Create backend foundation"
 
+### Multi-line Commit
+__METHOD-1: Using Chained -m__:
+>Example:
+git commit \ 
+-m "Title line"
+-m "multi-line comment"
+
+__METHOD-2: Using Vim environment__:
+1. Run: git commit
+This will either open a vim environment in the terminal or opens a new file in the explorer.
+
+2. _In Vim_: Press i to enter insert mode(to confirm, __INSERT__ will be visible at the bottom)
+- Type your comment.
+
+3. Press ESC to exit the insert mode.
+
+4. Press __:__, then type __wq__ and press enter.
+
 ### Industry Practice
 One commit should represent one meaningful change.
 

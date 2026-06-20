@@ -5,7 +5,6 @@ from pydantic import ConfigDict
 from datetime import datetime
 
 class StayCreate(BaseModel):
-    guest_id: int
     room_id: int
     price_per_night: Decimal
     check_in_datetime: datetime
@@ -13,7 +12,6 @@ class StayCreate(BaseModel):
 
 class StayResponse(BaseModel):
     stay_id: int
-    guest_id:int
     room_id:int
     price_per_night: Decimal
     check_in_datetime: datetime
@@ -25,7 +23,6 @@ class StayResponse(BaseModel):
     )
 
 class StayUpdate(BaseModel):
-    guest_id: Optional[int] = None
     room_id: Optional[int] = None
     price_per_night: Optional[Decimal] = None
     check_in_datetime: Optional[datetime] = None

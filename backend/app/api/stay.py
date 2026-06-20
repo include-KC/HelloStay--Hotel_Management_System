@@ -18,26 +18,10 @@ def Create_Stay(
     stay:StayCreate,
     db: Session = Depends(get_db)
 ):
-    
-    guest = db.query(Guest)\
-    .filter(Guest.id == stay.guest_id)\
-    .first()
 
     room = db.query(Room)\
     .filter(Room.id == stay.room_id)\
     .first()
-
-    if guest is None and room is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Guest and Room not found"
-        )
-    
-    if guest is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Guest not found"
-        )
 
     if room is None:
         raise HTTPException(
@@ -46,7 +30,6 @@ def Create_Stay(
         )
     
     new_stay = Stay(
-        guest_id = stay.guest_id,
         room_id = stay.room_id,
         price_per_night = stay.price_per_night,
         check_in_datetime = stay.check_in_datetime,
