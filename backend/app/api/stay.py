@@ -10,7 +10,7 @@ from app.schemas.stay import StayCreate, StayResponse, StayUpdate
 
 router = APIRouter(
     prefix = "/stay",
-    tags = ["Guest_Stay_Info"]
+    tags = ["Stays"]
 )
 
 @router.post("", response_model = StayResponse)

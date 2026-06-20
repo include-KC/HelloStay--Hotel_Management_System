@@ -5,7 +5,7 @@ from app.database.session import SessionLocal
 from app.models.system_info import SystemInfo
 
 router = APIRouter(
-    tags = ["System_Info"]
+    tags = ["System Info"]
 )
 
 @router.get("/system-info")

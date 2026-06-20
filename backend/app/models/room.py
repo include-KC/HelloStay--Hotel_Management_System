@@ -3,9 +3,12 @@ from decimal import Decimal
 from sqlalchemy import Integer, String, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.stay import Stay
+from typing import TYPE_CHECKING
 
 from app.database.base import Base
+
+if TYPE_CHECKING:
+    from app.models.stay import Stay
 
 class Room(Base):
     __tablename__ = "rooms"
@@ -34,8 +37,7 @@ class Room(Base):
 
     max_occupancy: Mapped[int] = mapped_column(
         Integer,
-        nullable = True,
-                
+        nullable = False,
     )
 
     facilities: Mapped[str] = mapped_column(

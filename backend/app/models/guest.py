@@ -2,10 +2,13 @@ from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column 
 from sqlalchemy.orm import relationship
 
-from app.models.guest_stay import GuestStay
+from typing import TYPE_CHECKING
 
 
 from app.database.base import Base
+
+if TYPE_CHECKING:
+    from app.models.guest_stay import GuestStay
 
 class Guest(Base):
     __tablename__ = "guests"

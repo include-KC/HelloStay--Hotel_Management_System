@@ -4,6 +4,8 @@ from app.models.room import Room
 from app.models.guest import Guest
 from app.models.system_info import SystemInfo
 from app.models.stay import Stay
+from app.models.guest_stay import GuestStay
+
 
 from logging.config import fileConfig
 

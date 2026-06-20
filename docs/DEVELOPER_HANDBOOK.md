@@ -5243,19 +5243,15 @@ Problem:
 * Outdated base
 * Merge conflicts later
 
----
-
 ## Mistake 7: Committing Sensitive Data
 Bad:
  id="bp028"
 API_KEY=123456
 
-Problem:
+__Problem__:
 * Security risk
 * Credential leaks
 * Production compromise
-
----
 
 # Good Git Workflow Summary
 A professional workflow looks like this:
@@ -5279,8 +5275,6 @@ Merge
 ↓
 Delete branch
 
----
-
 # HelloStay Specific Best Practices
 For your project:
 * Keep backend APIs modular (Guest, Room, Stay, Payment)
@@ -5290,29 +5284,49 @@ For your project:
 * Never commit `.env` files
 * Use Pull Requests even if working alone
 
----
-
 ## Interview Questions
-
-### Why are small commits important?
+>Why are small commits important?
 Small commits make it easier to track changes, debug issues, and revert specific functionality without affecting unrelated parts of the code.
 
----
-
-### Why should main branch always be stable?
+>Why should main branch always be stable?
 Because it represents production-ready code. Any unstable code in main can break deployments or affect other developers.
 
----
-
-### Why should feature branches be used?
+>Why should feature branches be used?
 Feature branches isolate development work, allowing multiple features to be built independently without affecting the main codebase.
 
----
-
-### What is the danger of using git push --force?
+>What is the danger of using git push --force?
 It rewrites remote history and can delete other developers' work, causing repository inconsistency.
 
+>Why are commit messages important?
+They document the history of the project and help developers understand why changes were made without reading the entire code.
+
 ---
 
-### Why are commit messages important?
-They document the history of the project and help developers understand why changes were made without reading the entire code.
+# Verifying the ORM Layer
+Before implementing business logic or API endpoints, verify that the application starts successfully.
+
+>A successful application startup confirms:
+- All SQLAlchemy models are importable.
+- Relationship definitions are valid.
+- Circular imports have been resolved.
+- FastAPI can initialize all routers.
+- Database configuration loads correctly.
+
+Application startup is an important milestone because it validates the project's foundational architecture before additional features are developed.
+
+---
+
+# Single Source of Truth for Database Schema
+A project should use only one mechanism to create and evolve the database schema.
+
+__Avoid mixing__:
+- `Base.metadata.create_all()`
+- Alembic migrations
+
+__Reason__:
+- `create_all()` creates tables but does not record migration history.
+- Alembic maintains version-controlled schema history.
+
+Using both can cause Alembic to detect existing tables without corresponding migration records, leading to migration conflicts.
+
+For production applications, Alembic should be the single source of truth for all schema changes.
