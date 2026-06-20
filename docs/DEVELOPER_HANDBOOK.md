@@ -976,6 +976,9 @@ This will either open a vim environment in the terminal or opens a new file in t
 
 2. _In Vim_: Press i to enter insert mode(to confirm, __INSERT__ will be visible at the bottom)
 - Type your comment.
+- The first line of the comment will be Title.
+- If you want to have multi-line comment,
+After writing the Title, add other details after leaving one line.
 
 3. Press ESC to exit the insert mode.
 
