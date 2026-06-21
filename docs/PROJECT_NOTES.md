@@ -317,7 +317,7 @@ The project will be built milestone by milestone.
 
 ### Documentation Files
 
->LEARNING_NOTEBOOK.md
+>BACKEND_CONCEPTS.md
 Purpose:
 Store technical concepts learned during development.
 
@@ -488,7 +488,7 @@ app/api/system_info.py
 Documentation will be maintained alongside development.
 
 >Documentation Files:
-- LEARNING_NOTEBOOK.md
+- BACKEND_CONCEPTS.md
 - DEVELOPER_HANDBOOK.md
 - PROJECT_NOTES.md
 
@@ -1779,6 +1779,41 @@ Direct schema creation through `Base.metadata.create_all()` is no longer permitt
 
 ---
 
+## Architecture Decision 58: 
+__Topic__:
+Separate Documentation by Technology Layer
+
+**Status:** Accepted
+
+### Context
+As HelloStay grows beyond the backend, a single `LEARNING_NOTEBOOK.md` file containing all technical concepts becomes unmanageable.
+
+The file had grown to 3600+ lines covering only backend concepts (FastAPI, SQLAlchemy, Alembic, Pydantic).
+
+Upcoming frontend (React, Vite, Bootstrap, axios) and desktop (Electron, IPC) technologies will introduce a significant volume of new concepts.
+
+### Decision
+The monolithic `LEARNING_NOTEBOOK.md` is renamed to `BACKEND_CONCEPTS.md` and three new documentation files are created:
+
+| File | Scope |
+|------|-------|
+| `BACKEND_CONCEPTS.md` | FastAPI, SQLAlchemy, Alembic, Pydantic, Python |
+| `FRONTEND_CONCEPTS.md` | React, Vite, Bootstrap, axios, component patterns |
+| `ELECTRON_CONCEPTS.md` | Electron, IPC, BrowserWindow, packaging |
+| `FULLSTACK_FLOW.md` | Data flow, request lifecycle, API communication |
+
+### Consequences
+>Advantages:
+- Each file remains focused and searchable.
+- Related concepts stay together.
+- New developers can navigate by technology layer.
+
+>Trade-offs:
+- Requires discipline to write new concepts in the correct file.
+- Slightly more files to manage.
+
+---
+
 # Milestone History
 
 ## Milestone 0 - Project Planning & Documentation
@@ -1813,7 +1848,7 @@ Define the project vision, technology stack, architecture approach, and document
 * SQLAlchemy
 
 ### Documentation Files Created
-* LEARNING_NOTEBOOK.md
+* BACKEND_CONCEPTS.md
 * DEVELOPER_HANDBOOK.md
 * PROJECT_NOTES.md
 
@@ -2278,3 +2313,25 @@ Successfully tested through Swagger UI.
 - Price per night preserved for each stay transaction
 
 ---
+
+## Milestone 14 - Documentation Restructuring
+
+### Status
+Completed
+
+### Objective
+Restructure project documentation to support upcoming frontend and desktop development phases.
+
+### Deliverables
+- `LEARNING_NOTES.md` renamed to `BACKEND_CONCEPTS.md`
+- `FRONTEND_CONCEPTS.md` created with header template
+- `ELECTRON_CONCEPTS.md` created with header template
+- `FULLSTACK_FLOW.md` created with header template
+- Architecture Decision 58 documented
+- All cross-references to old filename updated
+
+### Key Outcomes
+- Documentation now organized by technology layer
+- Each new technology (React, Electron) has a dedicated concepts file
+- Clear separation between backend, frontend, desktop, and fullstack knowledge
+- Architecture decision recorded for future reference

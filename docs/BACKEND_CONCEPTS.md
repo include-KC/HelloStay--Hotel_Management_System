@@ -1,6 +1,6 @@
-# HelloStay Learning Notebook
+# HelloStay Backend Concepts
 >Purpose
-This document stores technical concepts learned while building HelloStay.
+This document stores backend technical concepts learned while building HelloStay.
 
 >For every concept, document:
 - Definition

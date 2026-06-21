@@ -26,7 +26,7 @@ Markdown is a lightweight markup language used to create formatted documentation
 >Common Examples
 - README.md
 - PROJECT_NOTES.md
-- LEARNING_NOTEBOOK.md
+- BACKEND_CONCEPTS.md
 - DEVELOPER_HANDBOOK.md
 
 ## Heading Levels
