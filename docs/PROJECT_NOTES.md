@@ -2335,3 +2335,31 @@ Restructure project documentation to support upcoming frontend and desktop devel
 - Each new technology (React, Electron) has a dedicated concepts file
 - Clear separation between backend, frontend, desktop, and fullstack knowledge
 - Architecture decision recorded for future reference
+
+---
+
+## Milestone 15 - Guest Stay Module
+
+### Status
+Completed
+
+### Objective
+Enable multiple guest entries in a single room to accurately track all occupants for a specific stay.
+
+### Deliverables
+- `GuestStay` database model representing the many-to-many relationship
+- Alembic migration for the `guest_stay` table
+- `GuestStayCreate`, `GuestStayResponse`, and `GuestStayUpdate` schemas
+- `POST /guest-stays`
+- `GET /guest-stays`
+- `GET /guest-stays/{id}`
+- `PUT /guest-stays/{id}`
+- `DELETE /guest-stays/{id}`
+
+### Validation
+Successfully tested through Swagger UI.
+
+### Key Outcomes
+- Multiple guests can now be associated with a single stay record
+- Backend core features for Phase 1 are fully complete
+- Ready for Frontend architecture setup
