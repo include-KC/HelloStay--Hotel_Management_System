@@ -12,3 +12,1716 @@ This document stores frontend technical concepts learned while building HelloSta
 - HelloStay Usage
 
 ---
+
+## npm (Node Package Manager)
+>Definition
+The default package manager for Node.js, used to install and manage third-party code libraries.
+
+>Purpose
+To easily download dependencies (like React, Bootstrap, or Vite) without having to manually download the source code.
+
+>Command
+`npm install <package_name>`
+
+>Industry Practice
+Always rely on `package.json` to keep track of dependencies rather than remembering what you installed. `npm install` automatically reads `package.json` and installs everything needed.
+
+>HelloStay Usage
+Used to install Vite, React, and future frontend libraries in the `frontend` folder.
+
+---
+
+## npm fund
+>Definition
+A command that displays information about how to financially support the open-source developers who created the packages you just installed.
+
+>Purpose
+Open-source software is free, but developers rely on donations to maintain it. `npm fund` simply lists the donation links provided by package authors.
+
+>Industry Practice
+**Safely ignored.** You do not need to run this command, and it is absolutely not an error. Most developers completely ignore the "packages are looking for funding" message.
+
+---
+
+## Tailwind CSS
+>Definition
+A utility-first CSS framework packed with classes like `flex`, `pt-4`, `text-center` and `rotate-90` that can be composed to build any design, directly in your markup.
+
+>Purpose
+To rapidly build modern websites without ever leaving the HTML/JSX. It completely eliminates the need to write custom CSS classes and avoids class name collisions.
+
+>Command
+`npm install -D tailwindcss@3 postcss autoprefixer`
+`npx tailwindcss init -p`
+
+>Industry Practice
+Tailwind has become the industry standard for modern React applications because it scales better than traditional CSS and prevents stylesheet bloat. It requires a mindset shift from "semantic classes" (e.g. `.card`) to "utility classes" (e.g. `bg-white shadow-md rounded-lg`).
+
+>HelloStay Usage
+Replaced Bootstrap as the core design system as per Architecture Decision 59, providing the granular control needed for a premium desktop application UI.
+
+---
+
+## React Router DOM
+>Definition
+The standard routing library for React applications. It enables client-side routing, meaning the URL changes and components swap out without the browser actually requesting a new HTML page from the server.
+
+>Purpose
+Creates a Single Page Application (SPA) feel, making navigation instant.
+
+>Command
+`npm install react-router-dom`
+
+>Industry Practice
+Use the `<BrowserRouter>` at the highest level of the app (usually `App.jsx`). Use `<Routes>` and `<Route>` to map paths to components.
+
+>HelloStay Usage
+Used to navigate between the Login screen and the various Dashboard modules (Rooms, Bookings, HR, etc.).
+
+---
+
+## Layout Component Pattern (Outlet)
+>Definition
+A design pattern in React Router where a parent component defines the surrounding structure (like a Sidebar and Topbar), and uses an `<Outlet />` component to render the dynamic child content based on the current URL.
+
+>Purpose
+Prevents code duplication. Instead of importing the Sidebar into every single page, the Layout component handles it once.
+
+>Example
+```jsx
+<Route path="/" element={<MainLayout />}>
+  <Route path="rooms" element={<Rooms />} />
+</Route>
+```
+When visiting `/rooms`, React Router renders `<MainLayout>` and injects `<Rooms>` exactly where the `<Outlet />` tag is placed inside `MainLayout`.
+
+---
+
+## Framer Motion
+>Definition
+A production-ready motion library for React.
+
+>Purpose
+Makes it incredibly easy to add complex animations, page transitions, and gestures using declarative syntax.
+
+>HelloStay Usage
+Used to add subtle fade-ins and slide-ups to our dashboard cards to make the desktop app feel premium and alive.
+
+---
+
+## Lucide React
+>Definition
+A beautifully crafted, open-source icon library.
+
+>HelloStay Usage
+Used throughout the Sidebar and Topbar for consistent, clean iconography matching our design system.
+
+---
+
+## React State (`useState`)
+>Definition
+A React Hook that allows you to add state (memory) to functional components. When state changes, React automatically re-renders the component to reflect the new data.
+
+>Purpose
+To track variables that change over time and affect the UI (like tracking the progress bar in the Installer, or storing form input).
+
+>Syntax
+```jsx
+import { useState } from 'react';
+const [progress, setProgress] = useState(0);
+```
+- `progress`: The current value.
+- `setProgress`: The function used to update the value.
+- `0`: The initial value.
+
+>HelloStay Usage
+Used in the `Installer.jsx` to manage the installation progress percentage, and in `Login.jsx` to toggle between 'owner' and 'employee' views.
+
+---
+
+## React Effects (`useEffect`)
+>Definition
+A React Hook that lets you synchronize a component with an external system or run side effects (like fetching data, setting up subscriptions, or starting a timer).
+
+>Purpose
+To execute code that shouldn't run during the main render cycle.
+
+>Syntax
+```jsx
+useEffect(() => {
+  // Setup code (e.g., start a timer)
+  const timer = setInterval(() => console.log('Tick'), 1000);
+
+  // Cleanup function (runs when component unmounts)
+  return () => clearInterval(timer);
+}, []); // Empty dependency array means this runs ONLY ONCE when the component mounts.
+```
+
+>HelloStay Usage
+Used in `Installer.jsx` to start the simulated setup interval. The cleanup function ensures the timer stops if the user navigates away before it finishes.
+
+---
+
+## Navigation (`useNavigate`)
+>Definition
+A hook from `react-router-dom` that allows you to programmatically navigate between pages without using an `<a>` tag or `<Link>` component.
+
+>Purpose
+Used to redirect the user after they click a button or complete an action (like successfully submitting a registration form).
+
+>Syntax
+```jsx
+import { useNavigate } from 'react-router-dom';
+
+export default function MyComponent() {
+  const navigate = useNavigate();
+
+  const handleComplete = () => {
+    navigate('/dashboard'); // Instantly swaps the screen to the dashboard
+  };
+}
+```
+
+>HelloStay Usage
+Used across the Authentication UI to route users:
+- From the completed Installer to the Owner Registration.
+- From successful Registration to the Login screen.
+- From the Login screen to the Dashboard.
+
+---
+
+## Building UI Forms in React
+>Definition
+React forms require a slightly different mental model than raw HTML. In React, forms are often "controlled", meaning React state becomes the "single source of truth" for the input fields.
+
+>Industry Practice
+1. Always use `onChange` to update state as the user types.
+2. Provide visual feedback for focus (`focus:ring-2`) and hover states.
+3. Group related inputs into grids (`grid-cols-2`) to maximize screen real estate on desktop applications.
+
+>HelloStay Usage
+The `RegisterOwner.jsx` and `RegisterEmployee.jsx` files use Tailwind classes (`focus:ring-blue-500`, `bg-gray-50`) to create premium, commercial-grade forms that look native to a desktop environment. They implement the "Upload Area" pattern using dashed borders and drag-and-drop visuals.
+
+---
+
+## The Spread Operator (`...`)
+>Definition
+In JavaScript, three dots (`...`) are called the "spread operator". It unpacks all the elements from an array or an object into a new array or object.
+
+>Purpose
+In React, state is *immutable* (you cannot change it directly). If you have an object in state and want to update just one property, you must copy the entire object first, and then overwrite the property. The spread operator makes this copying easy.
+
+>Syntax Example
+```jsx
+// Imagine we have this state:
+const [user, setUser] = useState({ name: 'John', age: 25 });
+
+// BAD: Never mutate state directly like this in React!
+// user.age = 26; 
+
+// GOOD: Copy all existing properties using '...', then overwrite age
+setUser({ ...user, age: 26 }); 
+```
+
+>HelloStay Usage
+Used in `RegisterHotel.jsx` when updating the form data: `setFormData({...formData, hotelName: e.target.value})`. This copies the existing totalRooms and facilities, and only updates the hotelName.
+
+---
+
+## LocalStorage
+>Definition
+A built-in feature of the user's web browser that allows you to save data directly on their computer. The data persists even if they close the browser tab or restart their computer.
+
+>Purpose
+To remember information between page reloads without needing a backend database. It can only store **strings** (text).
+
+>Syntax Example
+```javascript
+// Saving data to the browser
+localStorage.setItem('myKey', 'Hello World');
+
+// Retrieving data from the browser
+const data = localStorage.getItem('myKey');
+console.log(data); // Outputs: "Hello World"
+```
+
+>HelloStay Usage
+Used to save the Hotel Registration details in `RegisterHotel.jsx` and read them in `Dashboard.jsx`.
+
+---
+
+## JSON.stringify() and JSON.parse()
+>Definition
+Because `localStorage` can **only store text**, you cannot save a Javascript Object (like `{ hotelName: "Plaza" }`) directly. You must convert the Object into a text string, and convert it back when you read it.
+
+>Purpose
+- `JSON.stringify()`: Converts a Javascript Object into a Text String.
+- `JSON.parse()`: Converts a Text String back into a Javascript Object.
+
+>Syntax Example
+```javascript
+const hotel = { name: "Plaza", rooms: 50 };
+
+// Convert object to string to save it
+localStorage.setItem('hotelData', JSON.stringify(hotel));
+
+// Read string from storage
+const rawString = localStorage.getItem('hotelData');
+
+// Convert string back to an object so we can use it
+const actualHotelObject = JSON.parse(rawString);
+console.log(actualHotelObject.name); // Outputs: "Plaza"
+```
+
+>HelloStay Usage
+Used in the Hotel Setup flow to safely store the complex `formData` object containing the hotel details and facilities arrays into the browser.
+
+---
+
+## Rendering Lists in React (`.map()`)
+>Definition
+In React, we do not use `for` loops to render multiple items (like a list of rooms or a grid of cards). Instead, we use the Javascript `.map()` function, which loops over an array and returns a new React element for each item.
+
+>Purpose
+To dynamically generate UI components based on data arrays.
+
+>Syntax Example
+```jsx
+const facilities = ["WiFi", "Pool", "Gym"];
+
+return (
+  <div>
+    {facilities.map((facility, index) => (
+       // React requires a unique "key" prop for every item mapped in an array
+       <span key={index}>{facility}</span>
+    ))}
+  </div>
+);
+```
+
+>HelloStay Usage
+Used extensively in `Dashboard.jsx` to render the KPI stat cards, and in `RegisterHotel.jsx` to render the clickable grid of Facility buttons.
+
+---
+
+## Lazy State Initialization
+>Definition
+Passing a **function** into `useState` instead of a direct value. This tells React to only execute that function once when the component first loads.
+
+>Problem it Solves
+If you use `useEffect` to instantly overwrite state on the first load (e.g., reading from LocalStorage), React has to render the component twice in a row, which throws performance warnings in the IDE ("Calling setState synchronously within an effect"). 
+
+>Syntax Example
+```jsx
+// BAD: Forces a double-render and throws IDE warnings
+const [data, setData] = useState("Loading...");
+useEffect(() => {
+  setData(localStorage.getItem('myKey'));
+}, []);
+
+// GOOD: "Lazy Initialization". Reads storage once, correctly, with no warnings.
+const [data, setData] = useState(() => {
+  return localStorage.getItem('myKey') || "Default Value";
+});
+```
+
+>HelloStay Usage
+Used in `Dashboard.jsx` to load the Hotel Details from `localStorage` the exact millisecond the Dashboard opens, avoiding double-renders.
+
+---
+
+## Conditional CSS Classes (`clsx`)
+>Definition
+`clsx` is a tiny utility library that makes it easy to conditionally combine CSS class names.
+
+>Purpose
+In Tailwind, you often want a button to be blue if it's selected, and gray if it's not. Writing raw Javascript string concatenations for this gets messy. `clsx` solves this cleanly.
+
+>Syntax Example
+```jsx
+import clsx from 'clsx';
+
+const isSelected = true;
+
+// If isSelected is true, it adds 'bg-blue-500'. If false, it adds 'bg-gray-200'.
+const buttonClass = clsx(
+  "p-4 rounded-lg text-white", // Base classes always applied
+  isSelected ? "bg-blue-500" : "bg-gray-200" // Conditional classes
+);
+
+return <button className={buttonClass}>Click Me</button>;
+```
+
+>HelloStay Usage
+Used in the `Sidebar.jsx` to highlight the currently active navigation link, and in `RegisterHotel.jsx` to visually highlight the facilities the owner clicks on.
+
+---
+
+## recharts
+>Definition
+A composable charting library built on React components. Instead of imperatively drawing charts with canvas or SVG commands, you declare chart parts as JSX elements and pass data arrays to them.
+
+>Purpose
+To render data visualizations (bar charts, line charts, pie charts, etc.) inside React applications without writing raw SVG or canvas logic.
+
+>Command
+`npm install recharts`
+
+>Syntax Example
+```jsx
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+const data = [
+  { name: 'Available', value: 40, fill: '#10b981' },
+  { name: 'Occupied', value: 35, fill: '#ef4444' },
+];
+
+function MyChart() {
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={data}>
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+          {data.map((entry, i) => (
+            <Cell key={i} fill={entry.fill} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+```
+
+>Industry Practice
+- Always wrap charts in `<ResponsiveContainer>` so they resize with their parent container.
+- Use `<Cell>` to assign individual colors to bars/segments.
+- Use `margin` prop on the chart to add breathing room around the axes.
+- `<Tooltip>` `contentStyle` accepts CSS-like objects for custom popup styling.
+
+>Common Mistakes
+- Forgetting `ResponsiveContainer` — causes the chart to render at 0x0 pixels.
+- Passing `width` and `height` directly to `<BarChart>` — makes the chart fixed-size and non-responsive.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` to render the Room Occupancy Overview bar chart showing Available, Occupied, Cleaning, and Reserved room counts with color-coded bars.
+
+---
+
+## Modal Component Pattern
+>Definition
+A UI pattern where a child component renders an overlay (backdrop) and a positioned content card on top of the current page, temporarily blocking interaction with the rest of the application.
+
+>Purpose
+To capture focused user input (like a form) without navigating away from the current page. Commonly used for Add, Edit, Confirm, and Detail-view interactions.
+
+>Syntax Example
+```jsx
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+function MyPage() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setIsOpen(true)}>Open Modal</button>
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg"
+            >
+              {/* Modal content here */}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+```
+
+>Industry Practice
+- Use `z-50` or higher to ensure the modal sits above all other content.
+- Use `backdrop-blur-sm` or `bg-black/40` on the backdrop for a modern frosted-glass effect.
+- Wrap modal content in `AnimatePresence` so it animates in/out smoothly.
+- Always provide an `onClose` callback triggered by the backdrop click AND an explicit X button.
+- Reset form state when the modal closes to prevent stale data on re-open.
+
+>Common Mistakes
+- Not resetting form state on close — next open shows old values.
+- Missing `onClick={handleClose}` on the backdrop — user cannot dismiss the modal by clicking outside.
+- Using `fixed` without `inset-0` — modal does not center properly.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` — a form overlay for adding new rooms. Uses Framer Motion spring animation, backdrop blur, form validation with inline errors, and resets state on close.
+
+---
+
+## Data Table Pattern (Sort, Search, Filter, Paginate)
+>Definition
+A custom-built HTML `<table>` enhanced with interactive features: column sorting, text search, dropdown filtering, and page navigation — all managed via React state.
+
+>Purpose
+To display tabular data in a way that lets users quickly find, organize, and navigate through records without needing a third-party table library.
+
+>Syntax Example
+```jsx
+const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+const [searchQuery, setSearchQuery] = useState('');
+const [currentPage, setCurrentPage] = useState(1);
+const ROWS_PER_PAGE = 10;
+
+// Sort handler
+const handleSort = (key) => {
+  setSortConfig(prev => ({
+    key,
+    direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+  }));
+};
+
+// Filtered + sorted data
+const filtered = data
+  .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  .sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+    return sortConfig.direction === 'asc' ? 1 : -1;
+  });
+
+// Paginated slice
+const paginated = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+```
+
+>Industry Practice
+- Use `useMemo` for the filtered/sorted computation to avoid recalculating on every render.
+- Reset `currentPage` to 1 whenever `searchQuery` or `statusFilter` changes.
+- Show "Showing X to Y of Z" text in the pagination footer.
+- Use sort indicator icons (ChevronUp/ChevronDown) next to the active column header.
+
+>Common Mistakes
+- Forgetting to reset `currentPage` when filters change — user sees an empty page.
+- Sorting strings without `.toLowerCase()` — "Zebra" sorts before "apple" because uppercase letters have lower char codes.
+- Not using `useMemo` — expensive filter+sort runs on every keystroke, causing lag with large datasets.
+
+>HelloStay Usage
+Used in `Rooms.jsx` to build a premium data table with column header click-to-sort, real-time search by room number/type, status dropdown filter, and 10-row pagination with Previous/Next buttons.
+
+---
+
+## Status Badges (Color-Coded Conditional Rendering)
+>Definition
+A pattern where a data field's value is mapped to a specific color scheme (background, text, and border) to provide instant visual status recognition.
+
+>Purpose
+To let users scan a table and immediately understand the state of each record without reading the text — color acts as a pre-attentive visual cue.
+
+>Syntax Example
+```jsx
+const STATUS_STYLES = {
+  Available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Occupied: 'bg-red-50 text-red-700 border-red-200',
+  Cleaning: 'bg-orange-50 text-orange-700 border-orange-200',
+  Reserved: 'bg-blue-50 text-blue-700 border-blue-200',
+};
+
+function StatusBadge({ status }) {
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${STATUS_STYLES[status]}`}>
+      {status}
+    </span>
+  );
+}
+```
+
+>Industry Practice
+- Define a constant map (`STATUS_STYLES`) at the top of the file rather than inline ternaries — keeps JSX clean and makes colors easy to update.
+- Use a consistent hue pattern: light background (`-50`), dark text (`-700`), medium border (`-200`) from the same color family.
+- Green = Positive/Ready, Red = Blocked/Occupied, Orange = In Progress/Warning, Blue = Informational/Planned.
+
+>Common Mistakes
+- Using completely different color families for each status — creates visual chaos instead of instant recognition.
+- Hardcoding colors inside the `<span>` — makes it impossible to reuse or maintain.
+
+>HelloStay Usage
+Used in `Rooms.jsx` and `Dashboard.jsx` to display room status with instant visual clarity: Green=Available, Red=Occupied, Orange=Cleaning, Blue=Reserved, as defined in Architecture Decision 60.
+
+---
+
+## `useMemo` (React Hook)
+>Definition
+A React Hook that memoizes (caches) the result of an expensive computation. It only recalculates the value when one of its dependencies changes.
+
+>Purpose
+Prevents unnecessary recalculations on every render. Without `useMemo`, filtering and sorting a large array would run on every keystroke in a search box, causing lag.
+
+>Syntax Example
+```jsx
+import { useMemo } from 'react';
+
+const filteredRooms = useMemo(() => {
+  let result = [...rooms];
+  if (searchQuery) {
+    result = result.filter(r => r.name.includes(searchQuery));
+  }
+  result.sort((a, b) => a.name.localeCompare(b.name));
+  return result;
+}, [rooms, searchQuery]); // Only recalculates when rooms or searchQuery changes
+```
+
+>Industry Practice
+- Use `useMemo` for any computation that iterates over arrays (filter, sort, map) or performs expensive calculations.
+- Always list every external variable the computation depends on in the dependency array.
+- Do NOT use `useMemo` for simple values — it adds overhead that outweighs the benefit.
+
+>Common Mistakes
+- Empty dependency array `[]` when the computation uses external state — the memoized value becomes stale.
+- Using `useMemo` for trivial calculations — the caching overhead is slower than just recalculating.
+
+>HelloStay Usage
+Used in `Rooms.jsx` line 66 to memoize the filtered + sorted room list. This ensures the expensive filter+sort operation only runs when `rooms`, `searchQuery`, `statusFilter`, or `sortConfig` changes — not on every render.
+
+---
+
+## Functional State Updates (`prev => ...`)
+>Definition
+A pattern where you pass a **function** to a state setter instead of a direct value. The function receives the previous state as its argument and returns the new state.
+
+>Purpose
+When the new state depends on the previous state (like appending to an array or toggling a boolean), the functional form guarantees you're working with the latest value — even if React batches multiple state updates.
+
+>Syntax Example
+```jsx
+// BAD: May use a stale value of 'count' if updates are batched
+setCount(count + 1);
+
+// GOOD: Always uses the most recent state, even in rapid updates
+setCount(prev => prev + 1);
+
+// Appending to an array
+setRooms(prev => [...prev, newRoom]);
+
+// Removing from an array
+setRooms(prev => prev.filter(r => r.id !== roomId));
+```
+
+>Industry Practice
+- Always use functional updates when the new state is derived from the old state.
+- Use direct value setting only when the new state is completely independent (e.g., `setIsOpen(false)`).
+
+>Common Mistakes
+- Using the stale closure value instead of `prev` — causes lost updates when state changes rapidly (like rapid button clicks).
+
+>HelloStay Usage
+Used in `Rooms.jsx` line 33: `setRooms(prev => [...prev, newRoom])` to safely append a new room to the existing list without losing any rooms that were added between renders.
+
+---
+
+## `AnimatePresence` (Framer Motion)
+>Definition
+A component from Framer Motion that enables exit animations. Without it, when a component is removed from the DOM (like closing a modal), it simply vanishes. `AnimatePresence` keeps the component in the DOM long enough to play its `exit` animation.
+
+>Purpose
+To animate components that are conditionally rendered — specifically, to animate them OUT when they disappear (not just IN when they appear).
+
+>Syntax Example
+```jsx
+import { motion, AnimatePresence } from 'framer-motion';
+
+<AnimatePresence>
+  {isModalOpen && (
+    <motion.div
+      initial={{ opacity: 0 }}    // When it first appears
+      animate={{ opacity: 1 }}    // While it's on screen
+      exit={{ opacity: 0 }}       // When it's removed — AnimatePresence enables this
+    >
+      Modal content
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+>Industry Practice
+- Always wrap conditionally rendered `motion.*` elements in `AnimatePresence` if you want exit animations.
+- The direct child of `AnimatePresence` must have a unique `key` prop if you're rendering multiple items.
+- `AnimatePresence` must be placed **outside** the conditional check, not inside.
+
+>Common Mistakes
+- Placing `AnimatePresence` inside the `{condition && ...}` — it gets removed before the exit animation can play.
+- Forgetting `exit` prop on the `motion.*` element — nothing happens when the component unmounts.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` to wrap the modal overlay. When the user clicks Close or the backdrop, the modal fades out with a spring scale animation instead of vanishing instantly.
+
+---
+
+## `motion.div` / `motion.tr` (Framer Motion Animated Components)
+>Definition
+Framer Motion exports animated versions of HTML elements. `motion.div` is a regular `<div>` that can accept animation props like `initial`, `animate`, `exit`, and `transition`.
+
+>Purpose
+To declaratively define how an element should appear, behave, and disappear — without writing CSS keyframes or JavaScript animation loops.
+
+>Syntax Example
+```jsx
+import { motion } from 'framer-motion';
+
+// Animate a div fading in and sliding up
+<motion.div
+  initial={{ opacity: 0, y: 20 }}   // Starting state (invisible, 20px below)
+  animate={{ opacity: 1, y: 0 }}     // End state (visible, normal position)
+>
+  Hello World
+</motion.div>
+
+// Animate a table row
+<motion.tr
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ delay: i * 0.05 }}   // Stagger: each row appears 50ms after the previous
+>
+  <td>Data</td>
+</motion.tr>
+```
+
+>Industry Practice
+- Use `initial` for the state before animation starts.
+- Use `animate` for the state the element should reach.
+- Use `transition` to customize timing (spring, tween, delay, duration).
+- You can use `motion.*` on ANY HTML element — `motion.div`, `motion.tr`, `motion.span`, `motion.button`, etc.
+
+>Common Mistakes
+- Using `motion.div` when `motion.tr` is needed — causes invalid HTML structure inside `<table>`.
+- Forgetting `animate` — element stays stuck in the `initial` state.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` for page entrance (`opacity: 0 → 1, y: 10 → 0`) and activity timeline stagger. Used in `Rooms.jsx` on `<motion.tr>` to fade in each table row with a 30ms delay between rows.
+
+---
+
+## Framer Motion `transition` Prop
+>Definition
+A prop on `motion.*` elements that controls how the animation plays — its speed, easing, physics, and delay.
+
+>Purpose
+Without `transition`, Framer Motion uses a default spring animation. The `transition` prop lets you customize the feel — snappy, smooth, delayed, or physics-based.
+
+>Syntax Example
+```jsx
+// Spring animation (natural, physics-based)
+<motion.div
+  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+/>
+
+// Delayed entrance (stagger effect)
+<motion.div
+  transition={{ delay: i * 0.1 }}  // Each item waits 100ms longer
+/>
+
+// Tween (linear or eased over fixed duration)
+<motion.div
+  transition={{ duration: 0.3, ease: 'easeInOut' }}
+/>
+```
+
+>Spring Parameters:
+- `type: 'spring'` — Physics-based animation (bouncy, natural feel)
+- `damping` — How quickly the animation stops (higher = less bouncy)
+- `stiffness` — How fast the animation moves (higher = snappier)
+- `mass` — How heavy the object feels (higher = slower, more momentum)
+
+>Industry Practice
+- Use `spring` for modals and cards (natural, premium feel).
+- Use `delay` with `.map()` index for staggered list entrances.
+- Use `duration` for simple fades where spring physics feel excessive.
+
+>Common Mistakes
+- Very high `stiffness` + low `damping` — animation looks jittery and overshoots.
+- Forgetting `delay` is in seconds, not milliseconds — `delay: 100` means 100 seconds, not 100ms.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 104: `transition={{ type: 'spring', damping: 25, stiffness: 300 }}` for a snappy but smooth modal entrance. Used in `Dashboard.jsx` and `Rooms.jsx` with `delay: i * 0.1` and `delay: i * 0.03` for staggered list animations.
+
+---
+
+## `export default function`
+>Definition
+ES6 JavaScript syntax that exports a function as the **default** export of a file. This allows other files to import it using any name they choose.
+
+>Purpose
+Each React component lives in its own file. `export default` makes the component available for import in other files (like `AppRoutes.jsx`).
+
+>Syntax Example
+```jsx
+// In Rooms.jsx
+export default function Rooms() {
+  return <div>Rooms Page</div>;
+}
+
+// In AppRoutes.jsx — can use any name
+import Rooms from '../pages/Rooms';
+// OR even: import MyRooms from '../pages/Rooms';
+```
+
+>Industry Practice
+- Each file should have exactly ONE default export.
+- The filename and the function name should match (e.g., `Rooms.jsx` exports `Rooms`).
+- Named exports (`export function Foo`) are used for utilities, not components.
+
+>Common Mistakes
+- Having multiple `export default` in one file — causes "Duplicate export" errors.
+- Forgetting `export default` — the import in other files silently receives `undefined`.
+
+>HelloStay Usage
+Every component file in HelloStay uses this pattern: `export default function Dashboard()`, `export default function Rooms()`, `export default function AddRoomModal()`, etc.
+
+---
+
+## Template Literals (Backticks with `${}`)
+>Definition
+JavaScript string syntax using backticks (`` ` ``) instead of quotes. Template literals allow embedded expressions using `${expression}` inside the string.
+
+>Purpose
+Cleanly combine strings with variables without using `+` concatenation, which becomes unreadable with multiple variables.
+
+>Syntax Example
+```jsx
+const name = "Alice";
+const age = 25;
+
+// Old way (messy)
+const msg1 = "My name is " + name + " and I am " + age + " years old";
+
+// Template literal (clean)
+const msg2 = `My name is ${name} and I am ${age} years old`;
+
+// In JSX — dynamic className
+<h3 className={`text-2xl font-bold ${stat.color}`}>{stat.value}</h3>
+
+// Multi-line strings
+const html = `
+  <div>
+    <p>Hello</p>
+  </div>
+`;
+```
+
+>Industry Practice
+- Use template literals whenever combining strings with variables.
+- Template literals are also required for JSX attribute values that need dynamic parts inside strings.
+
+>Common Mistakes
+- Using regular quotes with `+` concatenation — harder to read and error-prone.
+- Forgetting to close the `${}` expression — causes syntax errors.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` line 98: `` className={`text-2xl font-bold ${stat.color}`} `` to dynamically set the color class based on the KPI card's color property.
+
+---
+
+## `parseInt()` and `parseFloat()` (Number Conversion)
+>Definition
+- `parseInt("100")` — Converts a string to an **integer** (whole number). Returns `NaN` if the string isn't numeric.
+- `parseFloat("25.50")` — Converts a string to a **floating-point** number (decimal).
+
+>Purpose
+`localStorage` stores everything as text. When you read `"100"` from storage, it's the text `"100"`, not the number `100`. These functions convert text to usable numbers for math operations.
+
+>Syntax Example
+```jsx
+const text = "2500";
+const number = parseInt(text);      // 2500
+const decimal = parseFloat("3.14"); // 3.14
+
+// With fallback (|| 0) if conversion fails
+const price = parseInt(formData.pricePerNight) || 0;
+```
+
+>Industry Practice
+- Always use `|| 0` or `?? 0` as a fallback to avoid `NaN` propagating through calculations.
+- Use `parseInt` for whole numbers (room count, occupancy).
+- Use `parseFloat` for money/decimals (price per night).
+
+>Common Mistakes
+- Doing math on strings without converting — `"5" + "10"` gives `"510"` (concatenation), not `15.
+- Forgetting the fallback — `parseInt(undefined)` returns `NaN`, which breaks all downstream math.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` line 30: `parseInt(hotelData.totalRooms) || 100` to safely convert the room count string from localStorage into a number with a fallback of 100. Used in `AddRoomModal.jsx` for price and occupancy conversion.
+
+---
+
+## `Math.floor()`, `Math.ceil()`, `Math.max()`, `Math.min()`
+>Definition
+Built-in JavaScript Math methods:
+- `Math.floor(3.7)` → `3` — Rounds **down** to nearest integer.
+- `Math.ceil(3.2)` → `4` — Rounds **up** to nearest integer.
+- `Math.max(5, 10, 3)` → `10` — Returns the **largest** value.
+- `Math.min(5, 10, 3)` → `3` — Returns the **smallest** value.
+
+>Purpose
+Used for calculations that need whole numbers (pagination bounds, occupancy counts, clamping values).
+
+>Syntax Example
+```jsx
+// Calculate 40% of rooms, rounded down
+const available = Math.floor(totalRooms * 0.4);  // 40.6 → 40
+
+// Calculate total pages needed for pagination
+const totalPages = Math.ceil(25 / 10);  // 2.5 → 3 pages
+
+// Clamp page number between 1 and max
+const safePage = Math.max(1, Math.min(desiredPage, totalPages));
+```
+
+>Industry Practice
+- `Math.floor` for array indexing and percentage calculations.
+- `Math.ceil` for pagination (always round up — you need a page for the remainder).
+- `Math.max` / `Math.min` for clamping values within bounds.
+
+>Common Mistakes
+- Using `Math.round` instead of `Math.floor` for pagination — can skip records.
+- Not handling `NaN` — `Math.floor(NaN)` returns `NaN`, not 0.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` for fallback occupancy values (`Math.floor(totalRoomsNum * 0.4)`). Used in `Rooms.jsx` line 46: `Math.ceil(updated.length / ROWS_PER_PAGE)` for pagination total, and `Math.max(1, p - 1)` / `Math.min(totalPages, p + 1)` to clamp page navigation.
+
+---
+
+## `.filter()` (Array Method)
+>Definition
+Creates a new array containing only the elements that pass a test (return `true` from a callback function). The original array is NOT modified.
+
+>Purpose
+To selectively include or exclude items from an array based on a condition — like filtering rooms by status, or removing a deleted item.
+
+>Syntax Example
+```jsx
+const rooms = [
+  { id: 1, status: 'Available' },
+  { id: 2, status: 'Occupied' },
+  { id: 3, status: 'Available' },
+];
+
+// Keep only Available rooms
+const available = rooms.filter(r => r.status === 'Available');
+// Result: [{ id: 1 }, { id: 3 }]
+
+// Remove a room by ID
+const remaining = rooms.filter(r => r.id !== 2);
+// Result: [{ id: 1 }, { id: 3 }]
+```
+
+>Industry Practice
+- `.filter()` always returns a **new array** — the original is untouched (immutable pattern).
+- Chain `.filter()` with `.map()` for selective rendering: `rooms.filter(r => r.active).map(r => <Row />)`.
+- Use arrow functions for concise filter callbacks.
+
+>Common Mistakes
+- Modifying the original array instead of filtering — `rooms.splice(i, 1)` mutates; `rooms.filter(...)` is safe.
+- Returning the condition without `return` keyword — works in arrow functions but confuses beginners.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` lines 36-37 to count rooms by status: `rooms.filter(r => r.roomStatus === 'Available').length`. Used in `Rooms.jsx` line 42 to remove a deleted room: `rooms.filter(r => r.id !== roomId)`.
+
+---
+
+## `.sort()` (Array Method)
+>Definition
+Sorts the elements of an array in place and returns the sorted array. The sort order is determined by a comparison callback function.
+
+>Purpose
+To arrange data in a specific order — alphabetical (A-Z), numerical (ascending), or date-based.
+
+>Syntax Example
+```jsx
+const rooms = [
+  { name: 'Suite 301', price: 5000 },
+  { name: 'Room 101', price: 2000 },
+  { name: 'Deluxe 201', price: 3500 },
+];
+
+// Sort by price ascending
+rooms.sort((a, b) => a.price - b.price);
+
+// Sort by name alphabetical
+rooms.sort((a, b) => a.name.localeCompare(b.name));
+
+// Sort by name — descending
+rooms.sort((a, b) => b.name.localeCompare(a.name));
+```
+
+>Comparison Function Rules:
+- Return **negative** if `a` should come before `b`.
+- Return **positive** if `a` should come after `b`.
+- Return **0** if order doesn't change.
+
+>Industry Practice
+- Always use `.toLowerCase()` when sorting strings — otherwise "Zebra" sorts before "apple".
+- `.sort()` **mutates** the original array — make a copy first: `[...arr].sort(...)` or sort inside `useMemo`.
+- Use `localeCompare()` for string comparison — it handles special characters and locale rules.
+
+>Common Mistakes
+- Sorting strings without `.toLowerCase()` — uppercase letters have lower char codes than lowercase.
+- Forgetting to copy the array before sorting — mutates the original state, which React forbids.
+- Using `a - b` for string comparison — returns `NaN`, causing unpredictable order.
+
+>HelloStay Usage
+Used in `Rooms.jsx` lines 81-91 inside `useMemo` to sort rooms by the active column. Strings are lowercased before comparison for case-insensitive sorting.
+
+---
+
+## `.slice()` (Array Method)
+>Definition
+Returns a shallow copy of a portion of an array, from the `start` index up to (but not including) the `end` index. The original array is NOT modified.
+
+>Purpose
+To extract a subset of data — most commonly used for pagination to get "page 2's 10 rows" from a larger array.
+
+>Syntax Example
+```jsx
+const allRooms = [A, B, C, D, E, F, G, H, I, J, K, L]; // 12 items
+
+// Page 1 (first 10 items, index 0 to 9)
+const page1 = allRooms.slice(0, 10);  // [A, B, C, D, E, F, G, H, I, J]
+
+// Page 2 (items 10 to 19, but only 2 exist)
+const page2 = allRooms.slice(10, 20); // [K, L]
+
+// Generic formula: page N, 10 per page
+const pageN = allRooms.slice((currentPage - 1) * 10, currentPage * 10);
+```
+
+>Industry Practice
+- `.slice()` is the standard approach for client-side pagination.
+- It does NOT modify the original array — safe for React state.
+- Combine with `.filter()` and `.sort()` first, then `.slice()` the result.
+
+>Common Mistakes
+- `.splice()` vs `.slice()` — `.splice()` **removes** items from the original array (mutating). `.slice()` **copies** a portion (safe).
+- Off-by-one errors — `.slice(0, 10)` gives items 0-9 (10 items), not 0-10 (11 items).
+
+>HelloStay Usage
+Used in `Rooms.jsx` lines 97-100: `filteredRooms.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)` to extract exactly 10 rooms per page.
+
+---
+
+## `.push()` (Array Method)
+>Definition
+Adds one or more elements to the **end** of an array and returns the new length. This **mutates** the original array.
+
+>Purpose
+To append a new item to an existing array. In React, this is used inside state updates (where the array is first copied).
+
+>Syntax Example
+```jsx
+const rooms = ['Room 101', 'Room 102'];
+
+// Mutating (dangerous in React outside of state setters)
+rooms.push('Room 103');
+
+// Safe in React — copy first, then push
+const updated = [...rooms, newRoom];  // Preferred immutable pattern
+setRooms(updated);
+```
+
+>Industry Practice
+- In React, prefer the spread operator `[...arr, newItem]` over `.push()` for immutability.
+- `.push()` is acceptable inside a state update when you've already created a copy.
+
+>Common Mistakes
+- Using `.push()` directly on React state — `rooms.push(newRoom)` mutates state, causing unpredictable renders and breaking should-component-update optimizations.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 73: `existing.push(newRoom)` inside `handleSubmit` — safe because `existing` is a freshly parsed copy from localStorage, not React state.
+
+---
+
+## `.trim()` (String Method)
+>Definition
+Removes whitespace from both the beginning and end of a string. Does NOT remove spaces in the middle.
+
+>Purpose
+To clean up user input before storing or comparing — prevents accidental leading/trailing spaces from causing bugs.
+
+>Syntax Example
+```jsx
+const input = "  Room 301  ";
+const cleaned = input.trim();  // "Room 301"
+
+// Check if a field is not empty (after removing spaces)
+if (formData.roomNumber.trim() !== '') {
+  // User actually typed something
+}
+```
+
+>Industry Practice
+- Always `.trim()` text input before validation and before storing in a database.
+- Use `.trim()` in validation checks — prevents a field with only spaces from passing as "filled".
+
+>Common Mistakes
+- Forgetting `.trim()` — a user typing "   " (spaces only) passes a non-empty check but is effectively blank.
+- Using `.trim()` on non-string values — causes an error if the value is `null` or `undefined`.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 32: `formData.roomNumber.trim()` to validate that the room number isn't just whitespace. Used on line 64 before storing the room number.
+
+---
+
+## `.toLocaleString('en-IN')` (Number Formatting)
+>Definition
+Converts a number to a string formatted according to a specific locale's conventions. `'en-IN'` formats numbers in the Indian numbering system (e.g., `12,50,000` instead of `1,250,000`).
+
+>Purpose
+To display prices, salaries, and other monetary values in a format that users in India are familiar with.
+
+>Syntax Example
+```jsx
+const price = 12500;
+
+// Indian format: 12,500
+price.toLocaleString('en-IN');  // "12,500"
+
+const bigNumber = 1250000;
+bigNumber.toLocaleString('en-IN');  // "12,50,000"
+
+// In JSX
+<span>{'\u20B9'}{room.pricePerNight.toLocaleString('en-IN')}</span>
+// Renders: ₹12,500
+```
+
+>Industry Practice
+- Pass `'en-IN'` locale for Indian projects, `'en-US'` for US formatting.
+- Combine with the Rupee symbol `\u20B9` for complete price display.
+
+>Common Mistakes
+- Forgetting the locale — `price.toLocaleString()` uses the browser's default, which may not be Indian format.
+- Not using it at all — raw numbers like `2500` look unprofessional compared to `2,500`.
+
+>HelloStay Usage
+Used in `Rooms.jsx` line 224: `{room.pricePerNight.toLocaleString('en-IN')}` to display prices like ₹2,500 instead of 2500.
+
+---
+
+## `Date.now()` (Timestamp Generation)
+>Definition
+Returns the number of milliseconds elapsed since January 1, 1970 (Unix Epoch). This is guaranteed to be unique for sequential calls.
+
+>Purpose
+To generate unique IDs for client-side created objects before they're synced to a database. Since timestamps are sequential, no two calls return the same value in the same millisecond.
+
+>Syntax Example
+```jsx
+const newRoom = {
+  id: Date.now(),  // e.g., 1687500000000
+  roomNumber: '301',
+};
+```
+
+>Industry Practice
+- Acceptable for temporary client-side IDs during development.
+- In production, the backend should assign real auto-incrementing or UUID IDs.
+- Never use `Date.now()` for security-sensitive tokens — it's predictable.
+
+>Common Mistakes
+- Using `Date.now()` as a permanent database ID — can cause collisions if two users create items at the same millisecond.
+- Using `Math.random()` for IDs instead — not guaranteed unique.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 63: `id: Date.now()` to generate a unique identifier for each new room created in localStorage.
+
+---
+
+## `e.preventDefault()` (Form Submission Control)
+>Definition
+A method on the native browser event object that stops the browser's default behavior for that event. For forms, the default behavior is to submit data and reload the page.
+
+>Purpose
+In React SPAs, we never want a form submission to reload the page — it would destroy all React state. `preventDefault()` stops the reload so JavaScript can handle the submission.
+
+>Syntax Example
+```jsx
+const handleSubmit = (e) => {
+  e.preventDefault();  // Stop the page from reloading
+  // Now do your custom logic
+  const newRoom = { ... };
+  saveToStorage(newRoom);
+};
+```
+
+>Industry Practice
+- Always call `e.preventDefault()` as the first line in form submit handlers.
+- Without it, the entire React application state is lost on page reload.
+
+>Common Mistakes
+- Forgetting `e.preventDefault()` — form submission causes a full page reload, destroying all state.
+- Calling it after async operations — must be called synchronously at the top of the handler.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 59: `e.preventDefault()` inside `handleSubmit` to prevent the form from reloading the page when the user clicks "Add Room".
+
+---
+
+## `<select>` and `<option>` (Dropdown Form Elements)
+>Definition
+HTML form elements for dropdown selections. `<select>` creates the dropdown container; `<option>` defines each selectable item.
+
+>Purpose
+To present a fixed list of choices (like room type or status) where the user picks one option.
+
+>Syntax Example
+```jsx
+const ROOM_TYPES = ['Single', 'Double', 'Suite', 'Deluxe'];
+
+<select
+  value={formData.roomType}
+  onChange={(e) => handleChange('roomType', e.target.value)}
+  className="..."
+>
+  {ROOM_TYPES.map(type => (
+    <option key={type} value={type}>{type}</option>
+  ))}
+</select>
+```
+
+>Industry Practice
+- Always use `value` + `onChange` for controlled dropdowns in React.
+- Define options in a constant array outside the component — keeps JSX clean.
+- Use `appearance-none` in Tailwind to remove the default browser dropdown arrow, then add a custom one.
+
+>Common Mistakes
+- Forgetting the `value` prop on `<select>` — React shows a warning about controlled/uncontrolled switching.
+- Not providing a `key` on `<option>` elements — causes React warnings when the list is dynamic.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` for Room Type (line 148) and Room Status (line 163) dropdowns. Options are defined as `ROOM_TYPES` and `ROOM_STATUSES` constants.
+
+---
+
+## `type="number"` (Numeric Input)
+>Definition
+An HTML input type that restricts the keyboard to numeric characters and provides increment/decrement arrows. It also supports `min`, `max`, and `step` attributes.
+
+>Purpose
+To ensure users can only enter numbers for fields like price, quantity, and occupancy.
+
+>Syntax Example
+```jsx
+<input
+  type="number"
+  min="0"        // Minimum allowed value
+  max="100"      // Maximum allowed value
+  step="100"     // Increment step (arrow keys change by 100)
+  value={formData.pricePerNight}
+  onChange={(e) => handleChange('pricePerNight', e.target.value)}
+/>
+```
+
+>Industry Practice
+- Use `min` to prevent negative values for quantities and prices.
+- Use `step` to guide the user toward reasonable increments (e.g., step="100" for prices).
+- The value is still a **string** from `e.target.value` — use `parseFloat()` or `parseInt()` to convert.
+
+>Common Mistakes
+- Assuming `type="number"` guarantees numeric data — users can still paste text. Always validate.
+- Using `type="number"` for phone numbers or IDs — those are text, not numbers.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` for Price Per Night (`min="0" step="100"`) and Max Occupancy (`min="1" max="10"`) fields.
+
+---
+
+## `type="button"` vs `type="submit"` (Button Behavior)
+>Definition
+- `type="submit"` — Triggers the parent `<form>`'s `onSubmit` handler when clicked.
+- `type="button"` — Does nothing by default; only triggers its own `onClick` handler.
+
+>Purpose
+To control whether a button submits a form or just performs a standalone action. Inside a `<form>`, any button without an explicit `type` defaults to `submit`.
+
+>Syntax Example
+```jsx
+<form onSubmit={handleSubmit}>
+  {/* This button submits the form */}
+  <button type="submit">Save</button>
+
+  {/* This button closes the form WITHOUT submitting */}
+  <button type="button" onClick={handleClose}>Cancel</button>
+</form>
+```
+
+>Industry Practice
+- Always explicitly set `type="button"` on Cancel/Close buttons inside a `<form>`.
+- The default `type` in HTML is `"submit"` — omitting it on a Cancel button accidentally triggers form submission.
+
+>Common Mistakes
+- Forgetting `type="button"` on Cancel — clicking Cancel submits the form instead of closing the modal.
+- Using `type="submit"` on a Delete button — triggers form validation and submission instead of deletion.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 231: the Cancel button uses `type="button"` to close the modal without submitting, while the "Add Room" button uses `type="submit"` to trigger `handleSubmit`.
+
+---
+
+## Props Destructuring (`{ prop1, prop2 }`)
+>Definition
+A JavaScript syntax that extracts properties from an object into named variables. In React, it's used to receive component props directly as named constants instead of accessing them via `props.xxx`.
+
+>Purpose
+Makes component code cleaner and more readable by avoiding repetitive `props.` prefixes.
+
+>Syntax Example
+```jsx
+// Without destructuring (verbose)
+function AddRoomModal(props) {
+  return <div>{props.isOpen ? 'Open' : 'Closed'}</div>;
+}
+
+// With destructuring (clean)
+function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
+  return <div>{isOpen ? 'Open' : 'Closed'}</div>;
+}
+
+// With default values
+function Greeting({ name = 'Guest' }) {
+  return <p>Hello, {name}</p>;
+}
+```
+
+>Industry Practice
+- Always destructure props at the function parameter level — it's the React community standard.
+- Provide default values for optional props using `= defaultValue`.
+
+>Common Mistakes
+- Destructuring a prop that wasn't passed — results in `undefined`. Use default values as a safety net.
+- Renaming accidentally — destructuring `({ isOpen: open })` renames the variable to `open`.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 24: `function AddRoomModal({ isOpen, onClose, onRoomAdded })` to cleanly receive modal visibility, close handler, and room-added callback.
+
+---
+
+## Conditional Rendering in JSX
+>Definition
+React supports three patterns for conditionally showing elements:
+1. **Ternary** (`condition ? <A /> : <B />`) — shows one of two things.
+2. **Logical AND** (`condition && <A />`) — shows one thing or nothing.
+3. **If/else before return** — compute variables, then use them in JSX.
+
+>Purpose
+To show or hide UI elements based on state — like showing a delete confirmation vs. edit buttons, or showing an empty state vs. a data table.
+
+>Syntax Example
+```jsx
+// Pattern 1: Ternary — show A or B
+{isLoggedIn ? <Dashboard /> : <Login />}
+
+// Pattern 2: Logical AND — show A or nothing
+{rooms.length > 0 && <Table data={rooms} />}
+
+// Pattern 3: Inline ternary in attributes
+className={isActive ? 'bg-blue-500' : 'bg-gray-200'}
+
+// Pattern 4: Ternary for inline content
+{rooms.length === 0 ? 'No rooms yet' : `${rooms.length} rooms configured`}
+```
+
+>Industry Practice
+- Use ternary for either/or display.
+- Use `&&` for show/hide (the condition must be boolean or falsy-safe).
+- Keep complex conditionals outside JSX for readability.
+
+>Common Mistakes
+- `{count && <p>Items: {count}</p>}` when `count` is `0` — renders `"0"` because `0` is truthy in JS. Use `{count > 0 && ...}` instead.
+- Deeply nested ternaries — unreadable. Extract to a variable or use if/else.
+
+>HelloStay Usage
+Used extensively across all components:
+- `Dashboard.jsx` line 103: `{hotelData.facilities.length > 0 && (...)}` — show facilities only if any exist.
+- `Rooms.jsx` line 155: `{paginatedRooms.length === 0 ? <EmptyState /> : <Table />}` — empty vs. populated table.
+- `Rooms.jsx` line 243: `{deletingId === room.id ? <ConfirmButtons /> : <ActionButtons />}` — inline delete confirmation.
+
+---
+
+## `overflow-x-auto` (Horizontal Scroll Container)
+>Definition
+A Tailwind CSS utility that adds a horizontal scrollbar when content exceeds the container width. `overflow-x` controls horizontal overflow; `auto` shows the scrollbar only when needed.
+
+>Purpose
+To prevent wide tables from breaking the page layout on smaller screens by allowing horizontal scrolling.
+
+>Syntax Example
+```jsx
+<div className="overflow-x-auto">
+  <table className="w-full">
+    {/* Table may be wider than the screen */}
+  </table>
+</div>
+```
+
+>Industry Practice
+- Always wrap `<table>` elements in an `overflow-x-auto` container in responsive designs.
+- Without it, wide tables push out of their parent container, breaking the layout.
+
+>Common Mistakes
+- Forgetting the wrapper — table breaks out of its container on small screens.
+- Using `overflow-x-scroll` instead — always shows a scrollbar, even when not needed.
+
+>HelloStay Usage
+Used in `Rooms.jsx` line 180: `<div className="overflow-x-auto">` wrapping the data table to ensure it remains scrollable on narrower viewports.
+
+---
+
+## `divide-y` (Tailwind Border Separator)
+>Definition
+A Tailwind CSS utility that adds a `border-bottom` to all child elements except the first one. Creates visual separation between list items without manually adding borders.
+
+>Purpose
+To create clean dividers between table rows or list items without writing custom CSS or adding `<hr>` elements.
+
+>Syntax Example
+```jsx
+// Adds a thin border between each child div
+<div className="divide-y divide-gray-100">
+  <div>Item 1</div>
+  <div>Item 2</div>
+  <div>Item 3</div>
+</div>
+
+// In a table body — separates rows
+<tbody className="divide-y divide-gray-50">
+  <tr>...</tr>
+  <tr>...</tr>
+</tbody>
+```
+
+>Industry Practice
+- Use `divide-y` on table `<tbody>` or list containers for clean row separation.
+- Pair with `divide-gray-100` or `divide-gray-50` for subtle, non-distracting lines.
+
+>Common Mistakes
+- Using `divide-y` on a container with only one child — no visible effect (border is between items, not after the last one).
+- Combining with `border-b` on children — creates double borders.
+
+>HelloStay Usage
+Used in `Rooms.jsx` line 207: `<tbody className="divide-y divide-gray-50">` to add subtle row separators in the data table.
+
+---
+
+## `disabled` Attribute (Disabling Interactive Elements)
+>Definition
+An HTML attribute that prevents a button or input from being interacted with. Disabled elements are typically grayed out and do not respond to clicks.
+
+>Purpose
+To prevent invalid actions — like clicking "Previous" when on page 1, or clicking "Submit" while a form is being processed.
+
+>Syntax Example
+```jsx
+<button
+  onClick={() => setCurrentPage(p => p - 1)}
+  disabled={currentPage === 1}
+  className={clsx(
+    "p-2 rounded-lg border transition-colors",
+    currentPage === 1
+      ? "border-gray-100 text-gray-300 cursor-not-allowed"  // Disabled style
+      : "border-gray-200 text-gray-600 hover:bg-gray-50"    // Active style
+  )}
+>
+  Previous
+</button>
+```
+
+>Industry Practice
+- Always combine `disabled` with visual styling changes (grayed out, no hover effect, `cursor-not-allowed`).
+- Disabled buttons still exist in the DOM — screen readers can read them for accessibility.
+
+>Common Mistakes
+- Setting `disabled` without visual changes — users don't know why the button isn't working.
+- Using `pointer-events-none` instead of `disabled` — `pointer-events-none` doesn't work with keyboard navigation.
+
+>HelloStay Usage
+Used in `Rooms.jsx` lines 290-294 and 316-320: Previous/Next pagination buttons are disabled when on the first/last page respectively.
+
+---
+
+## `appearance-none` (Custom Select Styling)
+>Definition
+A Tailwind CSS utility that removes the browser's default dropdown styling (the native arrow and OS-specific appearance), allowing you to fully customize the `<select>` element.
+
+>Purpose
+Native `<select>` elements look different on every OS and are hard to style. `appearance-none` resets them to a blank slate so Tailwind classes can create a consistent, premium look.
+
+>Syntax Example
+```jsx
+<select className="pl-9 pr-8 py-2.5 border border-gray-200 rounded-lg bg-gray-50 appearance-none cursor-pointer">
+  <option>Option 1</option>
+  <option>Option 2</option>
+</select>
+```
+
+>Industry Practice
+- Always pair `appearance-none` with a custom arrow icon (like a ChevronDown from Lucide) positioned with `absolute` styling.
+- Add `cursor-pointer` to indicate the element is clickable.
+
+>Common Mistakes
+- Using `appearance-none` without a custom arrow — users don't see any visual cue that it's a dropdown.
+- Forgetting `cursor-pointer` — the cursor changes to text input instead of pointer.
+
+>HelloStay Usage
+Used in `Rooms.jsx` line 144: the status filter `<select>` uses `appearance-none` for consistent cross-platform styling.
+
+---
+
+## `backdrop-blur-sm` (Background Blur Effect)
+>Definition
+A Tailwind CSS utility that applies a Gaussian blur to everything **behind** the element. The element itself remains sharp while the content underneath becomes frosted.
+
+>Purpose
+To create a modern frosted-glass overlay effect behind modals and popups — a hallmark of premium UI design (used in iOS, macOS, Linear, Stripe).
+
+>Syntax Example
+```jsx
+<div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+```
+
+>Industry Practice
+- Combine `backdrop-blur-sm` with a semi-transparent background like `bg-black/40` for the classic frosted overlay.
+- Use `sm`, `md`, or `lg` variants to control blur intensity.
+- Performance note: heavy blur can impact performance on low-end devices — use `sm` for subtle effect.
+
+>Common Mistakes
+- Using `blur-sm` instead of `backdrop-blur-sm` — `blur-sm` blurs the element itself, not what's behind it.
+- Using heavy blur on mobile — can cause frame drops.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 96: `backdrop-blur-sm` on the modal backdrop for a premium frosted-glass effect behind the modal card.
+
+---
+
+## `bg-black/40` (Opacity Color Syntax)
+>Definition
+Tailwind CSS syntax for applying a color with opacity. The `/40` means 40% opacity. `bg-black/40` creates a semi-transparent black overlay.
+
+>Purpose
+To create dimmed overlays, subtle backgrounds, and frosted-glass effects without writing custom CSS `rgba()` values.
+
+>Syntax Example
+```jsx
+// Semi-transparent black (40% opacity)
+<div className="bg-black/40" />
+
+// Semi-transparent white (20% opacity)
+<div className="bg-white/20" />
+
+// Equivalent CSS: background-color: rgba(0, 0, 0, 0.4);
+```
+
+>Industry Practice
+- `bg-black/40` to `bg-black/60` for modal overlays (dimming the background).
+- `bg-white/10` to `bg-white/20` for glass effects on colored headers.
+- Always pair with `backdrop-blur-*` for the full frosted-glass effect.
+
+>Common Mistakes
+- Using `bg-gray-900/40` instead of `bg-black/40` — gray with opacity looks muddy compared to pure black.
+- Using opacity values above 70 — too dark, the background content becomes invisible.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 96: `bg-black/40` for the modal backdrop overlay. Used in `AddRoomModal.jsx` line 109: `bg-white/20` for the icon container in the modal header.
+
+---
+
+## `max-h-[90vh] overflow-y-auto` (Scrollable Modal)
+>Definition
+- `max-h-[90vh]` — Sets the maximum height to 90% of the viewport height (Tailwind arbitrary value syntax).
+- `overflow-y-auto` — Adds a vertical scrollbar only when content exceeds the max height.
+
+>Purpose
+To prevent modals from growing taller than the screen on small viewports or when the form has many fields. The modal becomes scrollable instead of overflowing.
+
+>Syntax Example
+```jsx
+<div className="max-h-[90vh] overflow-y-auto">
+  {/* Long form content that may exceed screen height */}
+</div>
+```
+
+>Industry Practice
+- Always set `max-h-[90vh]` on modals — ensures the modal never completely covers the screen.
+- The `10vh` remaining allows the user to see and click the backdrop to dismiss.
+- `overflow-y-auto` is preferred over `overflow-y-scroll` — scrollbar appears only when needed.
+
+>Common Mistakes
+- Using `h-[90vh]` instead of `max-h-[90vh]` — forces the modal to always be 90% tall, even when content is small.
+- Forgetting `overflow-y-auto` — content gets cut off at 90vh with no way to see the rest.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 105: `max-h-[90vh] overflow-y-auto` on the modal card to ensure the form remains scrollable on smaller screens.
+
+---
+
+## `space-y-5` (Vertical Spacing)
+>Definition
+A Tailwind CSS utility that adds consistent vertical spacing (margin-top) between child elements. `space-y-5` adds `1.25rem` (20px) between each child.
+
+>Purpose
+To create uniform gaps between form fields or stacked elements without manually adding margins to each element.
+
+>Syntax Example
+```jsx
+<div className="space-y-5">
+  <input placeholder="Field 1" />
+  <input placeholder="Field 2" />
+  <input placeholder="Field 3" />
+  {/* Each field automatically has 20px gap above it */}
+</div>
+```
+
+>Industry Practice
+- Use `space-y-*` for vertical stacks and `space-x-*` for horizontal rows.
+- Variants: `space-y-1` (4px), `space-y-2` (8px), `space-y-3` (12px), `space-y-4` (16px), `space-y-5` (20px), `space-y-6` (24px).
+- Works by applying `margin-top` to all children except the first.
+
+>Common Mistakes
+- Using `space-y` on a container with `display: flex` — `space-y` uses margin, not gap. For flex containers, use `gap-*` instead.
+- Mixing `space-y-*` with manual margins on children — creates uneven spacing.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` line 125: `<form className="space-y-5">` to create consistent 20px spacing between all form fields.
+
+---
+
+## `flex-1` (Flexible Grow)
+>Definition
+A Tailwind CSS utility that sets `flex: 1 1 0%` — makes a flex item grow to fill all available space in its container, while also allowing it to shrink if needed.
+
+>Purpose
+To make buttons, inputs, or columns equally share the available width in a flex container.
+
+>Syntax Example
+```jsx
+<div className="flex items-center gap-3">
+  <button className="flex-1">Cancel</button>  {/* Takes half the space */}
+  <button className="flex-1">Save</button>    {/* Takes the other half */}
+</div>
+```
+
+>Industry Practice
+- Use `flex-1` for equal-width button pairs (Cancel / Save, Yes / No).
+- Use `flex-shrink-0` on elements that should NOT shrink (like icons next to text).
+
+>Common Mistakes
+- Using `w-full` inside flex instead of `flex-1` — `w-full` doesn't respect sibling elements' space.
+- Using `flex-1` on a flex container itself — only works on flex children.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` lines 232 and 238: both Cancel and Add Room buttons use `flex-1` to equally share the form footer width.
+
+---
+
+## Unicode Escape Sequences (`\u20B9`)
+>Definition
+A way to represent special characters in JavaScript strings using their Unicode code point. `\u20B9` is the Unicode for the Indian Rupee symbol (₹).
+
+>Purpose
+To display special characters that may not be available on all keyboards or in all character encodings.
+
+>Syntax Example
+```jsx
+// Rupee symbol
+const price = `\u20B9${amount}`;
+// Renders: ₹2,500
+
+// In JSX
+<span>{'\u20B9'}{room.pricePerNight}</span>
+// Renders: ₹2,500
+```
+
+>Industry Practice
+- Use `\u20B9` for Rupee, `\u00A5` for Yen, `\u20AC` for Euro, `\u0024` for Dollar.
+- In JSX, wrap in `{'\uXXXX'}` to embed inside JSX text content.
+
+>Common Mistakes
+- Copy-pasting the ₹ symbol directly — may cause encoding issues in some environments. Unicode escapes are safer.
+- Forgetting the curly braces in JSX — `{'\u20B9'}` works, `'\u20B9'` inside JSX text doesn't interpolate.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` line 66 and `Rooms.jsx` line 224 to display the Indian Rupee symbol (₹) before price values.
+
+---
+
+## `&apos;` (HTML Entity in JSX)
+>Definition
+An HTML entity that represents an apostrophe (single quote: `'`). In JSX, you cannot use raw `"` inside attribute values that are already quoted with `"`, so HTML entities are used.
+
+>Purpose
+To safely include special characters like apostrophes in JSX text content without breaking the JSX parser.
+
+>Syntax Example
+```jsx
+// WRONG — breaks JSX parser
+<p>Here&apos;s what&apos;s happening</p>
+
+// CORRECT — use HTML entity
+<p>Here&apos;s what&apos;s happening today.</p>
+
+// ALTERNATIVE — use template literal
+<p>{`Here's what's happening today.`}</p>
+```
+
+>Industry Practice
+- JSX automatically escapes `'` and `"` in text content, but `&apos;` is the safest approach.
+- Most modern JSX parsers handle `"` in text content, but `&apos;` is universally safe.
+
+>Common Mistakes
+- Writing raw apostrophes in JSX — works in most cases but can cause parser issues in older setups.
+- Over-escaping — using `&apos;` everywhere makes source code hard to read.
+
+>HelloStay Usage
+Used in `Dashboard.jsx` line 86: `Here is what&apos;s happening at your property today` to safely include the apostrophe in "what's".
+
+---
+
+## `null` as Initial State
+>Definition
+Setting a state's initial value to `null` to indicate "nothing is selected" or "no value yet." This is different from `undefined` (which means "doesn't exist") or `""` (empty string).
+
+>Purpose
+To represent the absence of a selection or value in a type-safe way. `null` is explicit — it means "I intentionally have no value."
+
+>Syntax Example
+```jsx
+// null = nothing selected yet
+const [deletingId, setDeletingId] = useState(null);
+
+// When user clicks delete:
+setDeletingId(room.id);  // Now a room is marked for deletion
+
+// When user cancels:
+setDeletingId(null);     // Back to "nothing selected"
+
+// Check in JSX
+{deletingId === room.id ? <ConfirmButtons /> : <ActionButtons />}
+```
+
+>Industry Practice
+- Use `null` for "selected item" states (selected row, active modal, editing ID).
+- Use `""` (empty string) for text input initial values.
+- Use `false` for boolean toggles (modal open/closed).
+
+>Common Mistakes
+- Using `undefined` instead of `null` — `undefined` can mean the variable wasn't declared, causing subtle bugs.
+- Comparing with `== null` instead of `=== null` — `== null` matches both `null` and `undefined`.
+
+>HelloStay Usage
+Used in `Rooms.jsx` line 30: `const [deletingId, setDeletingId] = useState(null)` — tracks which room's delete confirmation is active. `null` means no delete is in progress.

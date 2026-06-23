@@ -69,7 +69,8 @@ def upgrade() -> None:
     sa.Column('is_primary_guest', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['guest_id'], ['guests.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['stay_id'], ['stays.stay_id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('guest_id', 'stay_id', name='uq_guest_stay')
     )
     op.create_index(op.f('ix_guest_stays_id'), 'guest_stays', ['id'], unique=False)
     # ### end Alembic commands ###

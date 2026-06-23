@@ -976,13 +976,14 @@ This will either open a vim environment in the terminal or opens a new file in t
 
 2. _In Vim_: Press i to enter insert mode(to confirm, __INSERT__ will be visible at the bottom)
 - Type your comment.
-- The first line of the comment will be Title.
-- If you want to have multi-line comment,
-After writing the Title, add other details after leaving one line.
+- The first line of the comment will be the Title.
+- **Industry Practice (50/72 Rule):** The Title should be 50 characters or less.
+- *Note:* Vim has built-in syntax highlighting for git commits. If your title exceeds 50 characters, Vim will change the color of the extra words (e.g., to white or red) to warn you that it is getting too long. This is a helpful visual boundary.
+- If you want to write a multi-line comment, press Enter twice to leave one blank line after the Title, then type your detailed explanation (the Body).
 
 3. Press ESC to exit the insert mode.
 
-4. Press __:__, then type __wq__ and press enter.
+4. Press __:__, then type __wq__ and press enter to save and exit.
 
 ### Industry Practice
 One commit should represent one meaningful change.
@@ -5351,3 +5352,318 @@ __Reason__:
 Using both can cause Alembic to detect existing tables without corresponding migration records, leading to migration conflicts.
 
 For production applications, Alembic should be the single source of truth for all schema changes.
+
+---
+
+# Frontend Architecture Principles
+
+## 1. UI/UX Design Systems
+>Principle
+Never start building random screens. Establish a design language first.
+
+>HelloStay Implementation
+Before creating any React components, we established a design system (AD 59):
+- Minimalist, Desktop-first
+- Tailwind CSS for utility-classes instead of Bootstrap
+- Lucide React for consistent iconography
+- Framer Motion for premium micro-animations
+
+>Industry Practice
+Consistent padding, colors, and border-radiuses (`rounded-xl`, `bg-gray-50`) across the entire app separates amateur projects from commercial-grade software.
+
+## 2. State vs Storage
+>Principle
+Understand the lifespan of your data.
+
+1. **React State (`useState`)**: Dies when the component unmounts or the page refreshes. Use this for temporary UI interactions (like typing in a form or opening a dropdown).
+2. **Local Storage**: Survives page refreshes but lives only on that specific computer. Use this for non-sensitive user preferences or temporary setup wizards (like the Hotel Setup data before the backend is connected).
+3. **Database (Backend)**: Permanent. Single source of truth.
+
+## 3. Client-Side Routing (SPA)
+>Principle
+Modern web apps do not request new HTML files for every page click. 
+
+>Implementation
+Using `react-router-dom`, we intercept URL changes and swap React components in and out of the `<Outlet />` instantly. This creates the "Single Page Application" (SPA) feel, eliminating white flash reloads.
+
+## 4. Controlled Forms
+>Principle
+In React, the framework should control the form, not the DOM.
+
+>Implementation
+Always bind inputs to React state using `value={state}` and `onChange={(e) => setState(e.target.value)}`. This makes validation, dynamic rendering, and data submission completely predictable.
+
+---
+
+# Room Management Module (Milestone 23)
+
+## Architecture Overview
+The Room Management module follows a three-component architecture:
+
+| Component | File | Responsibility |
+|---|---|---|
+| Page | `Rooms.jsx` | Data table, search, filter, sort, pagination |
+| Modal | `AddRoomModal.jsx` | Form overlay for creating new rooms |
+| Chart | `Dashboard.jsx` (Occupancy widget) | Visual breakdown of room statuses |
+
+## Data Flow
+```
+AddRoomModal writes → localStorage ('helloStay_rooms')
+Rooms.jsx reads ← localStorage ('helloStay_rooms')
+Dashboard.jsx reads ← localStorage ('helloStay_rooms')
+```
+All room data persists in the browser via localStorage until the backend API integration phase.
+
+## Room Object Schema
+```json
+{
+  "id": 1687500000000,
+  "roomNumber": "301",
+  "roomType": "Deluxe",
+  "pricePerNight": 2500,
+  "maxOccupancy": 2,
+  "roomStatus": "Available",
+  "facilities": "AC, Mini Bar"
+}
+```
+
+## Color-Coded Status System (AD 60)
+| Status | Background | Text | Border | Meaning |
+|---|---|---|---|---|
+| Available | `bg-emerald-50` | `text-emerald-700` | `border-emerald-200` | Room is vacant and ready |
+| Occupied | `bg-red-50` | `text-red-700` | `border-red-200` | Guest currently staying |
+| Cleaning | `bg-orange-50` | `text-orange-700` | `border-orange-200` | Housekeeping in progress |
+| Reserved | `bg-blue-50` | `text-blue-700` | `border-blue-200` | Pre-booked for upcoming guest |
+
+## Modal Form Validation Pattern
+>Principle
+Validate on submit, not on every keystroke. Clear individual field errors as the user fixes them.
+
+>Implementation
+1. Define an `INITIAL_ERRORS` object with empty strings for each field.
+2. On submit, check required fields and set error messages.
+3. In each field's `onChange`, clear that field's error.
+4. Show error text below the input with `text-xs text-red-500`.
+5. Use `clsx` to conditionally apply `border-red-300` to invalid fields.
+
+## Data Table Pattern
+>Principle
+Build custom tables with pure Tailwind instead of third-party table libraries for full design control.
+
+>Implementation
+1. Sort: `useState({ key, direction })` — toggle asc/desc on header click.
+2. Search: `useMemo` to filter by query string across relevant fields.
+3. Filter: Dropdown `useState` that narrows the dataset by a specific field.
+4. Paginate: `slice((page-1)*PER_PAGE, page*PER_PAGE)` — reset page to 1 on filter change.
+5. Empty states: Show a dedicated illustration/message when no records match.
+
+## Dashboard Occupancy Chart
+>Principle
+Charts must gracefully degrade — show real data when available, demo data when localStorage is empty.
+
+>Implementation
+- `recharts` `<BarChart>` with `<ResponsiveContainer>` for responsive sizing.
+- `<Cell>` components assign per-bar colors (green, red, orange, blue).
+- Falls back to proportional demo values based on `totalRooms` from hotel setup data.
+
+## Backend Migration Strategy
+When the FastAPI backend rooms API is connected:
+1. `AddRoomModal` will POST to `/rooms` instead of writing to localStorage.
+2. `Rooms.jsx` will fetch from `GET /rooms` on mount using `useEffect`.
+3. `Dashboard.jsx` will fetch room counts from the API.
+4. The localStorage pattern remains as an offline fallback during development.
+
+---
+
+# Frontend Code Patterns (Milestone 23)
+
+## Component File Structure
+>Principle
+Every React component file should follow a consistent internal structure for readability.
+
+>Recommended Order
+```
+1. Imports (React hooks, third-party libraries, local components, icons)
+2. Constants (arrays, config objects, status maps)
+3. Component function (with destructured props)
+4. State declarations (useState hooks)
+5. Derived state / computations (useMemo, variables)
+6. Event handlers (handleSubmit, handleDelete, etc.)
+7. Return JSX
+8. Export default
+```
+
+>HelloStay Usage
+All three Milestone 23 components (`Dashboard.jsx`, `Rooms.jsx`, `AddRoomModal.jsx`) follow this structure.
+
+## Props-Down, Callbacks-Up Pattern
+>Principle
+Parent components own the data. Child components receive data via props and request changes by calling callback functions passed as props.
+
+>Implementation
+```jsx
+// Parent (Rooms.jsx) owns the rooms state
+const [rooms, setRooms] = useState([]);
+
+// Passes data + callback to child (AddRoomModal)
+<AddRoomModal
+  isOpen={isModalOpen}           // Data prop
+  onClose={() => setIsModalOpen(false)}  // Callback prop
+  onRoomAdded={handleRoomAdded}  // Callback prop
+/>
+
+// Child calls the callback to request a change
+onRoomAdded(newRoom);  // Parent's handleRoomAdded runs, updates state
+```
+
+>Industry Practice
+- Never modify props directly — props are read-only.
+- The parent is the "single source of truth." Children ask for changes; parents make them.
+
+## Inline Delete Confirmation Pattern
+>Principle
+Instead of a modal for every delete, swap the action buttons in-place with "Delete? Yes/No" buttons. Faster UX, no extra modals.
+
+>Implementation
+```jsx
+const [deletingId, setDeletingId] = useState(null);
+
+// In the table row:
+{deletingId === room.id ? (
+  // Show confirmation
+  <div className="flex items-center gap-2">
+    <span className="text-xs text-gray-500">Delete?</span>
+    <button onClick={() => confirmDelete(room.id)}>Yes</button>
+    <button onClick={() => setDeletingId(null)}>No</button>
+  </div>
+) : (
+  // Show normal action buttons
+  <button onClick={() => setDeletingId(room.id)}>
+    <Trash2 />
+  </button>
+)}
+```
+
+>Industry Practice
+- `null` means "no delete in progress." When `deletingId` matches the row's ID, that row shows the confirmation.
+- Reset pagination if the current page becomes empty after deletion.
+
+## Fallback Data Pattern (Graceful Degradation)
+>Principle
+When reading from localStorage, always provide demo/default values so the UI never shows broken or empty states.
+
+>Implementation
+```jsx
+const [rooms] = useState(() => {
+  const saved = localStorage.getItem('helloStay_rooms');
+  return saved ? JSON.parse(saved) : [];  // Fallback: empty array
+});
+
+// In the chart — fallback to demo proportions if no rooms exist
+const availableCount = rooms.length > 0
+  ? rooms.filter(r => r.roomStatus === 'Available').length
+  : Math.floor(totalRoomsNum * 0.4);  // Demo fallback: 40%
+```
+
+>Industry Practice
+- Use the ternary pattern `data.length > 0 ? realCalculation : fallbackValue`.
+- Demo data should be proportional and realistic — don't show zeros.
+
+## Form State Reset Pattern
+>Principle
+Always reset form state AND error state when a modal closes — prevents stale data from appearing on the next open.
+
+>Implementation
+```jsx
+const INITIAL_FORM = { roomNumber: '', roomType: 'Single', ... };
+const INITIAL_ERRORS = { roomNumber: '', pricePerNight: '', ... };
+
+const handleClose = () => {
+  setFormData(INITIAL_FORM);   // Reset form
+  setErrors(INITIAL_ERRORS);   // Reset errors
+  onClose();                    // Notify parent
+};
+
+// On successful submit
+const handleSubmit = (e) => {
+  e.preventDefault();
+  if (!validate()) return;
+  // ... save logic ...
+  setFormData(INITIAL_FORM);   // Reset form
+  setErrors(INITIAL_ERRORS);   // Reset errors
+  onRoomAdded(newRoom);         // Notify parent
+  onClose();                    // Close modal
+};
+```
+
+>Industry Practice
+- Define `INITIAL_*` constants at the module level (outside the component) — avoids re-creation on every render.
+- Reset both form AND error state — resetting only form leaves error messages visible on next open.
+
+## Responsive Grid Strategy
+>Principle
+Use Tailwind responsive prefixes to adapt layouts from mobile to desktop without media queries.
+
+>Implementation
+```jsx
+// KPI cards: 1 column on mobile, 2 on tablet, 4 on desktop
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+// Two-column layout: stacked on mobile, side-by-side on desktop
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+// Header: stacked on mobile, inline on desktop
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+```
+
+>Breakpoint Prefixes:
+- `sm:` — 640px (small tablets)
+- `md:` — 768px (tablets/small desktops)
+- `lg:` — 1024px (desktops)
+- `xl:` — 1280px (large desktops)
+
+>Industry Practice
+- Always design mobile-first — start with `grid-cols-1`, then add larger breakpoints.
+- Use `gap-6` (24px) for card grids, `gap-4` (16px) for form fields, `gap-3` (12px) for compact lists.
+
+## Table Row Animation Pattern
+>Principle
+Animate table rows with a stagger delay so they appear to "flow in" one after another instead of all at once.
+
+>Implementation
+```jsx
+{paginatedRooms.map((room, i) => (
+  <motion.tr
+    key={room.id}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: i * 0.03 }}  // 30ms between each row
+  >
+    ...
+  </motion.tr>
+))}
+```
+
+>Industry Practice
+- Keep stagger delays short (20-50ms) for tables — longer delays feel sluggish with many rows.
+- Use `opacity` animation only for tables — slide animations on rows can feel jarring.
+
+## Currency Display Pattern
+>Principle
+Always format monetary values with the currency symbol and locale-specific thousand separators.
+
+>Implementation
+```jsx
+// Indian Rupee with Indian formatting
+<span>{'\u20B9'}{room.pricePerNight.toLocaleString('en-IN')}</span>
+// Renders: ₹2,500
+
+// For a future international version
+const formatCurrency = (amount, locale = 'en-IN', currency = 'INR') => {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount);
+};
+```
+
+>Industry Practice
+- Always use `toLocaleString()` — never display raw numbers like `2500`.
+- The `en-IN` locale uses the Indian numbering system (lakhs/crores): ₹12,50,000 instead of ₹1,250,000.

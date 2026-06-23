@@ -95,5 +95,5 @@ def delete_guest(
     db.delete(guest_info)
     db.commit()
 
-    return "Guest Removed Successfully"
+    return {"message": "Guest Removed Successfully"}
 

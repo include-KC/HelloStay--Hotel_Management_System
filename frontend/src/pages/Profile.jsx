@@ -1,0 +1,1 @@
+﻿export default function Profile() { return (<div className='bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-full flex flex-col items-center justify-center'> <h2 className='text-2xl font-bold text-gray-800'>Profile Module</h2> <p className='text-gray-500 mt-2'>This module is under construction.</p> </div>); }

@@ -1,11 +1,10 @@
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import Integer, String, Numeric, DateTime, ForeignKey
-from decimal import Decimal
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from typing import TYPE_CHECKING    
+from typing import TYPE_CHECKING
 
 from app.database.base import Base
 
@@ -55,7 +54,3 @@ class Stay(Base):
     room: Mapped["Room"] = relationship(
         back_populates="stays"
     )
-
-
-
-

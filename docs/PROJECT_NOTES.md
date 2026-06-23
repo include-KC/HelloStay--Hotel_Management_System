@@ -1814,6 +1814,206 @@ The monolithic `LEARNING_NOTEBOOK.md` is renamed to `BACKEND_CONCEPTS.md` and th
 
 ---
 
+## Architecture Decision 59:
+__Topic__:
+UI/UX Design System
+
+**Status:** Accepted
+
+### Context
+Before building any frontend screens, a complete design specification must be locked into the project history. This decision records the full UI/UX design language so all future frontend work is consistent.
+
+### Decision
+
+**Core Design System**
+
+>Technology Stack (Frontend)
+- React + Vite (component framework)
+- Tailwind CSS (utility-first styling)
+- Lucide React (icon library)
+- Framer Motion (animations and transitions)
+- Electron (desktop wrapper)
+
+>Design Language
+- Inspired by: Linear, Notion, Stripe Dashboard, GitHub Desktop
+- Corner radius: 10–14px
+- Shadows: Soft, layered
+- Typography: Premium (Inter or equivalent)
+- Theme: Light and Dark mode support
+- Animations: Smooth page transitions, loading skeletons
+- Philosophy: Minimal, elegant, commercial-grade. Must NOT look like a government application.
+
+>Layout
+- Desktop-first (Windows)
+- Collapsible sidebar navigation
+- Breadcrumb navigation
+- Toast notifications
+- Keyboard shortcuts
+- Search everywhere
+- Empty states and error pages
+
+### Consequences
+>Advantages:
+- All UI decisions are formally locked before a single screen is coded, preventing design drift.
+
+>Trade-offs:
+- Tailwind CSS replaces the Bootstrap installed in Milestone 17. Bootstrap should be uninstalled from the frontend before UI work begins to avoid conflicts.
+
+---
+
+## Architecture Decision 60:
+__Topic__:
+Module Specifications & Features
+
+**Status:** Accepted
+
+### Context
+With the design system established, the specific feature requirements, permission scopes, and functional breakdown for every module must be documented.
+
+### Decision
+
+**Application Flow**
+
+>Installer UI
+- HelloStay logo, version info
+- Install location selector
+- Progress bar, Finish screen, Launch checkbox
+
+>Login Screen
+- Centered card with logo
+- Employee ID, Employee Name, Role selector
+- Secondary actions: Add New Owner, Add New Employee
+
+>Owner Registration
+- Collects: Name, Phone, Email, Address, Aadhaar, Government ID upload, Password
+- Auto-generates: Unique Owner ID, Owner Profile, Owner Card
+
+>Employee Registration (Owner Only)
+- Collects: Name, Phone, Address, Role, Salary, Government ID, Joining Date
+- Auto-generates: Employee ID, Employee Card (printable), QR Code, Employee Profile
+
+**Role-Based Permission System**
+
+| Role | Access Level |
+|---|---|
+| Owner | Full access to all modules |
+| Receptionist | Rooms, Check-in, Check-out, Bookings, Profile |
+| Room Manager | Rooms, Bookings, Profile |
+| Housekeeping | Rooms (cleaning status), Profile |
+| Accountant | Reports, Expenses, Salary (view), Profile |
+| Security | Guest verification, Profile |
+| Custom Roles | Configurable by Owner |
+
+Employees must NEVER see: Employee Management, Salary, Settings, Owner Controls, Reports, Business Analytics.
+
+**Owner Dashboard Sidebar Modules**
+Dashboard, Rooms, Bookings, Guests, Employees, HR & Payroll, Expenses, Inventory, Restaurant, Reports, Settings, Profile, Logout.
+
+>Dashboard Widgets
+Today's Check-ins, Check-outs, Occupied/Available Rooms, Revenue, Pending Payments, Employee Count, Monthly Income Graph, Recent Activities, Notifications, Upcoming Bookings.
+
+**Room Management**
+
+>Table Columns
+Room Number, Room Type, Floor, Price, Current Status, Cleaning Status, Occupancy, Actions.
+
+>CRUD Operations
+Add, Edit, Delete, Search, Filter, Sort.
+
+>Color Coding
+Green=Available, Red=Occupied, Orange=Cleaning, Blue=Reserved.
+
+**Guest Management**
+Profile cards storing: Name, Phone, ID Proof, Room Number, Stay Duration, Payment Status, History. Allow ID proof upload.
+
+**HR & Payroll Module (Owner Only)**
+This is a full enterprise HRMS comparable to Zoho People, Keka, or GreytHR.
+
+>Access
+Owner only. Employees may only view their own attendance history. Employees must NEVER access salary details of any other employee.
+
+>HR Dashboard KPI Cards
+Total Employees, Present Today, Absent Today, On Leave, Late Today, Monthly Salary Expense, Pending Payments, Total Deductions, Attendance Percentage.
+
+>Attendance Table Columns
+Employee ID, Name, Department, Role, Shift Timing, Check-in, Check-out, Total Hours, Overtime Hours, Status, Remarks.
+
+>Attendance Status Values
+Present, Late, Half Day, Absent, Paid Leave, Sick Leave, Holiday, Weekly Off.
+
+>Attendance Calendar
+Monthly view per employee. Color indicators: Green=Present, Red=Absent, Yellow=Late, Blue=Paid Leave, Orange=Half Day, Gray=Holiday.
+
+>Salary Profile per Employee
+Monthly, Daily, Hourly Rate, Overtime Rate, Bonus, Incentives, Deductions, Advance Salary, Net Salary.
+
+>Automatic Payroll Calculation Inputs (Owner-Configurable)
+Working Days/Month, Hours/Day, Grace Period, Late Penalty, Half Day Rules, Overtime Rate, Bonus Rules, Holiday Policy, Weekly Off.
+
+>Auto-Calculated Outputs
+Present Days, Absent Days, Leave, Half Days, Lates, Overtime, Gross Salary, Deductions, Bonus, Net Payable.
+
+>Deduction Rules (Configurable)
+Per-absence deduction, per-late deduction, half-day salary cut, leave exemption, overtime multiplier (1.5x/2x), attendance bonus threshold.
+
+>Salary Slip Generator
+Hotel Logo, Hotel Details, Employee Name/ID/Department, Salary Month, Attendance Summary, Overtime, Bonuses, Deductions, Final Salary, Payment Status, Owner Signature. Export: Print, PDF, Download, Email.
+
+>Leave Management
+Employee submits request. Owner approves/rejects/requests info. Leave statistics displayed.
+
+>Owner Notifications
+Absent employee, Late check-in, Forgot check-out, Salary due, Leave request, Attendance modification.
+
+**Reports Module**
+Charts: Revenue, Occupancy Rate, Employee Performance, Monthly Profit, Booking Trends, Room Utilization.
+
+**Settings Module (Owner Only)**
+Hotel Information, GST Details, Invoice Settings, Theme (Light/Dark), Backup, Restore, Database, User Permissions, Application Preferences.
+
+### Consequences
+>Advantages:
+- The role-permission matrix is defined upfront, guiding all backend auth middleware.
+
+>Trade-offs:
+- The HR & Payroll module requires significant new backend models (Attendance, Salary, Leave) that must be planned as dedicated milestones.
+
+---
+
+## Architecture Decision 61:
+__Topic__:
+Dynamic UI Configuration & Setup Flow
+
+**Status:** Accepted
+
+### Context
+HelloStay must be flexible enough to handle a small 10-room motel or a massive 500-room luxury resort with casinos and golf courses. Therefore, the UI modules cannot be hard-coded for every user.
+
+### Decision
+
+**1. Dynamic Navigation Modules**
+The application navigation (Sidebar) must dynamically adapt to the Hotel's registered profile. 
+- If the owner does NOT select "In-house Restaurant" during the setup phase, the Restaurant module is completely hidden from the UI.
+- This configuration is read synchronously during layout rendering.
+
+**2. Strict Setup Flow Enforcement**
+- `RegisterOwner.jsx` (Master Admin creation) does not route to Login. It routes strictly to `RegisterHotel.jsx`.
+- `RegisterHotel.jsx` forces the owner to configure their specific capacity (Total Rooms) and Facilities.
+- The `Dashboard.jsx` relies entirely on this configuration to generate capacity metrics and welcome banners.
+
+**3. Temporary Storage**
+- `localStorage` is heavily utilized to persist the Hotel Profile data during this multi-step setup phase to ensure smooth routing without premature backend API submissions.
+
+### Consequences
+>Advantages:
+- Keeps the UI clean and uncluttered for smaller hotels.
+- Creates a customized, premium onboarding experience for the owner.
+
+>Trade-offs:
+- Requires continuous state-checks (reading from storage or a React Context) inside core layout components like `Sidebar.jsx`.
+
+---
+
 # Milestone History
 
 ## Milestone 0 - Project Planning & Documentation
@@ -2363,3 +2563,216 @@ Successfully tested through Swagger UI.
 - Multiple guests can now be associated with a single stay record
 - Backend core features for Phase 1 are fully complete
 - Ready for Frontend architecture setup
+
+---
+
+## Milestone 16 - Frontend Environment Setup
+
+### Status
+Completed
+
+### Objective
+Initialize a fast, modern React application using Vite and clean up the default boilerplate.
+
+### Deliverables
+- `frontend` directory initialized with Vite and React
+- Default Vite boilerplate removed from `App.jsx`
+- `npm install` executed to install dependencies
+- React development server successfully tested
+
+### Concepts Learned
+- Vite as a rapid build tool
+- npm for dependency management
+- Single Page Application (SPA) architecture
+- JSX syntax basics
+
+### Key Outcomes
+- Frontend foundation established
+- Live development server operational
+- Ready for CSS framework integration
+
+---
+
+## Milestone 17 - Bootstrap & Frontend Architecture
+
+### Status
+Completed
+
+### Objective
+Install Bootstrap for ready-to-use CSS styling and create a professional folder structure inside the React project.
+
+### Deliverables
+- `bootstrap` npm package installed
+- Bootstrap CSS imported globally in `main.jsx`
+- `App.jsx` updated with Bootstrap utility classes
+- Empty architectural folders created: `components`, `pages`, `services`, `utils`, `hooks`
+
+### Concepts Learned
+- Bootstrap 5 framework integration
+- Component-Based Architecture layout
+- Separation of Concerns in frontend code
+
+### Key Outcomes
+- Professional UI styling system activated
+- Scalable codebase structure established
+- Ready for Desktop wrapper integration
+
+---
+
+## Milestone 18 - Electron Desktop Setup
+
+### Status
+Completed
+
+### Objective
+Initialize a separate Node.js environment for Electron and wrap the React application inside a native desktop window.
+
+### Deliverables
+- `electron` npm package installed as a dev dependency
+- Custom `package.json` configured for the Electron process
+- `main.js` script created to control the desktop window lifecycle
+- Desktop window successfully loading the local React development server
+
+### Concepts Learned
+- Electron Main Process vs Web View
+- Node.js initialization (`npm init -y`)
+- `BrowserWindow` configuration
+
+### Key Outcomes
+- HelloStay now runs as a standalone desktop application rather than a browser tab
+- Frontend architecture is now fully containerized within a desktop wrapper
+- Ready to connect the React UI to the FastAPI backend
+
+---
+
+## Milestone 19 - API Communication Setup
+
+### Status
+Completed
+
+### Objective
+Establish a secure communication bridge between the React frontend and FastAPI backend.
+
+### Deliverables
+- `CORSMiddleware` configured in FastAPI `main.py`
+- `axios` installed in the frontend
+- Centralized `api.js` configured with backend base URL
+- `App.jsx` updated to fetch and display backend root message
+
+### Concepts Learned
+- Axios for HTTP requests
+- CORS (Cross-Origin Resource Sharing) security mechanisms
+- React `useEffect` for data fetching
+
+### Key Outcomes
+- The frontend successfully retrieves live data from the backend
+- **Phase 1 (Foundation) is officially 100% Complete!**
+- Ready to begin Phase 2 (Authentication)
+
+---
+
+## Milestone 20 - Backend Authentication Setup (Phase 2)
+
+### Status
+Completed
+
+### Objective
+Implement secure password hashing and JSON Web Token (JWT) generation logic in the FastAPI backend to prepare for user login functionality.
+
+### Deliverables
+- Security dependencies installed (`passlib[bcrypt]`, `python-jose`, `python-multipart`).
+- `core/security.py` module created with hash and token functions.
+- `schemas/token.py` created for token payload validation.
+- VS Code workspace properly configured to recognize the virtual environment (`pyrightconfig.json`).
+
+### Concepts Learned
+- Password Hashing (bcrypt vs passlib compatibility)
+- JWT (JSON Web Tokens)
+- Python Virtual Environments in VS Code
+
+### Key Outcomes
+- Backend is now capable of securely authenticating users.
+- Ready to build the frontend layout and connect the login interface.
+
+---
+
+## Milestone 21 - Frontend Core Architecture & Routing
+
+### Status
+Completed
+
+### Objective
+Create the complete frontend structure based on Architecture Decisions 59 & 60, including routing, dynamic layouts, and dummy pages for all planned modules.
+
+---
+
+## Milestone 22 - Frontend Core Architecture & Dynamic UI
+
+### Status
+Completed
+
+### Objective
+Build the dynamic onboarding flow, context-aware dashboard, and hotel setup system based on Architecture Decision 61.
+
+### Deliverables
+- `RegisterOwner.jsx` — Master Owner registration form
+- `RegisterHotel.jsx` — Hotel setup with name, capacity, and 49 facilities (with search filter)
+- `MainLayout.jsx` — Sidebar + Topbar + Outlet layout wrapper
+- `Sidebar.jsx` — Dynamic navigation that hides modules based on hotel facilities
+- `Topbar.jsx` — Context-aware header with search and notifications
+- `Dashboard.jsx` — Welcome banner, KPI cards, and facilities display using Lazy State Initialization
+- `AppRoutes.jsx` — Full routing with protected MainLayout and standalone auth pages
+- All data persisted in `localStorage` during setup phase
+
+### Key Outcomes
+- Onboarding flow enforces strict setup order (AD 61)
+- UI dynamically adapts to hotel configuration
+- Comprehensive documentation in FRONTEND_CONCEPTS.md and DEVELOPER_HANDBOOK.md
+
+---
+
+## Milestone 23 - Room Management Module
+
+### Status
+Completed
+
+### Objective
+Build a premium Room Management module with data visualization on the Dashboard, a fully interactive data table, and an Add Room modal with form validation.
+
+### Deliverables
+- `Dashboard.jsx` upgraded with:
+  - Room Occupancy bar chart (recharts) showing Available/Occupied/Cleaning/Reserved breakdown
+  - Activity Timeline with staggered Framer Motion animations
+  - KPI cards now read real room data from localStorage when available
+- `Rooms.jsx` — Complete rewrite with:
+  - Premium data table: Room Number, Type, Price/Night, Status (color-coded badges), Max Occupancy, Actions
+  - Column header click-to-sort (ascending/descending)
+  - Real-time search by room number or type
+  - Status filter dropdown (All, Available, Occupied, Cleaning, Reserved)
+  - Pagination (10 rows per page) with page number buttons
+  - Empty state with illustration and CTA button
+  - Inline delete confirmation (Yes/No) replacing action buttons
+- `AddRoomModal.jsx` — New component:
+  - Full overlay with backdrop blur and Framer Motion spring animation
+  - Form fields: Room Number, Room Type, Status, Price, Max Occupancy, Facilities
+  - Inline validation with error messages and red border highlights
+  - Writes to `localStorage('helloStay_rooms')` and triggers parent re-render
+  - State reset on close
+- `FRONTEND_CONCEPTS.md` updated with 4 new concepts:
+  - recharts, Modal Component Pattern, Data Table Pattern, Status Badges
+- `DEVELOPER_HANDBOOK.md` updated with Room Management Module architecture section
+
+### Technologies Introduced
+- `recharts@3.8.1` — Charting library for data visualization
+
+### Architecture Decisions Referenced
+- AD 59 — UI/UX Design System (Tailwind, Lucide, Framer Motion)
+- AD 60 — Module Specifications (Room table columns, color-coding, CRUD operations)
+- AD 61 — Dynamic UI (localStorage persistence during setup phase)
+
+### Key Outcomes
+- Dashboard now provides real-time visual occupancy insights
+- Room Management page is fully functional with search, sort, filter, and pagination
+- Add Room flow validates input and persists data correctly
+- Zero lint errors across all new and modified files
+- Ready for backend API integration in a future milestone

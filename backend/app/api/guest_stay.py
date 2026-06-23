@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.models.guest_stay import GuestStay
-from app.schemas.guest_stay import GuestStayCreate, GuestStayResponse
+from app.schemas.guest_stay import GuestStayCreate, GuestStayResponse, GuestStayUpdate
 
 router = APIRouter(
     prefix = "/guest-stays",
@@ -56,6 +56,33 @@ def get_guest_stay_by_id(
     return guest_stay
 
 
+@router.put("/{guest_stay_id}", response_model = GuestStayResponse)
+def update_guest_stay(
+    guest_stay_id: int,
+    guest_stay: GuestStayUpdate,
+    db: Session = Depends(get_db)
+):
+    existing_guest_stay = db.query(GuestStay)\
+    .filter(GuestStay.id == guest_stay_id)\
+    .first()
+
+    if existing_guest_stay is None:
+        raise HTTPException(
+            status_code = 404,
+            detail = "Guest Stay Not Found."
+        )
+
+    update_data = guest_stay.model_dump(exclude_unset = True)
+
+    for key, value in update_data.items():
+        setattr(existing_guest_stay, key, value)
+
+    db.commit()
+    db.refresh(existing_guest_stay)
+
+    return existing_guest_stay
+
+
 @router.delete("/{guest_stay_id}")
 def delete_guest_stay(
     guest_stay_id: int,
@@ -74,4 +101,4 @@ def delete_guest_stay(
     db.delete(guest_stay)
     db.commit()
 
-    return "Guest Stay Deleted Successfully"
+    return {"message": "Guest Stay Deleted Successfully"}
