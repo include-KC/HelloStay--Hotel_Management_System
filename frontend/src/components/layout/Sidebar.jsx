@@ -1,39 +1,40 @@
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, BedDouble, CalendarDays, Users, Contact, 
-  Briefcase, Wallet, Package, UtensilsCrossed, BarChart3, 
-  Settings, UserCircle, LogOut 
+import {
+  LayoutDashboard, BedDouble, CalendarDays, Users, Contact,
+  Briefcase, Wallet, Package, UtensilsCrossed, BarChart3,
+  Settings, UserCircle, LogOut, Sparkles
 } from 'lucide-react';
 import clsx from 'clsx';
 
-const NAV_ITEMS = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Rooms', path: '/rooms', icon: BedDouble },
-  { name: 'Bookings', path: '/bookings', icon: CalendarDays },
-  { name: 'Guests', path: '/guests', icon: Users },
-  { name: 'Employees', path: '/employees', icon: Contact },
-  { name: 'HR & Payroll', path: '/hr-payroll', icon: Briefcase },
-  { name: 'Expenses', path: '/expenses', icon: Wallet },
-  { name: 'Inventory', path: '/inventory', icon: Package },
-  { name: 'Restaurant', path: '/restaurant', icon: UtensilsCrossed },
-  { name: 'Reports', path: '/reports', icon: BarChart3 },
-  { name: 'Settings', path: '/settings', icon: Settings },
-  { name: 'Profile', path: '/profile', icon: UserCircle },
+const ALL_NAV_ITEMS = [
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'manager', 'employee'] },
+  { name: 'Rooms', path: '/rooms', icon: BedDouble, roles: ['owner', 'manager', 'employee'] },
+  { name: 'Bookings', path: '/bookings', icon: CalendarDays, roles: ['owner'] },
+  { name: 'Guests', path: '/guests', icon: Users, roles: ['owner'] },
+  { name: 'Employees', path: '/employees', icon: Contact, roles: ['owner'] },
+  { name: 'HR & Payroll', path: '/hr-payroll', icon: Briefcase, roles: ['owner'] },
+  { name: 'Expenses', path: '/expenses', icon: Wallet, roles: ['owner', 'manager'] },
+  { name: 'Inventory', path: '/inventory', icon: Package, roles: ['owner', 'manager', 'employee'] },
+  { name: 'Facilities', path: '/facilities', icon: Sparkles, roles: ['owner', 'manager'] },
+  { name: 'Restaurant', path: '/restaurant', icon: UtensilsCrossed, roles: ['owner', 'manager'], facility: 'In-house Restaurant' },
+  { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['owner'] },
+  { name: 'Settings', path: '/settings', icon: Settings, roles: ['owner'] },
+  { name: 'Profile', path: '/profile', icon: UserCircle, roles: ['owner', 'manager', 'employee'] },
 ];
 
 export default function Sidebar() {
-  // Read hotel setup data to conditionally render modules
   const savedData = localStorage.getItem('helloStay_hotelData');
-  let hasRestaurant = true; // Default to true if no data
-  
+  const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+
+  let hasRestaurant = true;
   if (savedData) {
     const data = JSON.parse(savedData);
-    hasRestaurant = data.facilities.includes('In-house Restaurant');
+    hasRestaurant = data.facilities?.includes('In-house Restaurant') ?? true;
   }
 
-  // Filter out the Restaurant module if the hotel doesn't have one
-  const activeNavItems = NAV_ITEMS.filter(item => {
-    if (item.name === 'Restaurant' && !hasRestaurant) return false;
+  const activeNavItems = ALL_NAV_ITEMS.filter(item => {
+    if (!item.roles.includes(userRole)) return false;
+    if (item.facility && item.facility === 'In-house Restaurant' && !hasRestaurant) return false;
     return true;
   });
 
@@ -43,9 +44,14 @@ export default function Sidebar() {
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
           <span className="text-white font-bold text-xl">H</span>
         </div>
-        <h1 className="text-xl font-bold text-gray-800 tracking-tight">HelloStay</h1>
+        <div>
+          <h1 className="text-xl font-bold text-gray-800 tracking-tight">HelloStay</h1>
+          <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+            {userRole}
+          </p>
+        </div>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {activeNavItems.map((item) => {
           const Icon = item.icon;
@@ -55,8 +61,8 @@ export default function Sidebar() {
               to={item.path}
               className={({ isActive }) => clsx(
                 "flex items-center px-3 py-2.5 rounded-lg transition-colors text-sm font-medium",
-                isActive 
-                  ? "bg-blue-50 text-blue-700" 
+                isActive
+                  ? "bg-blue-50 text-blue-700"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               )}
             >

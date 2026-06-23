@@ -1,14 +1,33 @@
-import { useState } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BedDouble } from 'lucide-react';
+import { X, BedDouble, Search, Plus, Check, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 
-const ROOM_TYPES = ['Single', 'Double', 'Suite', 'Deluxe', 'Presidential'];
+const INDUSTRY_ROOM_TYPES = [
+  'Standard Room', 'Deluxe Room', 'Suite', 'Executive Suite', 'Presidential Suite',
+  'Family Room', 'Twin Room', 'Double Room', 'Single Room', 'Studio',
+  'Connecting Room', 'Adjoining Room', 'Accessible Room', 'Penthouse',
+  'Villa', 'Cottage', 'Bungalow', 'Duplex', 'Loft', 'Cabana',
+];
+
 const ROOM_STATUSES = ['Available', 'Occupied', 'Cleaning', 'Reserved'];
+
+const CURRENCIES = {
+  INR: { symbol: '₹', label: 'Indian Rupee (₹)' },
+  USD: { symbol: '$', label: 'US Dollar ($)' },
+  EUR: { symbol: '€', label: 'Euro (€)' },
+  GBP: { symbol: '£', label: 'British Pound (£)' },
+  AED: { symbol: 'د.إ', label: 'UAE Dirham (د.إ)' },
+  THB: { symbol: '฿', label: 'Thai Baht (฿)' },
+  JPY: { symbol: '¥', label: 'Japanese Yen (¥)' },
+  SGD: { symbol: 'S$', label: 'Singapore Dollar (S$)' },
+  AUD: { symbol: 'A$', label: 'Australian Dollar (A$)' },
+  CAD: { symbol: 'C$', label: 'Canadian Dollar (C$)' },
+};
 
 const INITIAL_FORM = {
   roomNumber: '',
-  roomType: 'Single',
+  roomType: '',
   pricePerNight: '',
   maxOccupancy: '2',
   roomStatus: 'Available',
@@ -17,6 +36,7 @@ const INITIAL_FORM = {
 
 const INITIAL_ERRORS = {
   roomNumber: '',
+  roomType: '',
   pricePerNight: '',
   maxOccupancy: '',
 };
@@ -24,6 +44,54 @@ const INITIAL_ERRORS = {
 export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState(INITIAL_ERRORS);
+  const [typeSearch, setTypeSearch] = useState('');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const typeInputRef = useRef(null);
+  const typeDropdownRef = useRef(null);
+
+  const hotelData = useMemo(() => {
+    const saved = localStorage.getItem('helloStay_hotelData');
+    return saved ? JSON.parse(saved) : {};
+  }, []);
+
+  const currencySymbol = CURRENCIES[hotelData.currency]?.symbol || '₹';
+
+  const filteredTypes = useMemo(() => {
+    const search = typeSearch.toLowerCase();
+    const matches = INDUSTRY_ROOM_TYPES.filter(t =>
+      t.toLowerCase().includes(search)
+    );
+    return matches;
+  }, [typeSearch]);
+
+  const showAddCustom = typeSearch.trim() &&
+    !INDUSTRY_ROOM_TYPES.some(t => t.toLowerCase() === typeSearch.toLowerCase());
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(e.target)) {
+        setShowTypeDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleTypeSelect = (type) => {
+    setFormData(prev => ({ ...prev, roomType: type }));
+    setTypeSearch(type);
+    setShowTypeDropdown(false);
+    if (errors.roomType) {
+      setErrors(prev => ({ ...prev, roomType: '' }));
+    }
+  };
+
+  const handleAddCustomType = () => {
+    const custom = typeSearch.trim();
+    if (custom) {
+      handleTypeSelect(custom);
+    }
+  };
 
   const validate = () => {
     const newErrors = { ...INITIAL_ERRORS };
@@ -31,6 +99,11 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
 
     if (!formData.roomNumber.trim()) {
       newErrors.roomNumber = 'Room number is required.';
+      isValid = false;
+    }
+
+    if (!formData.roomType.trim()) {
+      newErrors.roomType = 'Room type is required.';
       isValid = false;
     }
 
@@ -62,7 +135,7 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
     const newRoom = {
       id: Date.now(),
       roomNumber: formData.roomNumber.trim(),
-      roomType: formData.roomType,
+      roomType: formData.roomType.trim(),
       pricePerNight: parseFloat(formData.pricePerNight),
       maxOccupancy: parseInt(formData.maxOccupancy),
       roomStatus: formData.roomStatus,
@@ -75,6 +148,7 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
 
     setFormData(INITIAL_FORM);
     setErrors(INITIAL_ERRORS);
+    setTypeSearch('');
     onRoomAdded(newRoom);
     onClose();
   };
@@ -82,6 +156,8 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
   const handleClose = () => {
     setFormData(INITIAL_FORM);
     setErrors(INITIAL_ERRORS);
+    setTypeSearch('');
+    setShowTypeDropdown(false);
     onClose();
   };
 
@@ -143,17 +219,75 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
-                  <select
-                    value={formData.roomType}
-                    onChange={(e) => handleChange('roomType', e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm"
-                  >
-                    {ROOM_TYPES.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
+                <div className="relative" ref={typeDropdownRef}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Room Type <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      ref={typeInputRef}
+                      type="text"
+                      value={typeSearch}
+                      onChange={(e) => {
+                        setTypeSearch(e.target.value);
+                        setShowTypeDropdown(true);
+                        if (formData.roomType && e.target.value !== formData.roomType) {
+                          setFormData(prev => ({ ...prev, roomType: '' }));
+                        }
+                      }}
+                      onFocus={() => setShowTypeDropdown(true)}
+                      className={clsx(
+                        "w-full pl-9 pr-8 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm",
+                        errors.roomType ? "border-red-300" : "border-gray-200"
+                      )}
+                      placeholder="Search or type room type..."
+                    />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+
+                  {showTypeDropdown && (
+                    <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                      {filteredTypes.map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => handleTypeSelect(type)}
+                          className={clsx(
+                            "w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left hover:bg-indigo-50 transition-colors",
+                            formData.roomType === type && "bg-indigo-50 text-indigo-700"
+                          )}
+                        >
+                          {formData.roomType === type && (
+                            <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                          )}
+                          <span className={formData.roomType === type ? "font-medium" : "ml-6"}>
+                            {type}
+                          </span>
+                        </button>
+                      ))}
+
+                      {showAddCustom && (
+                        <button
+                          type="button"
+                          onClick={handleAddCustomType}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left text-indigo-600 hover:bg-indigo-50 border-t border-gray-100 font-medium transition-colors"
+                        >
+                          <Plus className="w-4 h-4 flex-shrink-0" />
+                          Add &quot;{typeSearch.trim()}&quot;
+                        </button>
+                      )}
+
+                      {filteredTypes.length === 0 && !showAddCustom && (
+                        <div className="px-4 py-3 text-sm text-gray-500">
+                          No matching types. Type to add your own.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {errors.roomType && (
+                    <p className="text-xs text-red-500 mt-1">{errors.roomType}</p>
+                  )}
                 </div>
 
                 <div>
@@ -175,20 +309,25 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price Per Night (\u20B9) <span className="text-red-500">*</span>
+                    Price Per Night ({currencySymbol}) <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={formData.pricePerNight}
-                    onChange={(e) => handleChange('pricePerNight', e.target.value)}
-                    className={clsx(
-                      "w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm",
-                      errors.pricePerNight ? "border-red-300" : "border-gray-200"
-                    )}
-                    placeholder="e.g. 2500"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500">
+                      {currencySymbol}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={formData.pricePerNight}
+                      onChange={(e) => handleChange('pricePerNight', e.target.value)}
+                      className={clsx(
+                        "w-full pl-9 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm",
+                        errors.pricePerNight ? "border-red-300" : "border-gray-200"
+                      )}
+                      placeholder="e.g. 2500"
+                    />
+                  </div>
                   {errors.pricePerNight && (
                     <p className="text-xs text-red-500 mt-1">{errors.pricePerNight}</p>
                   )}

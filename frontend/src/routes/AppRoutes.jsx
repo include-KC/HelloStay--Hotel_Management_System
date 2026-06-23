@@ -18,6 +18,7 @@ import HRPayroll from '../pages/HRPayroll';
 import Expenses from '../pages/Expenses';
 import Inventory from '../pages/Inventory';
 import Restaurant from '../pages/Restaurant';
+import ManageFacilities from '../pages/ManageFacilities';
 import Reports from '../pages/Reports';
 import Settings from '../pages/Settings';
 import Profile from '../pages/Profile';
@@ -43,6 +44,7 @@ export default function AppRoutes() {
         <Route path="hr-payroll" element={<HRPayroll />} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="inventory" element={<Inventory />} />
+        <Route path="facilities" element={<ManageFacilities />} />
         <Route path="restaurant" element={<Restaurant />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />

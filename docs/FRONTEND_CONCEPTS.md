@@ -1725,3 +1725,975 @@ setDeletingId(null);     // Back to "nothing selected"
 
 >HelloStay Usage
 Used in `Rooms.jsx` line 30: `const [deletingId, setDeletingId] = useState(null)` — tracks which room's delete confirmation is active. `null` means no delete is in progress.
+
+---
+
+## Searchable Dropdown (Type-to-Filter)
+>Definition
+A custom dropdown component that combines a text input with a filtered list of options. As the user types, the list narrows down to matching items. Unlike a native `<select>`, it supports searching, custom entries, and rich styling.
+
+>Purpose
+To give users the speed of selecting from presets while allowing free-text entry for custom values. Ideal for long lists (room types, countries, categories) where scrolling is slow.
+
+>Syntax Example
+```jsx
+const [search, setSearch] = useState('');
+const [selected, setSelected] = useState('');
+const [showDropdown, setShowDropdown] = useState(false);
+
+const filtered = items.filter(item =>
+  item.toLowerCase().includes(search.toLowerCase())
+);
+
+<input
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  onFocus={() => setShowDropdown(true)}
+  placeholder="Search or type..."
+/>
+{showDropdown && (
+  <div className="absolute z-20 mt-1 bg-white border rounded-xl shadow-lg max-h-52 overflow-y-auto">
+    {filtered.map(item => (
+      <button key={item} onClick={() => { setSelected(item); setSearch(item); setShowDropdown(false); }}>
+        {item}
+      </button>
+    ))}
+    {/* "Add custom" option if no exact match */}
+  </div>
+)}
+```
+
+>Industry Practice
+- Always use `z-20` or higher for dropdown overlays so they appear above other content.
+- Close dropdown on outside click using `useRef` + `useEffect` with `mousedown` listener.
+- Show a "Add [custom]" option when the typed value doesn't match any preset.
+- Limit dropdown height with `max-h-52 overflow-y-auto` for long lists.
+
+>Common Mistakes
+- Forgetting to close dropdown on outside click — leaves zombie dropdowns open.
+- Not resetting selected value when user types something new — causes stale state.
+- Using `z-10` which gets covered by other positioned elements.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` for the Room Type selector. Shows 20 industry-standard room types as filterable suggestions, with an "Add [custom type]" option when the user types a value not in the list.
+
+---
+
+## Inline Status Change
+>Definition
+A pattern where a table cell switches between a display view (e.g., a colored badge) and an edit view (e.g., a `<select>` dropdown) when clicked, allowing quick status updates without navigating to a separate edit page.
+
+>Purpose
+To reduce clicks for high-frequency actions like changing room status. Front desk staff often need to update statuses rapidly — inline editing eliminates the need to open modals or navigate away from the table.
+
+>Syntax Example
+```jsx
+const [editingId, setEditingId] = useState(null);
+
+// In table row:
+{editingId === room.id ? (
+  <select
+    autoFocus
+    value={room.status}
+    onChange={(e) => { handleStatusChange(room.id, e.target.value); setEditingId(null); }}
+    onBlur={() => setEditingId(null)}
+    className="text-xs font-semibold px-2 py-1.5 rounded-lg border"
+  >
+    <option value="Available">Available</option>
+    <option value="Occupied">Occupied</option>
+  </select>
+) : (
+  <button onClick={() => setEditingId(room.id)} className="badge-style">
+    {room.status}
+  </button>
+)}
+```
+
+>Industry Practice
+- Use `autoFocus` on the select/input when it appears so the user can immediately interact.
+- Handle `onBlur` to cancel editing when user clicks away — prevents stuck edit states.
+- Persist changes immediately to state/localStorage on selection, don't wait for a "Save" button.
+- Only allow one row to be in edit mode at a time (single `editingId` state).
+
+>Common Mistakes
+- Forgetting `onBlur` handler — dropdown stays open forever if user clicks elsewhere.
+- Not preventing event bubbling — clicking the badge might trigger row-level actions.
+- Saving on every keystroke instead of on selection — causes unnecessary re-renders.
+
+>HelloStay Usage
+Used in `Rooms.jsx` for the Status column. Clicking the status badge reveals a dropdown to change status. Changes persist immediately to localStorage. `editingId` state ensures only one row is editable at a time.
+
+---
+
+## Dynamic Currency Display
+>Definition
+A pattern where the currency symbol shown in the UI is read from a shared configuration (localStorage or Context) rather than being hardcoded. This allows the same component to display different currencies based on the hotel's country.
+
+>Purpose
+To support multi-country usage without maintaining separate components for each currency. The currency is set once during hotel setup and flows through to all price-related displays.
+
+>Syntax Example
+```jsx
+// Reading currency from localStorage
+const currencySymbol = useMemo(() => {
+  const saved = localStorage.getItem('helloStay_hotelData');
+  const data = saved ? JSON.parse(saved) : {};
+  return CURRENCY_SYMBOLS[data.currency] || '₹';  // fallback to ₹
+}, []);
+
+// In JSX
+<label>Price Per Night ({currencySymbol})</label>
+<input prefix={currencySymbol} type="number" />
+
+// In table
+<span>{currencySymbol}{room.price.toLocaleString()}</span>
+```
+
+>Industry Practice
+- Use a symbol lookup map (object) for O(1) access instead of switch-case or if-else chains.
+- Always provide a fallback symbol in case localStorage is empty or currency is undefined.
+- Use `useMemo` for the currency lookup to avoid re-reading localStorage on every render.
+- Store currency as a ISO code (e.g., 'INR', 'USD') in localStorage, not the symbol itself.
+
+>Common Mistakes
+- Hardcoding `₹` or `$` in components — breaks when the hotel is in another country.
+- Storing the symbol instead of the code — makes it harder to use for formatting/locale operations.
+- Not providing a fallback — causes blank or undefined to appear in the UI.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` and `Rooms.jsx` to display the correct currency symbol. The symbol is read from `localStorage('helloStay_hotelData').currency` and looked up in a `CURRENCY_SYMBOLS` map. Fallback is `₹`.
+
+---
+
+## Auto-Populate Related Fields
+>Definition
+A UX pattern where selecting a value in one field automatically fills in related fields. For example, selecting a country pre-fills the currency field based on that country's standard currency.
+
+>Purpose
+To reduce manual input and prevent errors. Users don't need to remember which currency their country uses — the system knows and fills it in automatically. The user can still override if needed.
+
+>Syntax Example
+```jsx
+const handleCountryChange = (countryCode) => {
+  const country = COUNTRIES.find(c => c.code === countryCode);
+  setFormData(prev => ({
+    ...prev,
+    country: countryCode,
+    currency: country ? country.currency : prev.currency  // auto-fill
+  }));
+};
+
+<select onChange={(e) => handleCountryChange(e.target.value)}>
+  {countries.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+</select>
+
+{/* Currency can still be manually changed */}
+<select value={formData.currency} onChange={...}>
+  {currencies.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+</select>
+```
+
+>Industry Practice
+- Keep the auto-filled field editable — don't lock it. Some hotels in a country may use a different currency (e.g., a US hotel accepting EUR).
+- Show a confirmation card after selection to give visual feedback of the auto-populated values.
+- Use a lookup table (array of objects with `code` and `currency`) for the mapping.
+
+>Common Mistakes
+- Overwriting user's manual choice when a different field changes — always check if the field was already set by the user.
+- Using a chain of if-else for mapping — use a clean data structure instead.
+- Not providing a "no selection" default — forces the user into a currency before they're ready.
+
+>HelloStay Usage
+Used in `RegisterHotel.jsx`. When the user selects a Country, the Currency field is auto-populated with that country's standard currency (e.g., India → INR, US → USD). The user can still change the currency manually if needed.
+
+---
+
+## Role-Based Navigation (RBAC)
+>Definition
+A pattern where the navigation menu (sidebar) dynamically shows or hides items based on the logged-in user's role. Each navigation item declares which roles can access it, and the component filters accordingly.
+
+>Purpose
+To give different user types (Owner, Manager, Employee) a tailored experience. Owners see everything, managers see operational modules, and employees see only what they need. This prevents confusion and unauthorized access to sensitive modules.
+
+>Syntax Example
+```jsx
+// Define nav items with role access
+const NAV_ITEMS = [
+  { name: 'Dashboard', path: '/dashboard', roles: ['owner', 'manager', 'employee'] },
+  { name: 'Rooms', path: '/rooms', roles: ['owner', 'manager', 'employee'] },
+  { name: 'Bookings', path: '/bookings', roles: ['owner'] },
+  { name: 'Employees', path: '/employees', roles: ['owner'] },
+  { name: 'Expenses', path: '/expenses', roles: ['owner', 'manager'] },
+  { name: 'Settings', path: '/settings', roles: ['owner'] },
+];
+
+// Read role from storage
+const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+
+// Filter items
+const activeItems = NAV_ITEMS.filter(item => item.roles.includes(userRole));
+
+// Render
+{activeItems.map(item => <NavLink to={item.path}>{item.name}</NavLink>)}
+```
+
+>Industry Practice
+- Define roles at the data level (each item has a `roles` array) — not in JSX conditionals.
+- Always provide a fallback role (e.g., `|| 'owner'`) to prevent empty sidebars.
+- Show the current role in the sidebar header so users know which account they're using.
+- For production apps, roles come from the backend (JWT claims or session). localStorage is for MVP/setup phase only.
+
+>Common Mistakes
+- Hardcoding role checks in JSX (`{role === 'owner' && <NavLink />}`) — creates scattered, hard-to-maintain logic.
+- Forgetting to store role before navigating to dashboard — Sidebar reads it on mount, so it must be set first.
+- Not showing role description on login — users don't know what each role can access.
+
+>HelloStay Usage
+Used in `Sidebar.jsx` and `Login.jsx`. Each nav item has a `roles` array. The Login page stores the role in `localStorage('helloStay_userRole')`. The Sidebar filters items based on this role. Owner sees all 12 modules, Manager sees 4 (Dashboard, Rooms, Inventory, Expenses), Employee sees 3 (Dashboard, Rooms, Inventory).
+
+---
+
+## Computed Property Names
+>Definition
+A JavaScript feature (ES6) that allows you to use an expression as an object property key, wrapped in square brackets `[]`. Instead of writing `obj.fixedKey = value`, you write `obj[expression] = value`.
+
+>Purpose
+To dynamically set object keys based on variables. Commonly used in React when updating a specific field in state based on a parameter.
+
+>Syntax Example
+```jsx
+// Regular object literal
+const obj = { name: 'John' };
+
+// Computed property name
+const field = 'age';
+const obj2 = { [field]: 25 };  // { age: 25 }
+
+// In React state updates
+const handleChange = (field, value) => {
+  setFormData(prev => ({ ...prev, [field]: value }));
+  // If field = 'guestName', result: { ...prev, guestName: value }
+};
+
+// With template literal
+const key = `charge_${room.id}`;
+const charges = { [key]: 500 };  // { charge_123: 500 }
+```
+
+>Industry Practice
+- Use computed property names for dynamic form handlers — one handler for all fields instead of separate handlers per field.
+- The expression inside `[]` can be a variable, a template literal, or any expression that evaluates to a string.
+- Avoid complex expressions inside `[]` — keep it simple (variable or template literal).
+
+>Common Mistakes
+- Forgetting the `[]` around the key — `{ field: value }` creates a key literally named "field", not the variable's value.
+- Using computed property names when a static key would be clearer — don't overcomplicate.
+- Not spreading the previous state — `return { [field]: value }` loses all other fields. Always use `prev => ({ ...prev, [field]: value })`.
+
+>HelloStay Usage
+Used extensively in `ManageFacilities.jsx` for dynamic form handlers: `setBookingForm(prev => ({ ...prev, [field]: value }))` and `setChargesForm(prev => ({ ...prev, [field]: value }))`. Also used in `Rooms.jsx`, `AddRoomModal.jsx`, and `RegisterHotel.jsx`.
+
+---
+
+## Optional Chaining (`?.`)
+>Definition
+A JavaScript operator (ES2020) that safely accesses nested properties of an object without throwing an error if an intermediate property is `null` or `undefined`. Written as `obj?.prop?.subprop`.
+
+>Purpose
+To avoid "Cannot read property of undefined" errors when accessing nested data that might not exist. Eliminates verbose null-checking chains.
+
+>Syntax Example
+```jsx
+// Without optional chaining (verbose)
+const restaurant = data && data.facilities && data.facilities.includes('Restaurant');
+
+// With optional chaining (clean)
+const restaurant = data?.facilities?.includes('Restaurant');
+
+// Chaining multiple levels
+const city = hotelData?.address?.city?.name;
+
+// With nullish coalescing for default
+const hasRestaurant = data?.facilities?.includes('Restaurant') ?? false;
+```
+
+>Industry Practice
+- Use optional chaining when accessing localStorage data that might be null on first load.
+- Combine with nullish coalescing (`??`) for default values.
+- Don't over-chain — `a?.b?.c?.d?.e` is hard to read. Consider breaking into multiple lines.
+- Optional chaining short-circuits: if `data` is null, `data?.facilities` returns `undefined` without evaluating further.
+
+>Common Mistakes
+- Using optional chaining when the variable is guaranteed to exist — adds unnecessary complexity.
+- Forgetting that optional chaining returns `undefined`, not `false` — `null?.prop` is `undefined`, not `false`.
+- Using `?.` when `||` would be more appropriate — `?.` only guards against null/undefined, not falsy values like `0` or `""`.
+
+>HelloStay Usage
+Used in `Sidebar.jsx`: `data.facilities?.includes('In-house Restaurant') ?? true` — safely checks if the facility exists in hotel data even if localStorage is empty or data is malformed. Also used in `ManageFacilities.jsx` for accessing nested hotel data.
+
+---
+
+## Nullish Coalescing (`??`)
+>Definition
+A JavaScript operator (ES2020) that returns the right-hand operand when the left-hand operand is `null` or `undefined`. Unlike `||`, it does NOT treat `0`, `""`, or `false` as falsy.
+
+>Purpose
+To provide default values only when a value is truly missing (`null`/`undefined`), not when it's falsy but valid (like `0` or empty string).
+
+>Syntax Example
+```jsx
+// Problem with || (OR)
+const count = 0;
+console.log(count || 10);  // 10 — wrong! 0 is a valid value
+
+// Solution with ?? (Nullish Coalescing)
+console.log(count ?? 10);  // 0 — correct! Only uses default when null/undefined
+
+// In React
+const rooms = data?.totalRooms ?? 50;  // Use 50 only if totalRooms is null/undefined
+const currency = hotelData?.currency ?? 'INR';  // Default to INR only if not set
+
+// Chaining
+const hasRestaurant = data?.facilities?.includes('Restaurant') ?? false;
+```
+
+>Industry Practice
+- Use `??` when the fallback should only apply for missing values, not falsy values.
+- Use `||` when any falsy value should trigger the fallback.
+- Common with localStorage reads: `JSON.parse(saved)?.value ?? defaultValue`.
+
+>Common Mistakes
+- Using `||` instead of `??` when `0` or `""` are valid values — `0 || 10` gives `10`, but `0 ?? 10` gives `0`.
+- Overusing `??` when `||` is more readable — if you want to treat all falsy values as "missing", use `||`.
+
+>HelloStay Usage
+Used in `Sidebar.jsx`: `data.facilities?.includes('In-house Restaurant') ?? true` — defaults to `true` if facilities data is missing. Used in `ManageFacilities.jsx` for safely reading hotel data and room data from localStorage.
+
+---
+
+## `e.stopPropagation()`
+>Definition
+A DOM event method that prevents an event from bubbling up to parent elements. When called inside a nested element's event handler, it stops the event from triggering handlers on parent elements.
+
+>Purpose
+To prevent unwanted side effects when clicking nested interactive elements inside a clickable container. For example, clicking a "Delete" button inside a clickable card should not also trigger the card's onClick.
+
+>Syntax Example
+```jsx
+// Problem: clicking Delete also triggers card's onClick
+<div onClick={() => openCard()}>
+  <button onClick={() => deleteItem()}>Delete</button>  // Also opens card!
+</div>
+
+// Solution: stopPropagation
+<div onClick={() => openCard()}>
+  <button onClick={(e) => {
+    e.stopPropagation();  // Prevents card's onClick from firing
+    deleteItem();
+  }}>Delete</button>
+</div>
+
+// In ManageFacilities.jsx
+<button
+  onClick={(e) => {
+    e.stopPropagation();  // Don't trigger card's expand/collapse
+    setShowBookingModal(true);
+  }}
+>
+  New Booking
+</button>
+```
+
+>Industry Practice
+- Use `stopPropagation` when you have nested clickable elements and don't want the parent's click to fire.
+- Always put `stopPropagation` as the first line in the handler — before any other logic.
+- Consider whether the parent should be a `<div>` instead of a clickable element — sometimes the design is the issue, not the event.
+- Prefer `stopPropagation` over CSS `pointer-events: none` when you need the nested element to remain interactive.
+
+>Common Mistakes
+- Forgetting to accept the `e` parameter — `onClick={() => stopPropagation()}` won't work; it needs `onClick={(e) => e.stopPropagation()}`.
+- Using `stopPropagation` on every nested click — overuse makes code hard to follow. Only use when necessary.
+- Not handling the action that should happen — `stopPropagation` only prevents the parent's handler; you still need to call your own handler.
+
+>HelloStay Usage
+Used extensively in `ManageFacilities.jsx` for nested buttons inside clickable facility cards. When clicking "New Booking", "Settings", or "Delete" buttons, `e.stopPropagation()` prevents the card's expand/collapse handler from also firing.
+
+---
+
+## `.find()` (Array Method)
+>Definition
+A JavaScript array method that returns the **first element** that satisfies a provided testing function. Returns `undefined` if no element matches.
+
+>Purpose
+To search for a single item in an array based on a condition. Unlike `.filter()` which returns all matches, `.find()` returns only the first match and stops.
+
+>Syntax Example
+```jsx
+const rooms = [
+  { id: 1, number: '101', type: 'Standard' },
+  { id: 2, number: '202', type: 'Deluxe' },
+  { id: 3, number: '303', type: 'Suite' },
+];
+
+// Find a specific room
+const room = rooms.find(r => r.id === 2);
+// { id: 2, number: '202', type: 'Deluxe' }
+
+// Find with string matching
+const country = COUNTRIES.find(c => c.code === 'IN');
+
+// Find with optional chaining (safe)
+const match = rooms.find(r => r.number === '999');
+console.log(match);  // undefined — no error
+
+// Use found item
+const charge = PAYMENT_OPTIONS.find(p => p.value === booking.paymentType)?.label;
+```
+
+>Industry Practice
+- Use `.find()` when you need one item; use `.filter()` when you need multiple.
+- Always handle the `undefined` case — use optional chaining `?.` on the result.
+- `.find()` stops at the first match — if you need all matches, use `.filter()`.
+- The callback function should return a boolean (`true`/`false`).
+
+>Common Mistakes
+- Using `.find()` when you need `.filter()` — `.find()` returns only the first match.
+- Not checking for `undefined` result — `rooms.find(r => r.id === 999).name` throws an error.
+- Using `.findIndex()` when you need the item itself — `.findIndex()` returns the index, not the item.
+
+>HelloStay Usage
+Used in `ManageFacilities.jsx`: `PAYMENT_OPTIONS.find(p => p.value === booking.paymentType)?.label` to display the human-readable payment status label. Also used in `RegisterHotel.jsx` for country-currency mapping.
+
+---
+
+## `.some()` (Array Method)
+>Definition
+A JavaScript array method that tests whether **at least one element** in the array passes a provided test function. Returns `true` if any element matches, `false` otherwise.
+
+>Purpose
+To check if a condition is met by any element in an array without iterating through all elements. Returns early on first match, making it efficient for existence checks.
+
+>Syntax Example
+```jsx
+const rooms = [
+  { id: 1, type: 'Standard', status: 'Available' },
+  { id: 2, type: 'Deluxe', status: 'Occupied' },
+  { id: 3, type: 'Suite', status: 'Available' },
+];
+
+// Check if any room is occupied
+const hasOccupied = rooms.some(r => r.status === 'Occupied');  // true
+
+// Check if any room matches a type
+const hasSuite = rooms.some(r => r.type === 'Suite');  // true
+
+// In searchable dropdown (check for exact match)
+const hasExactMatch = ITEMS.some(i => i.toLowerCase() === search.toLowerCase());
+
+// Combining with .filter()
+const allOccupied = rooms.filter(r => r.status === 'Occupied');
+const someAvailable = rooms.some(r => r.status === 'Available');
+```
+
+>Industry Practice
+- Use `.some()` for boolean existence checks — "does any item match?".
+- Use `.every()` for "do all items match?" — opposite of `.some()`.
+- `.some()` short-circuits — stops at the first match, so it's faster than `.filter()` when you only need a boolean.
+- Don't use `.some()` when you need the actual item — use `.find()` instead.
+
+>Common Mistakes
+- Using `.some()` when you need the item — `.some()` returns `true`/`false`, not the element.
+- Using `.filter().length > 0` when `.some()` would be cleaner and faster.
+- Confusing `.some()` with `.every()` — `.some()` = any match, `.every()` = all must match.
+
+>HelloStay Usage
+Used in `AddRoomModal.jsx` and `ManageFacilities.jsx` for checking if a typed value matches any existing item: `INDUSTRY_ROOM_TYPES.some(t => t.toLowerCase() === typeSearch.toLowerCase())`. Also used in `Sidebar.jsx` for facility checks.
+
+---
+
+## Concept 62: Tab Navigation Pattern
+
+>Definition
+A tab-based navigation pattern that switches between different views within the same page without navigating to a new route. Uses a state variable to track the active tab and conditionally renders content.
+
+>Purpose
+- Organize related content into digestible sections
+- Reduce page clutter by showing one section at a time
+- Provide quick switching between views without page reloads
+- Common in settings pages, reports, and multi-section modules
+
+>Syntax Example
+```jsx
+const [activeTab, setActiveTab] = useState('overview');
+
+const tabs = [
+  { id: 'overview', label: 'Overview', icon: BarChart3 },
+  { id: 'occupancy', label: 'Occupancy', icon: BedDouble },
+  { id: 'revenue', label: 'Revenue', icon: TrendingUp },
+];
+
+// Tab bar
+<div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+  {tabs.map(tab => (
+    <button
+      key={tab.id}
+      onClick={() => setActiveTab(tab.id)}
+      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+        activeTab === tab.id
+          ? 'bg-white text-blue-600 shadow-sm'
+          : 'text-gray-500 hover:text-gray-700'
+      }`}
+    >
+      <tab.icon className="w-4 h-4" />
+      {tab.label}
+    </button>
+  ))}
+</div>
+
+// Conditional rendering
+{activeTab === 'overview' && <OverviewSection />}
+{activeTab === 'occupancy' && <OccupancySection />}
+{activeTab === 'revenue' && <RevenueSection />}
+```
+
+>Industry Practice
+- Use a state variable (`activeTab`) to track which tab is active
+- Highlight the active tab with background color and shadow
+- Include icons in tabs for visual clarity
+- Use `flex-1` for equal-width tabs
+- Animate tab content with Framer Motion for smooth transitions
+
+>Common Mistakes
+- Using separate routes for each tab (causes full page reloads)
+- Not highlighting the active tab (poor UX)
+- Making tab content too heavy ( defeats the purpose of tabs)
+- Forgetting to reset filters/state when switching tabs
+
+>HelloStay Usage
+Used in `HRPayroll.jsx` (Attendance/Payroll/Payslips tabs), `Restaurant.jsx` (Orders/Menu/Tables tabs), `Reports.jsx` (Overview/Occupancy/Revenue/Expenses tabs), and `Settings.jsx` (Hotel Profile/System/Backup tabs).
+
+---
+
+## Concept 63: Card Grid Layout
+
+>A layout pattern that displays data as a grid of cards instead of table rows. Each card is a self-contained unit with its own visual hierarchy, actions, and metadata.
+
+>Purpose
+- Display profiles, items, or records visually
+- Better for data that benefits from visual representation (guest profiles, menu items)
+- More engaging than table rows for certain data types
+- Works well on mobile and responsive layouts
+
+>Syntax Example
+```jsx
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {items.map(item => (
+    <motion.div
+      key={item.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all group"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+            {getInitials(item.name)}
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900">{item.name}</h3>
+            <p className="text-xs text-gray-500">{item.subtitle}</p>
+          </div>
+        </div>
+        {/* Actions visible on hover */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+            <Eye className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      {/* Card stats/content */}
+      <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+        <div className="bg-gray-50 rounded-lg p-2">
+          <p className="text-lg font-bold text-gray-900">{item.stat1}</p>
+          <p className="text-[10px] font-medium text-gray-500 uppercase">Label</p>
+        </div>
+      </div>
+    </motion.div>
+  ))}
+</div>
+```
+
+>Industry Practice
+- Use `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` for responsive layout
+- Use `group` + `group-hover:opacity-100` for hover-reveal actions
+- Add `hover:shadow-md transition-all` for interactive feedback
+- Use Framer Motion `initial`/`animate` for staggered entrance
+- Keep card content concise — use stats grids inside cards
+
+>Common Mistakes
+- Making cards too tall (keep content compact)
+- Not providing hover feedback on interactive cards
+- Using cards for tabular data (tables are better for dense data)
+- Missing responsive breakpoints (cards stack on mobile)
+
+>HelloStay Usage
+Used in `Guests.jsx` for guest profiles with avatar, stay history, and total spent.
+
+---
+
+## Concept 64: Avatar Initials Pattern
+
+>A visual pattern that generates colored circular avatars from user initials when no profile image is available. Uses the first letters of the name with a background color derived from the name.
+
+>Purpose
+- Provide visual identity for users/guests without profile images
+- Add color and visual variety to lists and cards
+- Quick visual scanning in data tables and card grids
+
+>Syntax Example
+```jsx
+// Get initials from name
+const getInitials = (name) => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
+// Generate consistent color from name
+const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-indigo-500'];
+const avatarColor = colors[name.charCodeAt(0) % colors.length];
+
+// Render avatar
+<div className={`w-11 h-11 ${avatarColor} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
+  {getInitials(name)}
+</div>
+```
+
+>Industry Practice
+- Use `charCodeAt(0) % colors.length` for deterministic color assignment
+- Limit to 2 characters (first letters of first/last name)
+- Use consistent sizing: `w-10 h-10` for tables, `w-14 h-14` for profiles
+- White text on colored background for contrast
+
+>Common Mistakes
+- Using random colors (causes闪烁 on re-render)
+- Showing more than 2 characters (breaks layout)
+- Not handling single-word names (show first 2 letters)
+
+>HelloStay Usage
+Used in `Guests.jsx`, `Employees.jsx`, and `HRPayroll.jsx` for employee/guest avatars.
+
+---
+
+## Concept 65: Quick Stock Adjustment Pattern
+
+>An inline action pattern that allows users to increment/decrement a value directly in a table row without opening an edit modal. Uses small +/- buttons with immediate visual feedback.
+
+>Purpose
+- Speed up common operations (quantity adjustments)
+- Reduce modal/form fatigue for simple changes
+- Provide immediate visual feedback
+- Common in inventory, POS, and quantity-based systems
+
+>Syntax Example
+```jsx
+const handleQuickAdjust = (itemId, delta) => {
+  const updated = items.map(i => {
+    if (i.id !== itemId) return i;
+    const newQty = Math.max(0, i.quantity + delta);
+    return { ...i, quantity: newQty, totalValue: newQty * i.costPerUnit };
+  });
+  setItems(updated);
+  localStorage.setItem('helloStay_inventory', JSON.stringify(updated));
+};
+
+// Render in table
+<td className="px-4 py-3">
+  <div className="flex items-center gap-1">
+    <button
+      onClick={() => handleQuickAdjust(item.id, -1)}
+      className="w-6 h-6 rounded bg-red-50 text-red-600 hover:bg-red-100 text-xs font-bold flex items-center justify-center"
+    >-</button>
+    <span className="text-sm font-semibold w-8 text-center">{item.quantity}</span>
+    <button
+      onClick={() => handleQuickAdjust(item.id, 1)}
+      className="w-6 h-6 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-xs font-bold flex items-center justify-center"
+    >+</button>
+  </div>
+</td>
+```
+
+>Industry Practice
+- Use `Math.max(0, ...)` to prevent negative quantities
+- Update both React state AND localStorage on every change
+- Use small, compact buttons (w-6 h-6) to fit in table cells
+- Color-code: red for decrease, green for increase
+
+>Common Mistakes
+- Forgetting `Math.max(0, ...)` — allows negative stock
+- Not updating localStorage — data lost on refresh
+- Making buttons too large — breaks table layout
+
+>HelloStay Usage
+Used in `Inventory.jsx` for quick quantity adjustments directly in the inventory table.
+
+---
+
+## Concept 66: Chart Integration with recharts
+
+>The process of integrating the recharts library into React components for data visualization. Uses ResponsiveContainer for responsiveness, and BarChart/PieChart/LineChart for different chart types.
+
+>Purpose
+- Visual data representation for dashboards and reports
+- Make data insights immediately apparent
+- Professional-looking charts without custom SVG coding
+- Responsive charts that adapt to container size
+
+>Syntax Example
+```jsx
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+// Bar Chart
+<ResponsiveContainer width="100%" height={200}>
+  <BarChart data={chartData}>
+    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+    <YAxis tick={{ fontSize: 11 }} />
+    <Tooltip formatter={(v) => `$${v.toLocaleString()}`} />
+    <Bar dataKey="value" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+  </BarChart>
+</ResponsiveContainer>
+
+// Pie Chart
+<ResponsiveContainer width="100%" height={200}>
+  <PieChart>
+    <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
+      {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+    </Pie>
+    <Tooltip />
+  </PieChart>
+</ResponsiveContainer>
+```
+
+>Industry Practice
+- Always wrap charts in `ResponsiveContainer` for responsiveness
+- Use `CartesianGrid` with light stroke for readability
+- Customize `Tooltip` with `formatter` for currency/number formatting
+- Use `Cell` for color-coded pie/donut segments
+- Set `radius` on Bar for rounded corners
+
+>Common Mistakes
+- Not wrapping in ResponsiveContainer (chart won't resize)
+- Missing `dataKey` prop (chart won't render)
+- Using too many colors (keep to 5-6 max)
+- Not handling empty data (shows broken chart)
+
+>HelloStay Usage
+Used in `Dashboard.jsx` (occupancy bar chart), `Reports.jsx` (revenue, occupancy, expense charts), and `Expenses.jsx` (category breakdown).
+
+---
+
+## Concept 67: Data Export/Import Pattern
+
+>A pattern for backing up and restoring application data by serializing localStorage to JSON and deserializing it back. Provides data portability and disaster recovery.
+
+>Purpose
+- Allow users to backup all application data
+- Enable data migration between browsers/devices
+- Provide disaster recovery capability
+- Support data sharing between installations
+
+>Syntax Example
+```jsx
+// Export data
+const handleExport = () => {
+  const data = {};
+  const keys = ['helloStay_rooms', 'helloStay_bookings', 'helloStay_guests'];
+  keys.forEach(key => {
+    const value = localStorage.getItem(key);
+    if (value) data[key] = JSON.parse(value);
+  });
+  data.exportDate = new Date().toISOString();
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Import data
+const handleImport = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'exportDate') localStorage.setItem(key, JSON.stringify(value));
+      });
+      window.location.reload();
+    } catch { alert('Invalid backup file'); }
+  };
+  reader.readAsText(file);
+};
+```
+
+>Industry Practice
+- Use `JSON.stringify(data, null, 2)` for pretty-printed backups
+- Use `Blob` + `URL.createObjectURL` for download triggering
+- Use `FileReader` for reading imported files
+- Include timestamp in export filename
+- Validate JSON structure before importing
+- Reload page after import to refresh all state
+
+>Common Mistakes
+- Not validating JSON before importing (crashes app)
+- Missing `URL.revokeObjectURL()` (memory leak)
+- Not including metadata (export date, version)
+- Importing without clearing old data (data conflicts)
+
+>HelloStay Usage
+Used in `Settings.jsx` for complete data backup and restore functionality.
+
+---
+
+## Concept 68: Attendance Marking Pattern
+
+>A pattern for recording daily attendance status per employee. Uses inline buttons for quick status selection with visual feedback showing the current status.
+
+>Purpose
+- Track employee attendance daily
+- Quick status marking without forms
+- Visual summary of monthly attendance
+- Foundation for payroll calculation
+
+>Syntax Example
+```jsx
+const ATTENDANCE_STATUSES = ['Present', 'Absent', 'Half Day', 'Leave', 'Holiday'];
+
+const STATUS_STYLES = {
+  'Present': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  'Absent': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+  'Half Day': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+};
+
+const handleMarkAttendance = (empId, status) => {
+  const existing = attendance.find(a => a.employeeId === empId && a.date === date);
+  let updated;
+  if (existing) {
+    updated = attendance.map(a =>
+      a.employeeId === empId && a.date === date ? { ...a, status } : a
+    );
+  } else {
+    updated = [...attendance, { id: Date.now(), employeeId: empId, date, status }];
+  }
+  setAttendance(updated);
+  localStorage.setItem('helloStay_attendance', JSON.stringify(updated));
+};
+
+// Render inline status buttons
+{ATTENDANCE_STATUSES.map(status => {
+  const isActive = todayStatus?.status === status;
+  return (
+    <button
+      key={status}
+      onClick={() => handleMarkAttendance(emp.id, status)}
+      className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-all ${
+        isActive
+          ? `${STATUS_STYLES[status].bg} ${STATUS_STYLES[status].text} ${STATUS_STYLES[status].border}`
+          : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
+      }`}
+    >
+      {status}
+    </button>
+  );
+})}
+```
+
+>Industry Practice
+- Use inline buttons (not dropdowns) for quick status marking
+- Color-code each status for instant visual recognition
+- Check for existing record before creating (upsert pattern)
+- Show monthly summary stats per employee
+
+>Common Mistakes
+- Creating duplicate records (not checking for existing)
+- Not persisting to localStorage
+- Missing visual feedback for active status
+- Using dropdowns instead of inline buttons (slower UX)
+
+>HelloStay Usage
+Used in `HRPayroll.jsx` Attendance tab for daily attendance marking with 5 status options.
+
+---
+
+## Concept 69: Order Workflow Pattern
+
+>A pattern for managing order status progression through a defined workflow. Each status change is triggered by a user action button, and the workflow follows a linear path.
+
+>Purpose
+- Track order lifecycle from creation to completion
+- Provide clear next-action buttons based on current status
+- Visual status indicators for quick scanning
+- Common in restaurant, hotel, and service industries
+
+>Syntax Example
+```jsx
+const ORDER_STATUSES = ['Preparing', 'Ready', 'Served', 'Paid'];
+
+const STATUS_STYLES = {
+  'Preparing': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  'Ready': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  'Served': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  'Paid': { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' },
+};
+
+const handleStatusChange = (orderId, newStatus) => {
+  const updated = orders.map(o =>
+    o.id === orderId ? { ...o, status: newStatus } : o
+  );
+  setOrders(updated);
+  localStorage.setItem('helloStay_restaurantOrders', JSON.stringify(updated));
+};
+
+// Conditional next-action buttons
+{order.status === 'Preparing' && (
+  <button onClick={() => handleStatusChange(order.id, 'Ready')}>
+    Mark Ready
+  </button>
+)}
+{order.status === 'Ready' && (
+  <button onClick={() => handleStatusChange(order.id, 'Served')}>
+    Mark Served
+  </button>
+)}
+{order.status === 'Served' && (
+  <button onClick={() => handleStatusChange(order.id, 'Paid')}>
+    Mark Paid
+  </button>
+)}
+```
+
+>Industry Practice
+- Show only the next logical action (not all actions)
+- Use color-coded status badges for visual scanning
+- Store status history if audit trail is needed
+- Filter completed orders out of active view
+
+>Common Mistakes
+- Showing all action buttons regardless of status (confusing UX)
+- Not updating localStorage on status change
+- Allowing backward status changes without confirmation
+- Not filtering completed orders from active view
+
+>HelloStay Usage
+Used in `Restaurant.jsx` for order status workflow (Preparing → Ready → Served → Paid) and `Bookings.jsx` for booking status management.

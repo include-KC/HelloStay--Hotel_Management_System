@@ -1,8 +1,92 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Hotel, ArrowRight, CheckCircle2, Search } from 'lucide-react';
+import { Hotel, ArrowRight, CheckCircle2, Search, Globe, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+
+const COUNTRIES = [
+  { code: 'IN', name: 'India', currency: 'INR' },
+  { code: 'US', name: 'United States', currency: 'USD' },
+  { code: 'GB', name: 'United Kingdom', currency: 'GBP' },
+  { code: 'AE', name: 'United Arab Emirates', currency: 'AED' },
+  { code: 'TH', name: 'Thailand', currency: 'THB' },
+  { code: 'JP', name: 'Japan', currency: 'JPY' },
+  { code: 'SG', name: 'Singapore', currency: 'SGD' },
+  { code: 'AU', name: 'Australia', currency: 'AUD' },
+  { code: 'CA', name: 'Canada', currency: 'CAD' },
+  { code: 'DE', name: 'Germany', currency: 'EUR' },
+  { code: 'FR', name: 'France', currency: 'EUR' },
+  { code: 'IT', name: 'Italy', currency: 'EUR' },
+  { code: 'ES', name: 'Spain', currency: 'EUR' },
+  { code: 'NL', name: 'Netherlands', currency: 'EUR' },
+  { code: 'BR', name: 'Brazil', currency: 'BRL' },
+  { code: 'MX', name: 'Mexico', currency: 'MXN' },
+  { code: 'ZA', name: 'South Africa', currency: 'ZAR' },
+  { code: 'MY', name: 'Malaysia', currency: 'MYR' },
+  { code: 'ID', name: 'Indonesia', currency: 'IDR' },
+  { code: 'PH', name: 'Philippines', currency: 'PHP' },
+  { code: 'LK', name: 'Sri Lanka', currency: 'LKR' },
+  { code: 'NP', name: 'Nepal', currency: 'NPR' },
+  { code: 'BD', name: 'Bangladesh', currency: 'BDT' },
+  { code: 'CN', name: 'China', currency: 'CNY' },
+  { code: 'KR', name: 'South Korea', currency: 'KRW' },
+  { code: 'NZ', name: 'New Zealand', currency: 'NZD' },
+  { code: 'SA', name: 'Saudi Arabia', currency: 'SAR' },
+  { code: 'QA', name: 'Qatar', currency: 'QAR' },
+  { code: 'OM', name: 'Oman', currency: 'OMR' },
+  { code: 'KW', name: 'Kuwait', currency: 'KWD' },
+  { code: 'BH', name: 'Bahrain', currency: 'BHD' },
+  { code: 'EG', name: 'Egypt', currency: 'EGP' },
+  { code: 'KE', name: 'Kenya', currency: 'KES' },
+  { code: 'NG', name: 'Nigeria', currency: 'NGN' },
+  { code: 'TR', name: 'Turkey', currency: 'TRY' },
+  { code: 'RU', name: 'Russia', currency: 'RUB' },
+  { code: 'PT', name: 'Portugal', currency: 'EUR' },
+  { code: 'GR', name: 'Greece', currency: 'EUR' },
+  { code: 'CH', name: 'Switzerland', currency: 'CHF' },
+  { code: 'AT', name: 'Austria', currency: 'EUR' },
+  { code: 'IE', name: 'Ireland', currency: 'EUR' },
+  { code: 'SE', name: 'Sweden', currency: 'SEK' },
+  { code: 'NO', name: 'Norway', currency: 'NOK' },
+  { code: 'DK', name: 'Denmark', currency: 'DKK' },
+  { code: 'FI', name: 'Finland', currency: 'EUR' },
+  { code: 'PL', name: 'Poland', currency: 'PLN' },
+  { code: 'CZ', name: 'Czech Republic', currency: 'CZK' },
+  { code: 'HU', name: 'Hungary', currency: 'HUF' },
+  { code: 'VN', name: 'Vietnam', currency: 'VND' },
+  { code: 'MM', name: 'Myanmar', currency: 'MMK' },
+];
+
+const CURRENCY_OPTIONS = [
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham' },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'CHF', symbol: 'Fr', name: 'Swiss Franc' },
+  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+  { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
+  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+  { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
+  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona' },
+  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
+  { code: 'DKK', symbol: 'kr', name: 'Danish Krone' },
+  { code: 'KRW', symbol: '₩', name: 'South Korean Won' },
+  { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
+  { code: 'RUB', symbol: '₽', name: 'Russian Ruble' },
+  { code: 'SAR', symbol: '﷼', name: 'Saudi Riyal' },
+  { code: 'QAR', symbol: '﷼', name: 'Qatari Riyal' },
+  { code: 'EGP', symbol: 'E£', name: 'Egyptian Pound' },
+  { code: 'NGN', symbol: '₦', name: 'Nigerian Naira' },
+  { code: 'VND', symbol: '₫', name: 'Vietnamese Dong' },
+];
 
 const FACILITIES_LIST = [
   "Free WiFi", "Swimming Pool", "In-house Restaurant", "Gym / Fitness Center",
@@ -15,7 +99,7 @@ const FACILITIES_LIST = [
   "Currency Exchange", "Tour Desk", "Bicycle Rental", "Car Hire", "Nightclub / DJ",
   "Babysitting Service", "BBQ Facilities", "Vending Machines", "ATM / Cash Machine",
   "Ski Storage", "Water Park", "Hot Tub / Jacuzzi", "Sauna", "Steam Room", "Yoga Classes",
-  "Tiffin Service", "Tea / Coffee", "Daily Housekeeping", "Wake-up Service", ""
+  "Tiffin Service", "Tea / Coffee", "Daily Housekeeping", "Wake-up Service",
 ];
 
 export default function RegisterHotel() {
@@ -24,6 +108,8 @@ export default function RegisterHotel() {
   const [formData, setFormData] = useState({
     hotelName: '',
     totalRooms: '',
+    country: '',
+    currency: '',
     facilities: []
   });
 
@@ -36,10 +122,21 @@ export default function RegisterHotel() {
     }));
   };
 
+  const handleCountryChange = (countryCode) => {
+    const country = COUNTRIES.find(c => c.code === countryCode);
+    setFormData(prev => ({
+      ...prev,
+      country: countryCode,
+      currency: country ? country.currency : prev.currency
+    }));
+  };
+
   const handleSaveAndContinue = () => {
     localStorage.setItem('helloStay_hotelData', JSON.stringify({
       hotelName: formData.hotelName || 'My Awesome Hotel',
       totalRooms: formData.totalRooms || '50',
+      country: formData.country,
+      currency: formData.currency || 'INR',
       facilities: formData.facilities
     }));
 
@@ -51,6 +148,9 @@ export default function RegisterHotel() {
       facility.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [searchQuery]);
+
+  const selectedCountry = COUNTRIES.find(c => c.code === formData.country);
+  const selectedCurrency = CURRENCY_OPTIONS.find(c => c.code === formData.currency);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -90,6 +190,65 @@ export default function RegisterHotel() {
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      Country
+                    </div>
+                  </label>
+                  <select
+                    value={formData.country}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm appearance-none cursor-pointer"
+                  >
+                    <option value="">Select country...</option>
+                    {COUNTRIES.map(country => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4 text-gray-400" />
+                      Currency
+                    </div>
+                  </label>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm appearance-none cursor-pointer"
+                  >
+                    <option value="">Select currency...</option>
+                    {CURRENCY_OPTIONS.map(currency => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.symbol} - {currency.name} ({currency.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {selectedCountry && selectedCurrency && (
+                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <span className="text-lg font-bold text-indigo-600">{selectedCurrency.symbol}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-indigo-800">
+                      {selectedCountry.name} — {selectedCurrency.name}
+                    </p>
+                    <p className="text-xs text-indigo-500">
+                      Room prices will be displayed in {selectedCurrency.code}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ShieldCheck, Upload, ArrowRight } from 'lucide-react';
+import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function RegisterOwner() {
@@ -43,23 +43,6 @@ export default function RegisterOwner() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hotel Property Address</label>
                 <textarea rows="3" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" placeholder="Full hotel address..."></textarea>
-              </div>
-
-              {/* ID Upload Area */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Government ID Upload</label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
-                  <div className="space-y-1 text-center">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600 justify-center">
-                      <span className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                        Upload a file
-                      </span>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
-                  </div>
-                </div>
               </div>
 
               <div className="pt-6 border-t border-gray-100 flex justify-end">

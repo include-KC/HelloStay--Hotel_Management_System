@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import AddRoomModal from '../components/modals/AddRoomModal';
+import { CURRENCY_SYMBOLS } from '../utils/currencies';
 
 const STATUS_STYLES = {
   Available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -13,6 +14,8 @@ const STATUS_STYLES = {
   Cleaning: 'bg-orange-50 text-orange-700 border-orange-200',
   Reserved: 'bg-blue-50 text-blue-700 border-blue-200',
 };
+
+const STATUS_OPTIONS = ['Available', 'Occupied', 'Cleaning', 'Reserved'];
 
 const ROWS_PER_PAGE = 10;
 
@@ -28,6 +31,13 @@ export default function Rooms() {
   const [sortConfig, setSortConfig] = useState({ key: 'roomNumber', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState(null);
+  const [editingStatusId, setEditingStatusId] = useState(null);
+
+  const currencySymbol = useMemo(() => {
+    const saved = localStorage.getItem('helloStay_hotelData');
+    const data = saved ? JSON.parse(saved) : {};
+    return CURRENCY_SYMBOLS[data.currency] || '₹';
+  }, []);
 
   const handleRoomAdded = (newRoom) => {
     setRooms(prev => [...prev, newRoom]);
@@ -47,6 +57,15 @@ export default function Rooms() {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
+  };
+
+  const handleStatusChange = (roomId, newStatus) => {
+    const updated = rooms.map(r =>
+      r.id === roomId ? { ...r, roomStatus: newStatus } : r
+    );
+    setRooms(updated);
+    localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
+    setEditingStatusId(null);
   };
 
   const handleSort = (key) => {
@@ -144,10 +163,9 @@ export default function Rooms() {
               className="pl-9 pr-8 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 appearance-none cursor-pointer transition-all"
             >
               <option value="All">All Statuses</option>
-              <option value="Available">Available</option>
-              <option value="Occupied">Occupied</option>
-              <option value="Cleaning">Cleaning</option>
-              <option value="Reserved">Reserved</option>
+              {STATUS_OPTIONS.map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -221,16 +239,34 @@ export default function Rooms() {
                       </td>
                       <td className="px-5 py-4">
                         <span className="text-sm font-medium text-gray-800">
-                          {'\u20B9'}{room.pricePerNight.toLocaleString('en-IN')}
+                          {currencySymbol}{room.pricePerNight.toLocaleString('en-IN')}
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <span className={clsx(
-                          'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border',
-                          STATUS_STYLES[room.roomStatus] || STATUS_STYLES.Available
-                        )}>
-                          {room.roomStatus}
-                        </span>
+                        {editingStatusId === room.id ? (
+                          <select
+                            autoFocus
+                            value={room.roomStatus}
+                            onChange={(e) => handleStatusChange(room.id, e.target.value)}
+                            onBlur={() => setEditingStatusId(null)}
+                            className="text-xs font-semibold px-2 py-1.5 rounded-lg border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                          >
+                            {STATUS_OPTIONS.map(status => (
+                              <option key={status} value={status}>{status}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <button
+                            onClick={() => setEditingStatusId(room.id)}
+                            className={clsx(
+                              'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer hover:shadow-sm transition-all',
+                              STATUS_STYLES[room.roomStatus] || STATUS_STYLES.Available
+                            )}
+                            title="Click to change status"
+                          >
+                            {room.roomStatus}
+                          </button>
+                        )}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1.5 text-sm text-gray-600">

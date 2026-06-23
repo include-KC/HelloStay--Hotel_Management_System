@@ -2014,6 +2014,296 @@ The application navigation (Sidebar) must dynamically adapt to the Hotel's regis
 
 ---
 
+## Architecture Decision 62:
+__Topic__:
+Multi-Currency Support & Flexible Room Types
+
+**Status:** Accepted
+
+### Context
+HelloStay targets hotels across multiple countries. A hardcoded ₹ symbol or fixed room type dropdown limits international adoption. Hotels need to:
+- Display prices in their local currency
+- Define room types that match their specific naming conventions (e.g., "Heritage Room", "Overwater Villa")
+
+### Decision
+
+**1. Currency & Country Selection During Setup**
+- `RegisterHotel.jsx` now includes Country and Currency dropdowns.
+- Country selection auto-populates the Currency field (e.g., selecting "India" sets ₹ INR).
+- Currency can be manually overridden if needed.
+- A confirmation card shows the selected country + currency combination.
+- Currency symbol is stored in `localStorage('helloStay_hotelData')` as `currency` code.
+
+**2. Dynamic Currency Display**
+- `AddRoomModal.jsx` reads the currency symbol from localStorage and displays it in the Price Per Night label and input prefix.
+- `Rooms.jsx` reads the currency symbol from localStorage and displays it in the Price/Night table column.
+- Currency lookup uses a `CURRENCY_SYMBOLS` map for fast O(1) access.
+
+**3. Searchable Room Type Selector with Custom Input**
+- `AddRoomModal.jsx` replaces the fixed `<select>` dropdown with a searchable text input.
+- 20 industry-standard room types are preloaded as suggestions (Standard, Deluxe, Suite, Villa, Penthouse, etc.).
+- User can type to filter suggestions or type a completely custom room type.
+- A "Add [custom type]" option appears when the typed value doesn't match any preset.
+- Click outside closes the dropdown; selecting an option fills the field.
+
+**4. Inline Status Change**
+- `Rooms.jsx` status column is now clickable — clicking the status badge reveals a `<select>` dropdown.
+- Status can be changed directly from the table without opening an edit page.
+- Changes persist immediately to localStorage.
+
+### Consequences
+>Advantages:
+- Hotels worldwide can use the app with their local currency and room naming conventions.
+- Inline status change reduces clicks and improves operational speed for front desk staff.
+- Searchable room type combines the speed of presets with the flexibility of free text.
+
+>Trade-offs:
+- Currency conversion rates are not handled — only the display symbol is localized.
+- Custom room types are not validated against industry standards, which may lead to inconsistent naming.
+
+---
+
+## Architecture Decision 63:
+__Topic__:
+Role-Based Access Control (RBAC) & Module Visibility
+
+**Status:** Accepted
+
+### Context
+HelloStay is used by different types of users — hotel owners, hired management companies, managers, and employees. Each role has different responsibilities and should only see the modules relevant to their work. The owner also needs to delegate management to a third-party company without giving away full ownership.
+
+### Decision
+
+**1. Three Login Roles**
+The Login page offers three tabs:
+- **Owner** — Full access to all modules including hotel setup, employee management, reports, and settings.
+- **Manager** — Limited access: Dashboard, Rooms, Inventory, Expenses. Cannot manage employees, bookings, guests, or reports.
+- **Employee** — Most limited: Dashboard, Rooms, Inventory only.
+
+**2. Role Stored in localStorage**
+On sign-in, `helloStay_userRole` is written to localStorage. The Sidebar reads this value to filter navigation items. No backend auth is involved yet — this is the setup phase pattern.
+
+**3. Management Company Option**
+A management company (third party hired to run the hotel) logs in as **Manager**. This gives them operational access (Rooms, Facilities, Restaurant, Inventory, Expenses) without access to sensitive owner functions (payroll, employee data, financial reports, hotel settings). The owner decides this responsibility during registration or later in settings.
+
+**4. Setup Flow is Owner-Only**
+The Installer → RegisterOwner → RegisterHotel flow is exclusively for the owner. When the setup wizard runs, it writes `helloStay_userRole: 'owner'` to localStorage automatically.
+
+### Consequences
+>Advantages:
+- Owners can delegate operational management to a hired company without exposing financial/HR data.
+- Employees see only what they need — clean, focused UI.
+- Easy to extend: new roles can be added by extending the `roles` array in `Sidebar.jsx`.
+
+>Trade-offs:
+- Role is stored in localStorage only — no server-side enforcement yet.
+- No granular permission system (e.g., "can view reports but not edit") — just module-level visibility.
+
+---
+
+# Application Modules
+
+This section describes every module (page) in HelloStay, its purpose, key features, and target user role.
+
+---
+
+## Dashboard
+>Purpose
+The central overview screen showing real-time hotel performance metrics and recent activity.
+
+>Key Features
+- KPI cards: Total Rooms, Available, Occupied, Occupancy Rate, Revenue
+- Room Occupancy bar chart (recharts) showing status breakdown
+- Activity Timeline with recent events (check-ins, check-outs, housekeeping)
+- Welcome banner with hotel name from setup
+
+>Target Role: Owner, Manager, Employee
+
+---
+
+## Rooms
+>Purpose
+Manage all hotel rooms — add, edit, delete, and change status.
+
+>Key Features
+- Data table with sort, search, filter, and pagination
+- Inline status change (click badge to change Available/Occupied/Cleaning/Reserved)
+- Add Room modal with searchable room type selector (20 presets + custom)
+- Dynamic currency display based on hotel setup
+- Inline delete confirmation
+
+>Target Role: Owner, Manager, Employee
+
+---
+
+## Bookings
+>Purpose
+Handle room reservations — create, view, update, and cancel bookings.
+
+>Key Features
+- Booking creation with guest selection, room assignment, check-in/check-out dates
+- Booking status tracking (Confirmed, Checked-In, Checked-Out, Cancelled)
+- Revenue calculation per booking
+- Calendar view for availability
+
+>Target Role: Owner (planned)
+
+---
+
+## Guests
+>Purpose
+Maintain a database of all guests who have stayed or are currently staying.
+
+>Key Features
+- Guest profile with personal details, ID proof, contact info
+- Stay history linked to bookings
+- Search and filter guests
+- Guest identification document storage
+
+>Target Role: Owner (planned)
+
+---
+
+## Employees
+>Purpose
+Manage hotel staff — register, view, and maintain employee records.
+
+>Key Features
+- Employee registration with name, phone, role, salary, joining date
+- Government ID storage
+- Role assignment (Receptionist, Room Manager, Housekeeping, Accountant, Security)
+- Employee listing with search
+
+>Target Role: Owner
+
+---
+
+## HR & Payroll
+>Purpose
+Handle employee salary calculations, attendance, and payroll processing.
+
+>Key Features
+- Monthly salary calculation
+- Attendance tracking
+- Payroll generation
+- Salary slip export
+
+>Target Role: Owner (planned)
+
+---
+
+## Expenses
+>Purpose
+Track and categorize all hotel operational expenses.
+
+>Key Features
+- Expense logging with category, amount, date, description
+- Category-wise breakdown
+- Monthly/yearly expense reports
+- Budget tracking
+
+>Target Role: Owner, Manager
+
+---
+
+## Inventory
+>Purpose
+Manage hotel supplies and stock — toiletries, linens, food items, cleaning supplies.
+
+>Key Features
+- Item registration with name, category, quantity, reorder level
+- Stock in/out tracking
+- Low stock alerts
+- Supplier management
+
+>Target Role: Owner, Manager, Employee
+
+---
+
+## Facilities (Manage Facilities)
+>Purpose
+Manage all hotel facilities (Spa, Pool, Gym, Conference Room, etc.) — bookings, occupancy, guest info, payment status, and charges configuration.
+
+>Key Features
+- **Facility Cards** — Each configured facility shown as a card with real-time stats (total bookings, today's bookings, pending payments)
+- **Booking System** — Create bookings with guest name, room number, date, time, number of guests
+- **Guest Information** — Guest name, room number, number of guests, special notes
+- **Payment Status Options:**
+  - *Club to Final Bill* — Charges added to room bill at checkout
+  - *Paid Before* — Guest pays before using the service
+  - *Paid After* — Guest pays after using the service
+  - *Complimentary* — No charge
+- **Charges Configuration:**
+  - *All Guests* — Same charge for every guest
+  - *By Room Type* — Different charges based on room type (Standard, Deluxe, Suite, etc.)
+  - *By Room Number* — Specific charges for specific rooms
+  - *Free for All* — No charges for any guest
+- **Booking List** — View recent bookings per facility with payment status badges
+- **Booking Details Modal** — Full view of guest info, payment status, notes
+- **Expandable Cards** — Click a facility card to see its booking list inline
+
+>Target Role: Owner, Manager
+
+---
+
+## Restaurant
+>Purpose
+Manage in-house restaurant operations — menu, orders, table management.
+
+>Key Features
+- Menu management (items, prices, categories)
+- Order taking and tracking
+- Table status management
+- Daily sales summary
+
+>Target Role: Owner, Manager
+>Condition: Only visible if "In-house Restaurant" is selected in hotel facilities
+
+---
+
+## Reports
+>Purpose
+Generate analytics and reports for business insights.
+
+>Key Features
+- Revenue reports (daily, weekly, monthly)
+- Occupancy analytics
+- Expense reports
+- Guest statistics
+- Export to PDF/Excel
+
+>Target Role: Owner (planned)
+
+---
+
+## Settings
+>Purpose
+Configure application preferences and hotel profile.
+
+>Key Features
+- Hotel profile editing (name, address, contact)
+- Currency and country update
+- Facility management
+- User account settings
+- Data backup/restore
+
+>Target Role: Owner (planned)
+
+---
+
+## Profile
+>Purpose
+View and edit the logged-in user's personal profile.
+
+>Key Features
+- Personal information display
+- Password change
+- Notification preferences
+
+>Target Role: Owner, Manager, Employee (planned)
+
+---
+
 # Milestone History
 
 ## Milestone 0 - Project Planning & Documentation
@@ -2731,13 +3021,13 @@ Build the dynamic onboarding flow, context-aware dashboard, and hotel setup syst
 
 ---
 
-## Milestone 23 - Room Management Module
+## Milestone 23 - Room Management Module & Facilities
 
 ### Status
 Completed
 
 ### Objective
-Build a premium Room Management module with data visualization on the Dashboard, a fully interactive data table, and an Add Room modal with form validation.
+Build a premium Room Management module with data visualization on the Dashboard, a fully interactive data table, an Add Room modal with form validation, and a comprehensive Facilities management module with booking and charges configuration.
 
 ### Deliverables
 - `Dashboard.jsx` upgraded with:
@@ -2752,15 +3042,40 @@ Build a premium Room Management module with data visualization on the Dashboard,
   - Pagination (10 rows per page) with page number buttons
   - Empty state with illustration and CTA button
   - Inline delete confirmation (Yes/No) replacing action buttons
+  - Inline status change — click status badge to reveal dropdown, change status without edit page
+  - Dynamic currency symbol from localStorage (no hardcoded ₹)
 - `AddRoomModal.jsx` — New component:
   - Full overlay with backdrop blur and Framer Motion spring animation
   - Form fields: Room Number, Room Type, Status, Price, Max Occupancy, Facilities
+  - Searchable Room Type selector with 20 industry presets + custom input option
+  - Dynamic currency symbol prefix in Price Per Night (reads from localStorage)
   - Inline validation with error messages and red border highlights
   - Writes to `localStorage('helloStay_rooms')` and triggers parent re-render
   - State reset on close
-- `FRONTEND_CONCEPTS.md` updated with 4 new concepts:
-  - recharts, Modal Component Pattern, Data Table Pattern, Status Badges
-- `DEVELOPER_HANDBOOK.md` updated with Room Management Module architecture section
+- `ManageFacilities.jsx` — New comprehensive module:
+  - Facility Cards showing real-time stats (total/today/pending bookings)
+  - Booking System with guest name, room number, date, time, guests, payment status, notes
+  - Payment Status Options: Club to Final Bill, Paid Before, Paid After, Complimentary
+  - Charges Configuration: All Guests, By Room Type, By Room Number, Free for All
+  - Expandable cards with inline booking list
+  - Booking Details Modal with full guest info
+  - All data persists to localStorage
+- `RegisterHotel.jsx` — Upgraded with:
+  - Country dropdown (50 countries with auto-mapped currencies)
+  - Currency dropdown (29 currencies with symbols)
+  - Auto-populate currency when country is selected
+  - Confirmation card showing selected country + currency
+- `RegisterOwner.jsx` — Removed ID upload section
+- `Login.jsx` — Role-based login with 3 tabs (Owner, Manager, Employee)
+- `Sidebar.jsx` — Role-based navigation with dynamic module visibility
+- `FRONTEND_CONCEPTS.md` updated with new concepts:
+  - Searchable Dropdown Pattern, Inline Status Change, Dynamic Currency Display
+  - Computed Property Names, Optional Chaining, Nullish Coalescing
+  - e.stopPropagation(), .find(), .some()
+- `DEVELOPER_HANDBOOK.md` updated with:
+  - Room Management Module architecture section
+  - Role-Based Sidebar Navigation pattern
+  - Role-Based Login Flow pattern
 
 ### Technologies Introduced
 - `recharts@3.8.1` — Charting library for data visualization
@@ -2769,10 +3084,422 @@ Build a premium Room Management module with data visualization on the Dashboard,
 - AD 59 — UI/UX Design System (Tailwind, Lucide, Framer Motion)
 - AD 60 — Module Specifications (Room table columns, color-coding, CRUD operations)
 - AD 61 — Dynamic UI (localStorage persistence during setup phase)
+- AD 62 — Multi-Currency Support & Flexible Room Types
+- AD 63 — Role-Based Access Control & Module Visibility
 
 ### Key Outcomes
 - Dashboard now provides real-time visual occupancy insights
-- Room Management page is fully functional with search, sort, filter, and pagination
-- Add Room flow validates input and persists data correctly
+- Room Management page is fully functional with search, sort, filter, pagination, and inline status change
+- Add Room flow validates input and persists data correctly with dynamic currency and flexible room types
+- Facilities module enables booking management, payment tracking, and charges configuration
+- Role-based access: Owner (full), Manager (Rooms, Facilities, Restaurant, Expenses), Employee (Rooms, Inventory)
+- Hotel setup now captures country and currency for internationalization
 - Zero lint errors across all new and modified files
 - Ready for backend API integration in a future milestone
+
+---
+
+## Architecture Decision 64: Full Module Implementation Strategy
+
+**Status:** Accepted
+**Date:** 2026-06-23
+**Context:** After completing Milestone 23 (Room Management + Facilities), the remaining 10 modules (Bookings, Guests, Employees, HR & Payroll, Expenses, Inventory, Restaurant, Reports, Settings, Profile) needed to be designed and implemented. Each module required consistent architecture, premium UI, and comprehensive documentation.
+
+### Decision
+Implement all 10 modules using the same localStorage-based data persistence pattern established in Rooms and ManageFacilities. Each module follows a consistent architecture:
+- **State:** useState with lazy initialization from localStorage
+- **Data Flow:** Read on mount → Filter/Sort → Display → Mutate → Write-back to state + localStorage
+- **UI:** Data table or card grid with sort, search, filter, pagination
+- **Modals:** Add/Edit form modal + View details modal
+- **Actions:** Inline edit, status toggle, delete with confirmation
+- **Stats:** Summary cards with key metrics at top of page
+
+### Consequences
+- All modules are immediately functional without backend
+- Consistent UX across the entire application
+- Easy to swap localStorage for API calls in future milestones
+- Each module is self-contained with its own localStorage keys
+
+---
+
+## Architecture Decision 65: Bookings Module Data Model
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+The Bookings module stores the following data per booking:
+```
+{
+  id: number (Date.now()),
+  guestName: string,
+  guestPhone: string,
+  roomId: number,
+  roomNumber: string,
+  checkInDate: string (YYYY-MM-DD),
+  checkOutDate: string (YYYY-MM-DD),
+  adults: number,
+  children: number,
+  status: "Reserved" | "Checked In" | "Checked Out" | "Cancelled",
+  totalAmount: number (auto-calculated: nights × pricePerNight),
+  amountPaid: number,
+  paymentStatus: "Pending" | "Partial" | "Paid" | "Refunded",
+  specialRequests: string,
+  createdAt: string (ISO),
+  updatedAt: string (ISO),
+  actualCheckIn: string (ISO, set on check-in),
+  actualCheckOut: string (ISO, set on check-out)
+}
+```
+
+### Key Features
+- Auto-calculate total amount from room price × nights
+- Room availability validation (checks date conflicts)
+- Status change auto-updates room status (Checked In → Occupied, Checked Out → Cleaning)
+- Inline payment recording from view modal
+- Guest/Room/Date/Phone search across all fields
+
+### Consequences
+- Bookings are the central entity linking guests to rooms
+- Room status is derived from booking status (single source of truth)
+- Historical price is preserved in the booking record
+
+---
+
+## Architecture Decision 66: Guest Profile Architecture
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+Guests are stored as independent profiles (not tied to bookings). The relationship is resolved at runtime by matching guest name to booking guestName.
+
+### Guest Data Model
+```
+{
+  id: number,
+  name: string,
+  phone: string,
+  email: string,
+  address: string,
+  idProofType: "Aadhaar Card" | "Passport" | "Driving License" | "Voter ID" | "PAN Card",
+  idProofNumber: string,
+  nationality: string,
+  dateOfBirth: string,
+  gender: string,
+  notes: string (VIP, allergies, preferences),
+  createdAt: string,
+  updatedAt: string
+}
+```
+
+### Key Features
+- Card-based layout (not table) for visual appeal
+- Stay history derived from bookings at runtime
+- Total spent calculated from booking payments
+- Avatar initials with color-coded backgrounds
+
+---
+
+## Architecture Decision 67: HR & Payroll System Design
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+The HR module uses a tab-based interface with three sections:
+1. **Attendance:** Daily attendance marking per employee with Present/Absent/Half Day/Leave/Holiday
+2. **Payroll:** Monthly salary calculation based on attendance, with earned amount and deductions
+3. **Payslips:** Generated payslips for each month, stored separately
+
+### Data Models
+- **Attendance:** `{ id, employeeId, date, status }` — one record per employee per day
+- **Payslips:** `{ id, employeeId, employeeName, role, month, year, baseSalary, daysPresent, daysAbsent, halfDays, leaves, earned, deductions, netPay, generatedAt }`
+
+### Salary Calculation Logic
+```
+perDay = baseSalary / daysInMonth
+earned = (presentDays × perDay) + (halfDays × perDay × 0.5)
+netPay = earned - deductions
+```
+
+---
+
+## Architecture Decision 68: Expense Tracking Architecture
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+Expenses are stored as flat records with category-based organization. No hierarchical categories — just flat string categories with color-coded visual indicators.
+
+### Key Features
+- 12 predefined expense categories with color-coded dots
+- Category breakdown bar chart (visual spending distribution)
+- Date range filtering for periodic reports
+- Receipt number tracking (optional)
+- Payment method tracking (Cash, Card, Bank Transfer, UPI, Cheque)
+
+---
+
+## Architecture Decision 69: Inventory Management Design
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+Inventory uses a quantity-based tracking system with stock status alerts:
+- **In Stock:** quantity > minStock (or no minStock set)
+- **Low Stock:** quantity ≤ minStock and quantity > 0
+- **Out of Stock:** quantity = 0
+
+### Key Features
+- Quick stock adjustment (+/- buttons directly in table)
+- Per-unit cost tracking with total value calculation
+- Min stock alert threshold
+- Category-based organization (10 categories)
+- Storage location tracking
+
+---
+
+## Architecture Decision 70: Restaurant Module Design
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+The Restaurant module has three tabs:
+1. **Orders:** Active order management with status flow (Preparing → Ready → Served → Paid)
+2. **Menu:** Menu item management with categories and pricing
+3. **Tables:** Visual table status grid (Available/Occupied)
+
+### Order Data Model
+```
+{
+  id: number,
+  tableNumber: string,
+  items: [{ menuItemId, name, price, quantity }],
+  total: number (auto-calculated),
+  status: "Preparing" | "Ready" | "Served" | "Paid",
+  guestName: string,
+  specialInstructions: string,
+  createdAt: string
+}
+```
+
+### Key Features
+- Add items to order from menu with quantity controls
+- Status progression workflow (Preparing → Ready → Served → Paid)
+- Visual table grid showing occupied/available status
+- Order summary with itemized totals
+
+---
+
+## Architecture Decision 71: Reports Module with recharts
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+The Reports module uses recharts for all data visualization with four report types:
+1. **Overview:** Revenue bar chart + Occupancy pie chart + KPI cards
+2. **Occupancy:** Room status distribution bar chart + percentage cards
+3. **Revenue:** Monthly revenue line chart + Payment status pie chart
+4. **Expenses:** Category-wise horizontal bar chart
+
+### Charts Used
+- `BarChart` — Revenue by month, occupancy distribution
+- `PieChart` — Room occupancy, payment status
+- `LineChart` — Revenue trend over time
+- `ResponsiveContainer` — All charts responsive
+- `Cell` — Color-coded segments
+
+---
+
+## Architecture Decision 72: Data Export/Import System
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+The Settings module provides data backup and restore:
+- **Export:** Downloads all localStorage data as a single JSON file with timestamp
+- **Import:** Reads a JSON backup file and restores all localStorage keys
+- **Clear All:** Nuclear option with double confirmation (window.confirm)
+
+### Exported Keys
+All `helloStay_*` localStorage keys are included in the export.
+
+---
+
+## Architecture Decision 73: Module localStorage Key Registry
+
+**Status:** Accepted
+**Date:** 2026-06-23
+
+### Decision
+Every module has a dedicated localStorage key. The complete registry:
+
+| Module | localStorage Key | Data Type |
+|--------|-----------------|-----------|
+| Hotel Setup | `helloStay_hotelData` | Object |
+| User Role | `helloStay_userRole` | String |
+| Rooms | `helloStay_rooms` | Array |
+| Bookings | `helloStay_bookings` | Array |
+| Guests | `helloStay_guests` | Array |
+| Employees | `helloStay_employees` | Array |
+| Attendance | `helloStay_attendance` | Array |
+| Payslips | `helloStay_payslips` | Array |
+| Expenses | `helloStay_expenses` | Array |
+| Inventory | `helloStay_inventory` | Array |
+| Facility Bookings | `helloStay_facilityBookings` | Array |
+| Facility Charges | `helloStay_facilityCharges` | Object |
+| Restaurant Menu | `helloStay_restaurantMenu` | Array |
+| Restaurant Orders | `helloStay_restaurantOrders` | Array |
+
+---
+
+## Milestone 24: Complete Module Implementation
+
+**Status:** COMPLETED
+**Date:** 2026-06-23
+
+### Objective
+Design and implement all 10 remaining frontend modules with premium UI, consistent architecture, and comprehensive documentation.
+
+### Completed Modules
+
+#### 1. Bookings Module (`Bookings.jsx` — ~550 lines)
+- Full data table with sort, search, filter (status, payment, date), pagination
+- New Booking modal with guest info, room selection, date pickers
+- Auto-calculate total from room price × nights
+- Room availability validation (checks date conflicts)
+- Status dropdown (Reserved/Checked In/Checked Out/Cancelled)
+- Status change auto-updates room status
+- Payment status tracking (Pending/Partial/Paid/Refunded)
+- View booking details modal with inline payment recording
+- Edit booking with form pre-population
+- Delete with inline Yes/No confirmation
+- Stats cards: Today's Check-ins, Check-outs, Revenue, Pending Amount
+
+#### 2. Guests Module (`Guests.jsx` — ~500 lines)
+- Card-based layout (not table) for visual guest profiles
+- Avatar initials with color-coded backgrounds
+- Guest stats: Total stays, Total spent, Country
+- Add/Edit guest modal with personal info, address, identity document
+- View guest modal with full profile + stay history from bookings
+- Search by name, phone, email, ID number
+- Pagination for card grid
+- Stats: Total Guests, Added This Month, With Bookings, Nationalities
+
+#### 3. Employees Module (`Employees.jsx` — ~500 lines)
+- Full data table with sort, search, role filter, status filter
+- Add employee (navigates to `/register-employee`)
+- Edit employee modal with all fields
+- Quick toggle Active/Inactive status
+- Inline delete confirmation
+- View employee modal with salary, months worked, all details
+- Stats: Total Staff, Active, On Leave, Monthly Payroll
+
+#### 4. HR & Payroll Module (`HRPayroll.jsx` — ~450 lines)
+- Tab-based interface: Attendance | Payroll | Payslips
+- Attendance: Daily marking per employee (Present/Absent/Half Day/Leave/Holiday)
+- Monthly attendance summary per employee
+- Payroll: Salary calculation based on attendance
+- Payslip generation for entire staff
+- Payslip cards with detail modal
+- Month/Year selector for period navigation
+
+#### 5. Expenses Module (`Expenses.jsx` — ~450 lines)
+- Full data table with sort, search, category filter, date range filter
+- Category breakdown bar chart (visual spending distribution)
+- Add/Edit expense with 12 categories
+- Payment method tracking
+- Receipt number tracking
+- Stats: Total, This Month, This Year, Entries
+
+#### 6. Inventory Module (`Inventory.jsx` — ~450 lines)
+- Full data table with sort, search, category filter, stock status filter
+- Quick stock adjustment (+/- buttons in table)
+- Stock status: In Stock / Low Stock / Out of Stock
+- Add/Edit item with category, unit, cost, supplier, location
+- Total value calculation
+- Stats: Total Items, Stock Value, Low Stock, Out of Stock
+
+#### 7. Restaurant Module (`Restaurant.jsx` — ~550 lines)
+- Tab-based interface: Orders | Menu | Tables
+- Orders: Active order cards with status workflow
+- Menu: Menu item cards with add-to-order functionality
+- Tables: Visual grid showing Available/Occupied status
+- Order creation with item selection, quantity controls
+- Status progression: Preparing → Ready → Served → Paid
+- Stats: Active Orders, Total Orders, Revenue, Menu Items
+
+#### 8. Reports Module (`Reports.jsx` — ~350 lines)
+- Tab-based interface: Overview | Occupancy | Revenue | Expenses
+- recharts integration: BarChart, PieChart, LineChart
+- Overview: Revenue bar + Occupancy pie + KPI cards
+- Occupancy: Room status distribution + percentages
+- Revenue: Monthly trend line + Payment status pie
+- Expenses: Category-wise horizontal bar chart
+- All charts responsive with tooltips
+
+#### 9. Settings Module (`Settings.jsx` — ~350 lines)
+- Tab-based interface: Hotel Profile | System | Backup & Data
+- Hotel Profile: Name, rooms, country, currency, contact info
+- System: Theme (placeholder), Notifications (placeholder)
+- Export Data: Downloads all localStorage as JSON
+- Import Data: Restores from JSON backup
+- Clear All: Nuclear option with confirmation
+
+#### 10. Profile Module (`Profile.jsx` — ~280 lines)
+- Profile card with gradient header and avatar
+- Edit name, email, phone
+- Role badge display (Owner/Manager/Employee)
+- Change password form with validation
+- Account information display
+- Password change placeholder (until backend auth)
+
+### New Concepts Documented
+- Frontend Concepts: Tab Navigation Pattern, Card Grid Layout, Avatar Initials, Quick Stock Adjustment, Chart Integration (recharts), Data Export/Import Pattern, Attendance Marking Pattern, Order Workflow Pattern
+- Developer Handbook: Complete Module Architecture Pattern, Data Table Pattern, Card Grid Pattern, Tab Navigation Pattern, Chart Dashboard Pattern, Data Export/Import Pattern, Attendance System Pattern, Order Management Pattern
+
+### Files Modified/Created
+- `Bookings.jsx` — Complete rewrite (~550 lines)
+- `Guests.jsx` — Complete rewrite (~500 lines)
+- `Employees.jsx` — Complete rewrite (~500 lines)
+- `HRPayroll.jsx` — Complete rewrite (~450 lines)
+- `Expenses.jsx` — Complete rewrite (~450 lines)
+- `Inventory.jsx` — Complete rewrite (~450 lines)
+- `Restaurant.jsx` — Complete rewrite (~550 lines)
+- `Reports.jsx` — Complete rewrite (~350 lines)
+- `Settings.jsx` — Complete rewrite (~350 lines)
+- `Profile.jsx` — Complete rewrite (~280 lines)
+- `PROJECT_NOTES.md` — AD 64-73 added, Milestone 24 added
+- `FRONTEND_CONCEPTS.md` — 8 new concepts documented
+- `DEVELOPER_HANDBOOK.md` — 8 new architectural patterns
+
+### Architecture Decisions Referenced
+- AD 59 — UI/UX Design System
+- AD 60 — Module Specifications
+- AD 61 — Dynamic UI Configuration
+- AD 62 — Multi-Currency Support
+- AD 63 — Role-Based Access Control
+- AD 64 — Full Module Implementation Strategy
+- AD 65 — Bookings Module Data Model
+- AD 66 — Guest Profile Architecture
+- AD 67 — HR & Payroll System Design
+- AD 68 — Expense Tracking Architecture
+- AD 69 — Inventory Management Design
+- AD 70 — Restaurant Module Design
+- AD 71 — Reports Module with recharts
+- AD 72 — Data Export/Import System
+- AD 73 — Module localStorage Key Registry
+
+### Key Outcomes
+- All 14 application modules are now fully implemented (Dashboard, Rooms, Bookings, Guests, Employees, HR & Payroll, Expenses, Inventory, Facilities, Restaurant, Reports, Settings, Profile, RegisterEmployee)
+- Zero lint errors across all files
+- Consistent architecture across all modules
+- Premium UI with Framer Motion animations
+- Comprehensive documentation for beginners
+- Ready for backend API integration

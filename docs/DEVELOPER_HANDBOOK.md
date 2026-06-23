@@ -5667,3 +5667,618 @@ const formatCurrency = (amount, locale = 'en-IN', currency = 'INR') => {
 >Industry Practice
 - Always use `toLocaleString()` — never display raw numbers like `2500`.
 - The `en-IN` locale uses the Indian numbering system (lakhs/crores): ₹12,50,000 instead of ₹1,250,000.
+
+---
+
+# Frontend Code Patterns (Milestone 23 Updates)
+
+## Searchable Dropdown with Custom Entry
+>Principle
+Replace native `<select>` with a custom searchable dropdown when the option list is long (>10 items) or when users need the flexibility to add custom values.
+
+>Implementation
+```jsx
+const [search, setSearch] = useState('');
+const [selected, setSelected] = useState('');
+const [open, setOpen] = useState(false);
+const ref = useRef(null);
+
+// Close on outside click
+useEffect(() => {
+  const handler = (e) => {
+    if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+  };
+  document.addEventListener('mousedown', handler);
+  return () => document.removeEventListener('mousedown', handler);
+}, []);
+
+const filtered = ITEMS.filter(item =>
+  item.toLowerCase().includes(search.toLowerCase())
+);
+
+const showAddCustom = search.trim() &&
+  !ITEMS.some(i => i.toLowerCase() === search.toLowerCase());
+
+// In JSX:
+<div ref={ref} className="relative">
+  <input value={search} onChange={...} onFocus={() => setOpen(true)} />
+  {open && (
+    <div className="absolute z-20 mt-1 bg-white border rounded-xl shadow-lg max-h-52 overflow-y-auto">
+      {filtered.map(item => (
+        <button key={item} onClick={() => { setSelected(item); setSearch(item); setOpen(false); }}>
+          {item}
+        </button>
+      ))}
+      {showAddCustom && (
+        <button onClick={handleAddCustom} className="border-t">
+          Add "{search.trim()}"
+        </button>
+      )}
+    </div>
+  )}
+</div>
+```
+
+>When to Use
+- Room types, country lists, category selectors — any list with 10+ options.
+- When users might have custom values not in the preset list.
+
+>When NOT to Use
+- Lists with <5 options — use a native `<select>` instead.
+- When custom values are not allowed — use a filterable select without the "Add" option.
+
+---
+
+## Inline Table Cell Editing
+>Principle
+Allow users to edit a table cell value by clicking on it, switching between a display view and an edit view. This avoids opening modals or navigating to edit pages for simple value changes.
+
+>Implementation
+```jsx
+const [editingId, setEditingId] = useState(null);
+
+// Display mode:
+<button onClick={() => setEditingId(row.id)} className="badge">
+  {row.status}
+</button>
+
+// Edit mode:
+{editingId === row.id && (
+  <select
+    autoFocus
+    value={row.status}
+    onChange={(e) => { handleChange(row.id, e.target.value); setEditingId(null); }}
+    onBlur={() => setEditingId(null)}
+  >
+    <option>Available</option>
+    <option>Occupied</option>
+  </select>
+)}
+```
+
+>Key Rules
+1. Only ONE cell should be in edit mode at a time — use a single `editingId` state.
+2. Always handle `onBlur` to cancel editing when user clicks away.
+3. Persist changes immediately — don't wait for a "Save" button.
+4. Use `autoFocus` on the edit control so it's ready to interact immediately.
+
+---
+
+## Multi-Currency Configuration Flow
+>Principle
+Store the currency code during hotel setup, and use a lookup map to display the correct symbol throughout the app. Never hardcode currency symbols in components.
+
+>Implementation
+```jsx
+// 1. Define currency map at module level
+const CURRENCY_SYMBOLS = {
+  INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', THB: '฿',
+  JPY: '¥', SGD: 'S$', AUD: 'A$', CAD: 'C$',
+};
+
+// 2. Read from localStorage in component
+const currencySymbol = useMemo(() => {
+  const saved = localStorage.getItem('helloStay_hotelData');
+  const data = saved ? JSON.parse(saved) : {};
+  return CURRENCY_SYMBOLS[data.currency] || '₹';
+}, []);
+
+// 3. Use in JSX
+<label>Price Per Night ({currencySymbol})</label>
+<span>{currencySymbol}{price.toLocaleString()}</span>
+```
+
+>When to Use
+- Any app that serves multiple countries.
+- SaaS products where pricing display varies by region.
+
+---
+
+## Country-Currency Auto-Population
+>Principle
+When a user selects a country, automatically populate the currency field with that country's standard currency. Keep the currency field editable so the user can override if needed.
+
+>Implementation
+```jsx
+const COUNTRIES = [
+  { code: 'IN', name: 'India', currency: 'INR' },
+  { code: 'US', name: 'United States', currency: 'USD' },
+  { code: 'AE', name: 'UAE', currency: 'AED' },
+  // ...
+];
+
+const handleCountryChange = (code) => {
+  const country = COUNTRIES.find(c => c.code === code);
+  setFormData(prev => ({
+    ...prev,
+    country: code,
+    currency: country ? country.currency : prev.currency
+  }));
+};
+```
+
+>Key Rules
+1. Always keep the currency field editable — don't lock it after auto-population.
+2. Store both `country` and `currency` in localStorage for downstream components.
+3. Show a confirmation card after selection to give visual feedback.
+
+---
+
+## Role-Based Sidebar Navigation
+>Principle
+Filter sidebar navigation items based on the logged-in user's role. Each nav item declares which roles can see it, and the Sidebar filters accordingly.
+
+>Implementation
+```jsx
+const ALL_NAV_ITEMS = [
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'manager', 'employee'] },
+  { name: 'Rooms', path: '/rooms', icon: BedDouble, roles: ['owner', 'manager', 'employee'] },
+  { name: 'Bookings', path: '/bookings', icon: CalendarDays, roles: ['owner'] },
+  { name: 'Guests', path: '/guests', icon: Users, roles: ['owner'] },
+  { name: 'Employees', path: '/employees', icon: Contact, roles: ['owner'] },
+  { name: 'HR & Payroll', path: '/hr-payroll', icon: Briefcase, roles: ['owner'] },
+  { name: 'Expenses', path: '/expenses', icon: Wallet, roles: ['owner', 'manager'] },
+  { name: 'Inventory', path: '/inventory', icon: Package, roles: ['owner', 'manager', 'employee'] },
+  { name: 'Settings', path: '/settings', icon: Settings, roles: ['owner'] },
+];
+
+const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+
+const activeNavItems = ALL_NAV_ITEMS.filter(item => item.roles.includes(userRole));
+```
+
+>When to Use
+- SaaS apps with multiple user types (admin, manager, viewer).
+- Any app where different users should see different features.
+- MVP phase where backend auth doesn't exist yet — localStorage is sufficient.
+
+>Key Rules
+1. Define roles at the nav item level — each item declares `roles: ['owner', 'manager']`.
+2. Read role from localStorage on every render (not cached) so role changes take effect immediately.
+3. Always have a fallback role (`|| 'owner'`) to prevent blank sidebars.
+4. Show the role label in the sidebar header so users know which account they're using.
+
+---
+
+## Role-Based Login Flow
+>Principle
+The Login page offers role selection tabs. On sign-in, the selected role is stored in localStorage and used by the Sidebar to filter navigation.
+
+>Implementation
+```jsx
+const ROLES = {
+  owner: { label: 'Owner', description: 'Full access', icon: Building2 },
+  manager: { label: 'Manager', description: 'Rooms, Inventory & Expenses', icon: Briefcase },
+  employee: { label: 'Employee', description: 'Rooms & Inventory only', icon: UserCircle },
+};
+
+const [role, setRole] = useState('owner');
+
+const handleSignIn = () => {
+  localStorage.setItem('helloStay_userRole', role);
+  navigate('/dashboard');
+};
+```
+
+>Key Rules
+1. Store role BEFORE navigating to dashboard — Sidebar reads it on mount.
+2. Setup wizard (Installer) should always set role to 'owner' since only owners run initial setup.
+3. Role tabs should show a description of what each role can access.
+4. The sign-in button label should reflect the selected role ("Sign In as Manager").
+
+---
+
+## Complete Module Architecture Pattern
+
+>Principle
+Every module in HelloStay follows the same architectural pattern. This consistency makes the codebase predictable and easy to maintain. When building a new module, copy the structure from an existing one.
+
+>Implementation Structure
+```jsx
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SomeIcon, Search, Plus, ChevronLeft, ChevronRight, Eye, Edit3, Trash2, XCircle } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 8;
+
+export default function ModuleName() {
+  // 1. STATE: Read from localStorage with lazy init
+  const [items, setItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('helloStay_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  // 2. FILTER/SORT STATE
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 3. MODAL STATE
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [formData, setFormData] = useState(INITIAL_DATA);
+  const [formErrors, setFormErrors] = useState({});
+
+  // 4. SAVE FUNCTION: Write to both state AND localStorage
+  const saveItems = (updated) => {
+    setItems(updated);
+    localStorage.setItem('helloStay_items', JSON.stringify(updated));
+  };
+
+  // 5. SORTED + FILTERED DATA (useMemo for performance)
+  const sortedItems = useMemo(() => { /* sort logic */ }, [items, sortConfig]);
+  const filteredItems = useMemo(() => { /* filter logic */ }, [sortedItems, searchQuery]);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // 6. STATS (useMemo)
+  const stats = useMemo(() => ({
+    total: items.length,
+    // ... other stats
+  }), [items]);
+
+  // 7. CRUD HANDLERS
+  const handleSubmit = () => { /* validate → save → close modal */ };
+  const handleEdit = (item) => { /* populate form → open modal */ };
+  const handleDelete = (id) => { /* filter → save */ };
+
+  // 8. RENDER: Header → Stats → Filters → Table/Grid → Modals
+  return (
+    <div className="space-y-6">
+      {/* Header with title + Add button */}
+      {/* Stats cards grid */}
+      {/* Search/filter bar */}
+      {/* Data table or card grid */}
+      {/* Pagination */}
+      {/* Add/Edit modal */}
+      {/* View details modal */}
+    </div>
+  );
+}
+```
+
+>Key Rules
+1. Always use `useState` with lazy initializer for localStorage reads
+2. Always save to both React state AND localStorage on mutations
+3. Use `useMemo` for derived data (sorting, filtering, stats)
+4. Use `AnimatePresence` for modal enter/exit animations
+5. Validate forms before submission with error state
+6. Show empty states with icons when no data exists
+7. Use inline delete confirmation (Yes/No buttons) instead of modals
+8. Keep pagination at 8 items per page for optimal density
+
+---
+
+## Data Table Pattern
+
+>Principle
+A reusable data table pattern with sortable columns, search, filters, and pagination. Used in Rooms, Bookings, Employees, Expenses, and Inventory modules.
+
+>Implementation
+```jsx
+// Table header with sortable columns
+<thead>
+  <tr className="bg-gray-50/80 border-b border-gray-100">
+    {[
+      { key: 'name', label: 'Name' },
+      { key: 'status', label: 'Status' },
+    ].map(col => (
+      <th
+        key={col.key}
+        onClick={() => handleSort(col.key)}
+        className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+      >
+        <span className="flex items-center gap-1">
+          {col.label}
+          <SortIcon columnKey={col.key} />
+        </span>
+      </th>
+    ))}
+    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+  </tr>
+</thead>
+
+// Sort icon component
+const SortIcon = ({ columnKey }) => {
+  const isActive = sortConfig.key === columnKey;
+  return (
+    <span className={`ml-1 inline-flex flex-col ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+      <ChevronRight className={`w-3 h-3 -mb-1 rotate-[-90deg] ${isActive && sortConfig.direction === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
+      <ChevronRight className={`w-3 h-3 rotate-90 ${isActive && sortConfig.direction === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
+    </span>
+  );
+};
+```
+
+>Key Rules
+1. Use `text-xs font-semibold uppercase tracking-wider` for header styling
+2. Use `select-none` to prevent text selection on header click
+3. Show sort direction with rotated chevron icons
+4. Use `motion.tr` for row entrance animations
+5. Use `hover:bg-gray-50/50` for row hover feedback
+6. Use `divide-y divide-gray-50` for subtle row separators
+
+---
+
+## Card Grid Pattern
+
+>Principle
+An alternative to data tables for visual data like guest profiles and menu items. Uses CSS Grid with responsive breakpoints.
+
+>Implementation
+```jsx
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {items.map((item, index) => (
+    <motion.div
+      key={item.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03 }}
+      className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all group"
+    >
+      {/* Card content */}
+      <div className="flex items-start justify-between">
+        {/* Left: Avatar + Info */}
+        {/* Right: Actions (hidden until hover) */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+            <Eye className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      {/* Stats grid inside card */}
+      <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+        {/* ... */}
+      </div>
+    </motion.div>
+  ))}
+</div>
+```
+
+>Key Rules
+1. Use `group` + `group-hover:opacity-100` for hover-reveal actions
+2. Use `transition-all` for smooth hover effects
+3. Stagger entrance animations with `delay: index * 0.03`
+4. Keep card content compact — max 2-3 lines per section
+5. Use `grid-cols-3 gap-3` for stats grids inside cards
+
+---
+
+## Chart Dashboard Pattern
+
+>Principle
+A pattern for building report dashboards with recharts. Each chart is wrapped in a white card with a title, and charts are arranged in a responsive grid.
+
+>Implementation
+```jsx
+// Chart card structure
+<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+    Chart Title
+  </h3>
+  {data.length === 0 ? (
+    <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
+      No data yet
+    </div>
+  ) : (
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+        <YAxis tick={{ fontSize: 11 }} />
+        <Tooltip formatter={(v) => `${currencySymbol}${v.toLocaleString('en-IN')}`} />
+        <Bar dataKey="value" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  )}
+</div>
+
+// Layout grid
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {/* Chart 1 */}
+  {/* Chart 2 */}
+</div>
+```
+
+>Key Rules
+1. Always handle empty data state (shows "No data yet")
+2. Use `ResponsiveContainer` for all charts
+3. Use light `CartesianGrid` stroke (`#f0f0f0`)
+4. Use small font sizes for axis ticks (11-12px)
+5. Format tooltip values with currency symbol
+6. Use `radius` on Bar for rounded corners
+7. Keep chart height between 200-300px for consistency
+
+---
+
+## Attendance System Pattern
+
+>Principle
+A daily attendance tracking system where each employee's attendance is marked per day using inline status buttons. The data feeds into the payroll calculation.
+
+>Implementation
+```jsx
+// Constants
+const ATTENDANCE_STATUSES = ['Present', 'Absent', 'Half Day', 'Leave', 'Holiday'];
+const STATUS_STYLES = {
+  'Present': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  'Absent': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+  'Half Day': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  'Leave': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  'Holiday': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+};
+
+// Upsert attendance record
+const handleMarkAttendance = (empId, status) => {
+  const existing = attendance.find(a => a.employeeId === empId && a.date === date);
+  let updated;
+  if (existing) {
+    updated = attendance.map(a =>
+      a.employeeId === empId && a.date === date ? { ...a, status } : a
+    );
+  } else {
+    updated = [...attendance, { id: Date.now(), employeeId: empId, date, status }];
+  }
+  setAttendance(updated);
+  localStorage.setItem('helloStay_attendance', JSON.stringify(updated));
+};
+
+// Salary calculation
+const calculateSalary = (emp) => {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const perDay = emp.salary / daysInMonth;
+  const earned = (presentDays * perDay) + (halfDays * perDay * 0.5);
+  const netPay = earned - deductions;
+  return { baseSalary: emp.salary, earned, deductions, netPay };
+};
+```
+
+>Key Rules
+1. Always upsert (check existing before creating new record)
+2. Store attendance as flat records: `{ employeeId, date, status }`
+3. Calculate salary based on days in month, not fixed 30 days
+4. Half day = 50% of per-day salary
+5. Generate payslips only on explicit user action
+
+---
+
+## Order Management Pattern
+
+>Principle
+A restaurant order management system with menu integration, quantity controls, and status workflow. Orders are created from the menu and progress through a defined workflow.
+
+>Implementation
+```jsx
+// Order creation from menu
+const addOrderItem = (menuItem) => {
+  const existing = orderForm.items.find(i => i.menuItemId === menuItem.id);
+  if (existing) {
+    setOrderForm(prev => ({
+      ...prev,
+      items: prev.items.map(i =>
+        i.menuItemId === menuItem.id ? { ...i, quantity: i.quantity + 1 } : i
+      )
+    }));
+  } else {
+    setOrderForm(prev => ({
+      ...prev,
+      items: [...prev.items, {
+        menuItemId: menuItem.id,
+        name: menuItem.name,
+        price: menuItem.price,
+        quantity: 1,
+      }]
+    }));
+  }
+};
+
+// Auto-calculate total
+const orderTotal = orderForm.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+// Status workflow
+const STATUS_FLOW = {
+  'Preparing': 'Ready',
+  'Ready': 'Served',
+  'Served': 'Paid',
+};
+```
+
+>Key Rules
+1. Increment quantity if item already in order (don't add duplicate)
+2. Auto-calculate total from items (never store manually)
+3. Show only the NEXT action button, not all actions
+4. Filter paid orders out of active view
+5. Use table number as the primary order identifier
+
+---
+
+## Missing Export White Screen Error
+
+>Principle
+When a constant, function, or component is defined in one file but NOT exported, and another file tries to import it, the build fails silently in development (Vite HMR may not catch it) and produces a **completely white screen** in the browser with no visible error. This is one of the most confusing bugs because there is no error message in the UI — just a blank page.
+
+>Symptoms
+- Browser shows a completely white/blank page
+- No red error overlay in development
+- Console may show: `Uncaught SyntaxError: The requested module does not provide an export named 'X'`
+- `vite build` fails with: `[MISSING_EXPORT] "X" is not exported by "src/pages/File.jsx"`
+
+>Root Cause
+```jsx
+// ManageFacilities.jsx — constant defined but NOT exported
+const CURRENCY_SYMBOLS = { INR: '₹', USD: '$' };
+
+// Bookings.jsx — tries to import it
+import { CURRENCY_SYMBOLS } from './ManageFacilities';  // FAILS SILENTLY
+```
+
+The `const` keyword makes the variable module-scoped but does NOT make it available to other modules. The `export` keyword is required.
+
+>Fix
+```jsx
+// ManageFacilities.jsx — add `export` keyword
+export const CURRENCY_SYMBOLS = { INR: '₹', USD: '$' };
+```
+
+>Why This Error Is Dangerous
+1. **No visible error in browser** — just a white screen, making it hard to debug
+2. **HMR doesn't always catch it** — Vite's hot module replacement may not reload properly
+3. **Cascading failure** — one missing export can break the entire app if the importing component is in the render tree
+4. **Lint doesn't catch it** — ESLint only checks for unused imports, not missing exports
+5. **Build only catches it at production build time** — `vite build` shows the error, but `vite dev` may not
+
+>Prevention Checklist
+1. When defining a constant that other files need, always use `export const`
+2. When creating a shared utility (like currency symbols), create a dedicated file:
+   ```
+   src/utils/currencies.js    → export const CURRENCY_SYMBOLS = {...}
+   src/utils/constants.js     → export const STATUS_STYLES = {...}
+   src/utils/formatters.js    → export const formatCurrency = () => {...}
+   ```
+3. Never import from a page component (`./ManageFacilities`) for shared data — use `utils/` files instead
+4. Run `vite build` periodically during development to catch export errors early
+5. If you see a white screen, check the browser console FIRST — the error is usually there
+
+>Debugging Steps
+1. Open browser DevTools → Console tab → look for `does not provide an export`
+2. Run `npx vite build` in terminal → look for `[MISSING_EXPORT]` errors
+3. Search the codebase for the missing export name to find where it's defined
+4. Add `export` keyword to the definition
+5. Restart the dev server (`Ctrl+C` then `npm run dev`)
+
+>HelloStay Incident
+On 2026-06-23, `CURRENCY_SYMBOLS` was defined in `ManageFacilities.jsx` as `const` (not `export const`). Nine other modules (Bookings, Guests, Employees, HRPayroll, Expenses, Inventory, Restaurant, Reports, Settings) all imported it from `ManageFacilities.jsx`. This caused the entire app to show a white screen. The fix was a single word: adding `export` before `const`.
+
+>Architecture Lesson
+**Shared constants should live in dedicated utility files, not in page components.** Page components should only export their default React component. This prevents circular dependencies and makes the dependency graph clean:
+```
+✅ src/utils/currencies.js    → shared across all modules
+✅ src/pages/Bookings.jsx     → imports from utils/
+❌ src/pages/Bookings.jsx     → imports from another page component
+```
