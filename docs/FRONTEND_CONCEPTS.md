@@ -2697,3 +2697,156 @@ const handleStatusChange = (orderId, newStatus) => {
 
 >HelloStay Usage
 Used in `Restaurant.jsx` for order status workflow (Preparing → Ready → Served → Paid) and `Bookings.jsx` for booking status management.
+
+---
+
+## Concept 70: Donut Chart (PieChart with Inner Radius)
+>Definition
+A circular chart with a hollow center, created using recharts `PieChart` + `Pie` with `innerRadius` and `outerRadius` props.
+
+>Purpose
+Display proportional data (like room occupancy distribution) in a compact, visually appealing format. The inner radius creates a donut shape that is more modern and readable than a full pie.
+
+>Syntax Example
+```jsx
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+
+<PieChart>
+  <Pie
+    data={occupancyData}
+    cx="50%"
+    cy="50%"
+    innerRadius={45}
+    outerRadius={75}
+    paddingAngle={3}
+    dataKey="value"
+  >
+    {occupancyData.map((entry) => (
+      <Cell key={entry.name} fill={entry.color} />
+    ))}
+  </Pie>
+</PieChart>
+```
+
+>Industry Practice
+- Use donut charts for status distribution (available/occupied/cleaning)
+- Add percentage labels outside the chart
+- Use `paddingAngle` for visual separation between segments
+- Always wrap in `ResponsiveContainer` for layout flexibility
+
+>Common Mistakes
+- Using pie chart when bar chart is more appropriate (use pie for parts-of-whole)
+- Not handling zero-value segments
+- Missing color legend for non-labeled charts
+
+>HelloStay Usage
+Used in `Dashboard.jsx` for Room Occupancy Overview showing Available/Occupied/Cleaning/Reserved distribution.
+
+---
+
+## Concept 71: Bidirectional Module Sync via localStorage
+>Definition
+Two modules (e.g., Bookings and Rooms) read and write to the same localStorage key, keeping their states synchronized through a shared data source.
+
+>Purpose
+When a change in Module A (Bookings) should automatically update data in Module B (Rooms), both modules write to the same localStorage key to maintain consistency.
+
+>Syntax Example
+```jsx
+// In Bookings.jsx — sync room status when booking changes
+const syncRoomStatus = (roomId, newRoomStatus) => {
+  setRooms(prev => {
+    const updated = prev.map(r =>
+      r.id === roomId ? { ...r, roomStatus: newRoomStatus } : r
+    );
+    localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
+    return updated;
+  });
+};
+
+// Usage
+syncRoomStatus(booking.roomId, 'Occupied');
+```
+
+>Industry Practice
+- Use a shared helper function for writes to avoid duplication
+- Check for conflicting data before overwriting (e.g., other active bookings)
+- Always persist to localStorage AND update React state together
+- Document which modules share which localStorage keys
+
+>Common Mistakes
+- Only updating localStorage without updating React state (stale UI)
+- Forgetting to check related data before overwriting
+- Multiple modules independently managing the same localStorage key without coordination
+
+>HelloStay Usage
+Used in `Bookings.jsx` ↔ `Rooms.jsx` sync. When booking status changes, room status is automatically updated via `syncRoomStatus()`.
+
+---
+
+## Concept 72: Role-Based UI Control
+>Definition
+UI elements (buttons, dropdowns, badges) are shown, hidden, or restricted based on the user's role stored in localStorage.
+
+>Purpose
+Different user roles (Owner, Manager, Employee) should see different levels of interactivity. Owners can edit everything, employees may only view.
+
+>Syntax Example
+```jsx
+const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+const canOverrideStatus = userRole === 'owner' || userRole === 'manager';
+
+// Conditional rendering
+{canOverrideStatus ? (
+  <select onChange={(e) => handleStatusChange(room.id, e.target.value)}>
+    <option value="Available">Available</option>
+    <option value="Maintenance">Maintenance</option>
+  </select>
+) : (
+  <span className="badge">{room.roomStatus}</span>
+)}
+```
+
+>Industry Practice
+- Always check role at the UI level AND at the data/API level (defense in depth)
+- Use a single source of truth for role (localStorage in V1, JWT in V2)
+- Restrict both visibility AND interactivity — hiding buttons is not enough if the API accepts unauthorized writes
+
+>Common Mistakes
+- Only hiding UI elements without server-side validation
+- Storing role in multiple places (causes inconsistency)
+- Not refreshing role after login/logout
+
+>HelloStay Usage
+Used in `Rooms.jsx` to restrict manual status changes to Owner/Manager only. Employee sees a read-only status badge.
+
+---
+
+## Concept 73: Key-Based Component Remount
+>Definition
+Passing a `key` prop that changes when the component's initial data changes, forcing React to unmount and remount the component (resetting all internal state).
+
+>Purpose
+When a modal needs to display different initial data (e.g., Add vs Edit), using a changing `key` forces a clean remount, ensuring no stale state from the previous mode.
+
+>Syntax Example
+```jsx
+<AddRoomModal
+  key={editingRoom ? `edit-${editingRoom.id}` : 'add'}
+  isOpen={isModalOpen}
+  editingRoom={editingRoom}
+/>
+```
+
+>Industry Practice
+- Use key-based remount for modals, forms, and edit views
+- Include the entity ID in the key to prevent same-ID remount skipping
+- Prefer this over manual state reset in useEffect (cleaner, no lint issues)
+
+>Common Mistakes
+- Using the same key for add and edit modes (stale form data)
+- Not including entity ID in key (multiple edits of different entities show same form)
+- Overusing key-based remount when useState initializer is sufficient
+
+>HelloStay Usage
+Used in `Rooms.jsx` → `AddRoomModal` to cleanly switch between Add and Edit modes without stale form state.

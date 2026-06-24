@@ -45,7 +45,7 @@ export default function Bookings() {
     } catch { return []; }
   });
 
-  const [rooms] = useState(() => {
+  const [rooms, setRooms] = useState(() => {
     try {
       const saved = localStorage.getItem('helloStay_rooms');
       return saved ? JSON.parse(saved) : [];
@@ -77,6 +77,16 @@ export default function Bookings() {
   const saveBookings = (updated) => {
     setBookings(updated);
     localStorage.setItem('helloStay_bookings', JSON.stringify(updated));
+  };
+
+  const syncRoomStatus = (roomId, newRoomStatus) => {
+    setRooms(prev => {
+      const updated = prev.map(r =>
+        r.id === roomId ? { ...r, roomStatus: newRoomStatus } : r
+      );
+      localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const getRoomAvailableStatus = (roomId, checkIn, checkOut, excludeBookingId = null) => {
@@ -168,6 +178,7 @@ export default function Bookings() {
         updatedAt: now,
       };
       saveBookings([...bookings, newBooking]);
+      syncRoomStatus(parseInt(formData.roomId), 'Reserved');
     }
     setIsModalOpen(false);
     setEditingBooking(null);
@@ -210,13 +221,22 @@ export default function Bookings() {
     saveBookings(updated);
 
     const booking = updated.find(b => b.id === bookingId);
-    if (booking && (newStatus === 'Checked In' || newStatus === 'Checked Out')) {
-      const roomUpdated = rooms.map(r =>
-        r.id === booking.roomId
-          ? { ...r, roomStatus: newStatus === 'Checked In' ? 'Occupied' : 'Cleaning' }
-          : r
+    if (!booking) return;
+
+    if (newStatus === 'Checked In') {
+      syncRoomStatus(booking.roomId, 'Occupied');
+    } else if (newStatus === 'Checked Out') {
+      syncRoomStatus(booking.roomId, 'Cleaning');
+    } else if (newStatus === 'Cancelled') {
+      const hasOtherActive = updated.some(b =>
+        b.roomId === booking.roomId &&
+        b.id !== bookingId &&
+        b.status !== 'Cancelled' &&
+        b.status !== 'Checked Out'
       );
-      localStorage.setItem('helloStay_rooms', JSON.stringify(roomUpdated));
+      if (!hasOtherActive) {
+        syncRoomStatus(booking.roomId, 'Available');
+      }
     }
   };
 
@@ -234,8 +254,21 @@ export default function Bookings() {
   };
 
   const handleDelete = (bookingId) => {
+    const booking = bookings.find(b => b.id === bookingId);
     saveBookings(bookings.filter(b => b.id !== bookingId));
     setDeletingId(null);
+
+    if (booking && booking.status !== 'Checked Out' && booking.status !== 'Cancelled') {
+      const hasOtherActive = bookings.some(b =>
+        b.roomId === booking.roomId &&
+        b.id !== bookingId &&
+        b.status !== 'Cancelled' &&
+        b.status !== 'Checked Out'
+      );
+      if (!hasOtherActive) {
+        syncRoomStatus(booking.roomId, 'Available');
+      }
+    }
   };
 
   const sortedBookings = useMemo(() => {

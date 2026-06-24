@@ -34,7 +34,6 @@ export default function AppRoutes() {
       
       {/* Protected Routes inside MainLayout */}
       <Route path="/" element={<MainLayout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="rooms" element={<Rooms />} />
         <Route path="bookings" element={<Bookings />} />
@@ -52,7 +51,7 @@ export default function AppRoutes() {
       </Route>
       
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

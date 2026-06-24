@@ -41,10 +41,26 @@ const INITIAL_ERRORS = {
   maxOccupancy: '',
 };
 
-export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
-  const [formData, setFormData] = useState(INITIAL_FORM);
+export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom, onRoomUpdated }) {
+  const isEditMode = !!editingRoom;
+
+  const getInitialForm = () => {
+    if (editingRoom) {
+      return {
+        roomNumber: editingRoom.roomNumber,
+        roomType: editingRoom.roomType,
+        pricePerNight: editingRoom.pricePerNight,
+        maxOccupancy: String(editingRoom.maxOccupancy),
+        roomStatus: editingRoom.roomStatus,
+        facilities: editingRoom.facilities || '',
+      };
+    }
+    return INITIAL_FORM;
+  };
+
+  const [formData, setFormData] = useState(getInitialForm);
   const [errors, setErrors] = useState(INITIAL_ERRORS);
-  const [typeSearch, setTypeSearch] = useState('');
+  const [typeSearch, setTypeSearch] = useState(() => editingRoom?.roomType || '');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const typeInputRef = useRef(null);
   const typeDropdownRef = useRef(null);
@@ -132,25 +148,46 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
     e.preventDefault();
     if (!validate()) return;
 
-    const newRoom = {
-      id: Date.now(),
-      roomNumber: formData.roomNumber.trim(),
-      roomType: formData.roomType.trim(),
-      pricePerNight: parseFloat(formData.pricePerNight),
-      maxOccupancy: parseInt(formData.maxOccupancy),
-      roomStatus: formData.roomStatus,
-      facilities: formData.facilities.trim(),
-    };
+    if (isEditMode) {
+      const updatedRoom = {
+        ...editingRoom,
+        roomNumber: formData.roomNumber.trim(),
+        roomType: formData.roomType.trim(),
+        pricePerNight: parseFloat(formData.pricePerNight),
+        maxOccupancy: parseInt(formData.maxOccupancy),
+        facilities: formData.facilities.trim(),
+      };
 
-    const existing = JSON.parse(localStorage.getItem('helloStay_rooms') || '[]');
-    existing.push(newRoom);
-    localStorage.setItem('helloStay_rooms', JSON.stringify(existing));
+      const existing = JSON.parse(localStorage.getItem('helloStay_rooms') || '[]');
+      const updated = existing.map(r => r.id === editingRoom.id ? updatedRoom : r);
+      localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
 
-    setFormData(INITIAL_FORM);
-    setErrors(INITIAL_ERRORS);
-    setTypeSearch('');
-    onRoomAdded(newRoom);
-    onClose();
+      setFormData(INITIAL_FORM);
+      setErrors(INITIAL_ERRORS);
+      setTypeSearch('');
+      onRoomUpdated(updatedRoom);
+      onClose();
+    } else {
+      const newRoom = {
+        id: Date.now(),
+        roomNumber: formData.roomNumber.trim(),
+        roomType: formData.roomType.trim(),
+        pricePerNight: parseFloat(formData.pricePerNight),
+        maxOccupancy: parseInt(formData.maxOccupancy),
+        roomStatus: formData.roomStatus,
+        facilities: formData.facilities.trim(),
+      };
+
+      const existing = JSON.parse(localStorage.getItem('helloStay_rooms') || '[]');
+      existing.push(newRoom);
+      localStorage.setItem('helloStay_rooms', JSON.stringify(existing));
+
+      setFormData(INITIAL_FORM);
+      setErrors(INITIAL_ERRORS);
+      setTypeSearch('');
+      onRoomAdded(newRoom);
+      onClose();
+    }
   };
 
   const handleClose = () => {
@@ -186,8 +223,8 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
                   <BedDouble className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold">Add New Room</h2>
-                  <p className="text-indigo-200 text-sm">Configure room details below</p>
+                  <h2 className="text-lg font-bold">{isEditMode ? 'Edit Room' : 'Add New Room'}</h2>
+                  <p className="text-indigo-200 text-sm">{isEditMode ? 'Update room details below' : 'Configure room details below'}</p>
                 </div>
               </div>
               <button
@@ -378,7 +415,7 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded }) {
                   type="submit"
                   className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-md shadow-indigo-200"
                 >
-                  Add Room
+                  {isEditMode ? 'Save Changes' : 'Add Room'}
                 </button>
               </div>
             </form>

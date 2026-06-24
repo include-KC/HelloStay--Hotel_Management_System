@@ -3495,6 +3495,10 @@ Design and implement all 10 remaining frontend modules with premium UI, consiste
 - AD 71 — Reports Module with recharts
 - AD 72 — Data Export/Import System
 - AD 73 — Module localStorage Key Registry
+- AD 74 — Booking ↔ Room Status Synchronization
+- AD 75 — Role-Based Manual Room Status Overrides
+- AD 76 — App Default Route — Login-First Behavior
+- AD 77 — Room Edit Modal Reuse Pattern
 
 ### Key Outcomes
 - All 14 application modules are now fully implemented (Dashboard, Rooms, Bookings, Guests, Employees, HR & Payroll, Expenses, Inventory, Facilities, Restaurant, Reports, Settings, Profile, RegisterEmployee)
@@ -3503,3 +3507,221 @@ Design and implement all 10 remaining frontend modules with premium UI, consiste
 - Premium UI with Framer Motion animations
 - Comprehensive documentation for beginners
 - Ready for backend API integration
+
+---
+
+## Milestone 25: Bug Fixes, Room-Booking Sync & Role-Based Status
+
+**Status:** COMPLETED
+**Date:** 2026-06-24
+
+### Objective
+Fix critical bugs (login redirect, edit button), implement bidirectional room-booking status synchronization, add role-based manual status overrides, and improve the Dashboard for single-screen viewing.
+
+### Completed Tasks
+
+#### 1. App Startup — Login-First Route (AD 76)
+- Root route `/` and fallback `*` now redirect to `/login` instead of `/dashboard`
+- Every session starts at the Login page with explicit role selection
+- Consistent with future JWT authentication flow
+
+#### 2. Dashboard — Professional Occupancy Chart + Single Screen
+- Replaced BarChart with **Donut/PieChart** (recharts) for room occupancy — industry-standard for status distribution
+- Added percentage labels on chart segments
+- Added occupancy rate KPI card
+- Reduced spacing and padding throughout for single-screen fit
+- Removed redundant facilities section (already in sidebar)
+- Chart renders only non-zero segments
+- Custom tooltip and legend for professional appearance
+
+#### 3. Rooms Module — Edit Button Fixed (AD 77)
+- Edit button (`Pencil` icon) now opens `AddRoomModal` in edit mode
+- Form is pre-filled with room data (number, type, price, occupancy, facilities)
+- Title changes to "Edit Room", button to "Save Changes"
+- Uses `key` prop pattern for clean remount between add/edit modes
+- `onRoomUpdated` callback updates parent state and localStorage
+
+#### 4. Rooms Module — Bidirectional Booking-Room Sync (AD 74)
+- `Bookings.jsx` now syncs room status on every booking status change:
+  - New booking → room set to **Reserved**
+  - Checked In → room set to **Occupied**
+  - Checked Out → room set to **Cleaning**
+  - Cancelled/Deleted → room set to **Available** (if no other active bookings)
+- `syncRoomStatus()` helper updates room state and localStorage atomically
+- Checks for other active bookings before reverting to Available
+
+#### 5. Rooms Module — Role-Based Manual Status Overrides (AD 75)
+- Only **Owner** and **Manager** can manually change room status
+- Manual dropdown only shows: `Available`, `Maintenance`, `Cleaning`
+- **Employee** role sees status as read-only badge (no click handler)
+- `Occupied` and `Reserved` are never manually settable (booking-driven only)
+- Maintenance and Cleaning badges show descriptive icons (Wrench, SprayCan)
+
+#### 6. Documentation (AD 74–77)
+- Added 4 new Architecture Decisions to PROJECT_NOTES.md
+- Added Milestone 25 to PROJECT_NOTES.md
+
+### Files Modified
+- `frontend/src/routes/AppRoutes.jsx` — Default route changed to `/login`
+- `frontend/src/pages/Dashboard.jsx` — PieChart, single-screen layout
+- `frontend/src/pages/Rooms.jsx` — Edit button, role-based status, sync
+- `frontend/src/pages/Bookings.jsx` — Bidirectional room status sync
+- `frontend/src/components/modals/AddRoomModal.jsx` — Edit mode support
+- `docs/PROJECT_NOTES.md` — AD 74-77, Milestone 25
+
+### Architecture Decisions Referenced
+- AD 74 — Booking ↔ Room Status Synchronization
+- AD 75 — Role-Based Manual Room Status Overrides
+- AD 76 — App Default Route — Login-First Behavior
+- AD 77 — Room Edit Modal Reuse Pattern
+
+### Key Outcomes
+- Login is now the mandatory entry point
+- Dashboard fits in a single screen with professional donut chart
+- Edit button in Rooms module is fully functional
+- Room status automatically syncs with booking lifecycle
+- Only authorized roles can manually override room status
+- Zero lint errors across all modified files
+
+### Key Outcomes
+- All 14 application modules are now fully implemented (Dashboard, Rooms, Bookings, Guests, Employees, HR & Payroll, Expenses, Inventory, Facilities, Restaurant, Reports, Settings, Profile, RegisterEmployee)
+- Zero lint errors across all files
+- Consistent architecture across all modules
+- Premium UI with Framer Motion animations
+- Comprehensive documentation for beginners
+- Ready for backend API integration
+
+---
+
+## Architecture Decision 74:
+__Topic__:
+Booking ↔ Room Status Synchronization
+
+**Status:** Accepted
+**Date:** 2026-06-24
+
+### Context
+Room status and booking status are tightly coupled in hotel operations. When a guest checks in, the room becomes occupied. When they check out, the room needs cleaning. Without automatic synchronization, staff would need to manually update room status for every booking change — creating room for human error and data inconsistency.
+
+### Decision
+Room status is derived from booking status as the single source of truth. The Bookings module writes room status changes to `helloStay_rooms` localStorage whenever a booking status changes:
+
+| Booking Status Change | Room Status |
+|---|---|
+| New Booking Created | Reserved |
+| Status → Checked In | Occupied |
+| Status → Checked Out | Cleaning |
+| Status → Cancelled (no other active bookings) | Available |
+| Booking Deleted (active, no other bookings) | Available |
+
+### Implementation
+The `syncRoomStatus()` helper in `Bookings.jsx` updates the room's `roomStatus` field and persists to localStorage. Before reverting to Available on cancellation/deletion, the system checks for other active bookings on the same room to prevent incorrect status changes.
+
+### Consequences
+>Advantages:
+- Room status is always consistent with actual booking state
+- No manual status updates needed for standard check-in/check-out flow
+- Prevents orphaned room statuses after booking changes
+- Cancellation safely checks for other active bookings before reverting
+
+>Trade-offs:
+- Room status is a derived value, not independently managed
+- Manual overrides (Maintenance, Cleaning) require separate role-based logic
+
+---
+
+## Architecture Decision 75:
+__Topic__:
+Role-Based Manual Room Status Overrides
+
+**Status:** Accepted
+**Date:** 2026-06-24
+
+### Context
+While room status is primarily driven by bookings (Available → Reserved → Occupied → Cleaning), operational scenarios require manual intervention. A room may need maintenance (broken AC, plumbing issues) or额外 cleaning (spill, deep clean) independent of any booking. These manual overrides must be restricted to authorized roles.
+
+### Decision
+Only **Owner** and **Manager** roles can manually change room status. The manual status dropdown only exposes three options:
+- **Available** — Room is ready for occupancy
+- **Maintenance** — Room needs repair (blocks new bookings)
+- **Cleaning** — Room needs manual cleaning (blocks new bookings)
+
+**Employee** role sees room status as read-only — no status change capability.
+
+Statuses like **Occupied** and **Reserved** are never manually settable — they are exclusively driven by booking status synchronization.
+
+### Implementation
+- `Rooms.jsx` reads `helloStay_userRole` from localStorage
+- `canOverrideStatus` flag is `true` only for `owner` and `manager`
+- The status dropdown (`MANUAL_STATUS_OPTIONS`) only shows `['Available', 'Maintenance', 'Cleaning']`
+- Employee role sees a styled badge with no click handler
+
+### Consequences
+>Advantages:
+- Prevents unauthorized status changes by employees
+- Manual overrides are limited to operationally appropriate options
+- Occupied/Reserved statuses remain system-driven (no accidental manual changes)
+- Clean separation between automatic (booking-driven) and manual (role-driven) status changes
+
+>Trade-offs:
+- Employees cannot flag rooms for maintenance — must escalate to manager/owner
+- No granular permission for "can set Cleaning but not Maintenance"
+
+---
+
+## Architecture Decision 76:
+__Topic__:
+App Default Route — Login-First Behavior
+
+**Status:** Accepted
+**Date:** 2026-06-24
+
+### Context
+The application previously defaulted to the Dashboard when opening the local URL (`/`). This meant first-time users or users who hadn't logged in could potentially see the dashboard without authentication context.
+
+### Decision
+The application root (`/`) and fallback route (`*`) now redirect to `/login` instead of `/dashboard`. The Login page is the mandatory entry point for all users.
+
+### Implementation
+- `AppRoutes.jsx`: Root index route removed (was `<Navigate to="/dashboard" />`)
+- Fallback route changed: `<Navigate to="/login" replace />`
+- Login page handles role selection and navigates to `/dashboard` after sign-in
+
+### Consequences
+>Advantages:
+- Every session starts at the Login page
+- Role is explicitly set before accessing any module
+- Consistent with future JWT authentication flow
+- Prevents accidental dashboard access without proper session context
+
+>Trade-offs:
+- One additional click to reach the dashboard (acceptable for security)
+
+---
+
+## Architecture Decision 77:
+__Topic__:
+Room Edit Modal Reuse Pattern
+
+**Status:** Accepted
+**Date:** 2026-06-24
+
+### Context
+The Rooms module needed both Add and Edit functionality. Rather than creating a separate EditRoomModal component, the existing AddRoomModal was extended to support edit mode.
+
+### Decision
+`AddRoomModal.jsx` accepts an optional `editingRoom` prop:
+- When `editingRoom` is `null` → Add mode (empty form, "Add Room" button)
+- When `editingRoom` is provided → Edit mode (pre-filled form, "Save Changes" button)
+
+The `key` prop on the modal component (`key={editingRoom ? 'edit-${editingRoom.id}' : 'add'}`) forces a clean remount when switching between add/edit, ensuring form state is properly reset.
+
+### Consequences
+>Advantages:
+- Single component for both Add and Edit reduces code duplication
+- Consistent form layout and validation for both operations
+- Key-based remount prevents stale form state
+
+>Trade-offs:
+- Modal component is slightly more complex with dual-mode logic
+- Future changes to the form affect both Add and Edit flows

@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import {
   Plus, Search, BedDouble, Pencil, Trash2, ChevronUp, ChevronDown,
-  ChevronLeft, ChevronRight, Users, Filter
+  ChevronLeft, ChevronRight, Users, Filter, Wrench, SprayCan
 } from 'lucide-react';
 import clsx from 'clsx';
 import AddRoomModal from '../components/modals/AddRoomModal';
@@ -13,9 +13,10 @@ const STATUS_STYLES = {
   Occupied: 'bg-red-50 text-red-700 border-red-200',
   Cleaning: 'bg-orange-50 text-orange-700 border-orange-200',
   Reserved: 'bg-blue-50 text-blue-700 border-blue-200',
+  Maintenance: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
-const STATUS_OPTIONS = ['Available', 'Occupied', 'Cleaning', 'Reserved'];
+const MANUAL_STATUS_OPTIONS = ['Available', 'Maintenance', 'Cleaning'];
 
 const ROWS_PER_PAGE = 10;
 
@@ -26,12 +27,16 @@ export default function Rooms() {
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortConfig, setSortConfig] = useState({ key: 'roomNumber', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState(null);
   const [editingStatusId, setEditingStatusId] = useState(null);
+
+  const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+  const canOverrideStatus = userRole === 'owner' || userRole === 'manager';
 
   const currencySymbol = useMemo(() => {
     const saved = localStorage.getItem('helloStay_hotelData');
@@ -42,6 +47,15 @@ export default function Rooms() {
   const handleRoomAdded = (newRoom) => {
     setRooms(prev => [...prev, newRoom]);
     setCurrentPage(1);
+  };
+
+  const handleRoomUpdated = (updatedRoom) => {
+    setRooms(prev => prev.map(r => r.id === updatedRoom.id ? updatedRoom : r));
+  };
+
+  const handleEdit = (room) => {
+    setEditingRoom(room);
+    setIsModalOpen(true);
   };
 
   const handleDelete = (roomId) => {
@@ -135,7 +149,7 @@ export default function Rooms() {
           </div>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => { setEditingRoom(null); setIsModalOpen(true); }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors shadow-md shadow-indigo-200 flex items-center gap-2 text-sm"
         >
           <Plus className="w-4 h-4" />
@@ -162,8 +176,8 @@ export default function Rooms() {
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
               className="pl-9 pr-8 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 appearance-none cursor-pointer transition-all"
             >
-              <option value="All">All Statuses</option>
-              {STATUS_OPTIONS.map(status => (
+              <option value="All">All Status</option>
+              {Object.keys(STATUS_STYLES).map(status => (
                 <option key={status} value={status}>{status}</option>
               ))}
             </select>
@@ -185,7 +199,7 @@ export default function Rooms() {
             </p>
             {rooms.length === 0 && (
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => { setEditingRoom(null); setIsModalOpen(true); }}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors shadow-md shadow-indigo-200 flex items-center gap-2 text-sm"
               >
                 <Plus className="w-4 h-4" />
@@ -243,7 +257,7 @@ export default function Rooms() {
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        {editingStatusId === room.id ? (
+                        {canOverrideStatus && editingStatusId === room.id ? (
                           <select
                             autoFocus
                             value={room.roomStatus}
@@ -251,19 +265,22 @@ export default function Rooms() {
                             onBlur={() => setEditingStatusId(null)}
                             className="text-xs font-semibold px-2 py-1.5 rounded-lg border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                           >
-                            {STATUS_OPTIONS.map(status => (
+                            {MANUAL_STATUS_OPTIONS.map(status => (
                               <option key={status} value={status}>{status}</option>
                             ))}
                           </select>
                         ) : (
                           <button
-                            onClick={() => setEditingStatusId(room.id)}
+                            onClick={() => canOverrideStatus && setEditingStatusId(room.id)}
                             className={clsx(
-                              'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer hover:shadow-sm transition-all',
+                              'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all',
+                              canOverrideStatus ? 'cursor-pointer hover:shadow-sm' : 'cursor-default',
                               STATUS_STYLES[room.roomStatus] || STATUS_STYLES.Available
                             )}
-                            title="Click to change status"
+                            title={canOverrideStatus ? 'Click to change status' : room.roomStatus}
                           >
+                            {room.roomStatus === 'Maintenance' && <Wrench className="w-3 h-3 mr-1" />}
+                            {room.roomStatus === 'Cleaning' && <SprayCan className="w-3 h-3 mr-1" />}
                             {room.roomStatus}
                           </button>
                         )}
@@ -294,12 +311,17 @@ export default function Rooms() {
                             </div>
                           ) : (
                             <>
-                              <button className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                              <button
+                                onClick={() => handleEdit(room)}
+                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                title="Edit Room"
+                              >
                                 <Pencil className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDelete(room.id)}
                                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete Room"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -367,9 +389,12 @@ export default function Rooms() {
       </div>
 
       <AddRoomModal
+        key={editingRoom ? `edit-${editingRoom.id}` : 'add'}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false); setEditingRoom(null); }}
         onRoomAdded={handleRoomAdded}
+        editingRoom={editingRoom}
+        onRoomUpdated={handleRoomUpdated}
       />
     </motion.div>
   );

@@ -6282,3 +6282,118 @@ On 2026-06-23, `CURRENCY_SYMBOLS` was defined in `ManageFacilities.jsx` as `cons
 ✅ src/pages/Bookings.jsx     → imports from utils/
 ❌ src/pages/Bookings.jsx     → imports from another page component
 ```
+
+---
+
+## Pattern 13: Bidirectional Module Synchronization Pattern
+
+### When to Use
+When two modules (e.g., Bookings and Rooms) share data through a common localStorage key and changes in one module must reflect in the other.
+
+### Structure
+```
+Module A (Bookings)
+├── Reads from shared key (helloStay_rooms)
+├── Writes to shared key via sync helper
+└── Updates own state + localStorage atomically
+
+Module B (Rooms)
+├── Reads from same shared key
+├── Provides manual override (role-based)
+└── Writes to same key + updates state
+```
+
+### Implementation
+```jsx
+// In Bookings.jsx — sync helper
+const syncRoomStatus = (roomId, newRoomStatus) => {
+  setRooms(prev => {
+    const updated = prev.map(r =>
+      r.id === roomId ? { ...r, roomStatus: newRoomStatus } : r
+    );
+    localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
+    return updated;
+  });
+};
+```
+
+### Key Rules
+1. Both modules must read the same localStorage key on mount
+2. Both modules must update localStorage AND React state together
+3. Check for conflicts before overwriting (e.g., other active bookings)
+4. Document shared keys in a registry (AD 73)
+
+---
+
+## Pattern 14: Role-Based UI Restriction Pattern
+
+### When to Use
+When different user roles should see different levels of interactivity in the same module.
+
+### Structure
+```jsx
+const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+const canEdit = userRole === 'owner' || userRole === 'manager';
+
+// Conditional rendering
+{canEdit ? (
+  <InteractiveComponent />
+) : (
+  <ReadOnlyDisplay />
+)}
+```
+
+### Implementation
+```jsx
+const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+const canOverrideStatus = userRole === 'owner' || userRole === 'manager';
+
+{canOverrideStatus && editingStatusId === room.id ? (
+  <select onChange={(e) => handleStatusChange(room.id, e.target.value)}>
+    <option value="Available">Available</option>
+    <option value="Maintenance">Maintenance</option>
+  </select>
+) : (
+  <span className="badge">{room.roomStatus}</span>
+)}
+```
+
+### Key Rules
+1. Check role at UI level AND at API level (defense in depth)
+2. Use a single source of truth for role (localStorage in V1)
+3. Restrict both visibility AND interactivity
+4. Don't rely solely on hiding buttons — validate on the server too
+
+---
+
+## Pattern 15: Key-Based Component Remount Pattern
+
+### When to Use
+When a modal or form component needs to display different initial data (e.g., Add vs Edit mode) and must have clean state each time.
+
+### Structure
+```jsx
+// Parent component
+<ModalComponent
+  key={entity ? `edit-${entity.id}` : 'add'}
+  isOpen={isOpen}
+  entity={entity}
+/>
+
+// Modal component — useState initializer handles the rest
+const [formData, setFormData] = useState(() => {
+  if (entity) {
+    return { field: entity.field };
+  }
+  return INITIAL_FORM;
+});
+```
+
+### Key Rules
+1. Include entity ID in key to prevent same-ID remount skipping
+2. Use useState initializer (not useEffect) for initial data
+3. Key change forces full remount — all state resets cleanly
+4. Avoids lint issues with setState in effects
+
+### HelloStay Usage
+`Rooms.jsx` uses `key={editingRoom ? \`edit-${editingRoom.id}\` : 'add'}` on `AddRoomModal` to cleanly switch between Add and Edit modes.
