@@ -1,9 +1,22 @@
-﻿import { useState } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Settings as SettingsIcon, Save, Building, Database, Bell, Palette, Download, Upload, Trash2, AlertTriangle } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Building, Database, Bell, Palette, Download, Upload, Trash2, AlertTriangle, Clock, Search, CheckCircle2 } from 'lucide-react';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
+import clsx from 'clsx';
 
 const COUNTRIES = ['India', 'United States', 'United Kingdom', 'UAE', 'Saudi Arabia', 'Singapore', 'Thailand', 'Malaysia', 'Australia', 'Canada', 'Germany', 'France', 'Japan', 'South Korea', 'Other'];
+
+const CHECKOUT_TIMES = [
+  { time: '10:00', label: '10:00 AM', description: 'Early / Budget (Common in India)' },
+  { time: '10:30', label: '10:30 AM', description: 'Early checkout' },
+  { time: '11:00', label: '11:00 AM', description: 'Industry Standard (Most Common Worldwide)' },
+  { time: '11:30', label: '11:30 AM', description: 'Slightly extended standard' },
+  { time: '12:00', label: '12:00 PM', description: 'Noon Standard (Hilton, IHG)' },
+  { time: '12:30', label: '12:30 PM', description: 'Mid-day checkout' },
+  { time: '13:00', label: '1:00 PM', description: 'Late Standard (Boutique Hotels)' },
+  { time: '14:00', label: '2:00 PM', description: 'Extended (Luxury Properties)' },
+  { time: 'custom', label: 'Custom Time', description: 'Set your own checkout time' },
+];
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('hotel');
@@ -14,6 +27,21 @@ export default function Settings() {
   });
 
   const [saved, setSaved] = useState(false);
+  const [checkoutSearch, setCheckoutSearch] = useState('');
+  const [showCheckoutDropdown, setShowCheckoutDropdown] = useState(false);
+
+  const filteredCheckoutTimes = useMemo(() => {
+    if (!checkoutSearch.trim()) return CHECKOUT_TIMES;
+    const q = checkoutSearch.toLowerCase();
+    return CHECKOUT_TIMES.filter(ct =>
+      ct.label.toLowerCase().includes(q) ||
+      ct.description.toLowerCase().includes(q)
+    );
+  }, [checkoutSearch]);
+
+  const effectiveCheckoutTime = hotelData.checkoutTime || '11:00';
+  const effectiveCheckoutLabel = hotelData.checkoutTimeLabel || '11:00 AM';
+  const effectiveCustomTime = hotelData.customCheckoutTime || '';
 
   const handleSave = () => {
     localStorage.setItem('helloStay_hotelData', JSON.stringify(hotelData));
@@ -142,6 +170,232 @@ export default function Settings() {
               <textarea rows="2" value={hotelData.address || ''} onChange={(e) => setHotelData(prev => ({ ...prev, address: e.target.value }))}
                 className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 text-sm"
                 placeholder="Full address..." />
+            </div>
+          </div>
+
+          {/* Checkout Time Settings */}
+          <div className="pt-6 border-t border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-blue-600" /> Checkout Configuration
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Standard Checkout Time</label>
+                <div className="relative">
+                  <div
+                    onClick={() => setShowCheckoutDropdown(!showCheckoutDropdown)}
+                    className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-sm cursor-pointer hover:border-blue-200 transition-all flex items-center justify-between"
+                  >
+                    <span className="text-gray-800">
+                      {effectiveCheckoutTime === 'custom'
+                        ? (effectiveCustomTime || 'Select custom time...')
+                        : effectiveCheckoutLabel}
+                    </span>
+                    <svg className={`w-4 h-4 text-gray-400 transition-transform ${showCheckoutDropdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+
+                  {showCheckoutDropdown && (
+                    <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg">
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={checkoutSearch}
+                            onChange={(e) => setCheckoutSearch(e.target.value)}
+                            className="pl-9 w-full p-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Search checkout times..."
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-56 overflow-y-auto">
+                        {filteredCheckoutTimes.map((ct) => (
+                          <button
+                            key={ct.time}
+                            type="button"
+                            onClick={() => {
+                              setHotelData(prev => ({
+                                ...prev,
+                                checkoutTime: ct.time,
+                                checkoutTimeLabel: ct.label,
+                              }));
+                              setShowCheckoutDropdown(false);
+                              setCheckoutSearch('');
+                            }}
+                            className={clsx(
+                              "w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0",
+                              effectiveCheckoutTime === ct.time && "bg-blue-50"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-800">{ct.label}</p>
+                                <p className="text-xs text-gray-500">{ct.description}</p>
+                              </div>
+                              {effectiveCheckoutTime === ct.time && (
+                                <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {effectiveCheckoutTime === 'custom' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Custom Checkout Time</label>
+                  <input
+                    type="time"
+                    value={effectiveCustomTime}
+                    onChange={(e) => setHotelData(prev => ({ ...prev, customCheckoutTime: e.target.value }))}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Late Checkout Fee */}
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Charge for late checkout</p>
+                    <p className="text-xs text-gray-500">Apply extra charges when guests stay past the standard checkout time</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHotelData(prev => ({ ...prev, chargeForLateCheckout: !prev.chargeForLateCheckout }))}
+                    className={clsx(
+                      "relative w-11 h-6 rounded-full transition-colors",
+                      hotelData.chargeForLateCheckout ? "bg-blue-600" : "bg-gray-300"
+                    )}
+                  >
+                    <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-transform"
+                      style={{ transform: hotelData.chargeForLateCheckout ? 'translateX(22px)' : 'translateX(2px)' }} />
+                  </button>
+                </div>
+
+                {hotelData.chargeForLateCheckout && (
+                  <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">Fee Type</label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setHotelData(prev => ({ ...prev, lateCheckoutFeeType: 'flat' }))}
+                          className={clsx(
+                            "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all",
+                            (hotelData.lateCheckoutFeeType || 'flat') === 'flat'
+                              ? "bg-blue-50 border-blue-200 text-blue-700"
+                              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                          )}
+                        >
+                          Flat Fee
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHotelData(prev => ({ ...prev, lateCheckoutFeeType: 'hourly' }))}
+                          className={clsx(
+                            "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all",
+                            hotelData.lateCheckoutFeeType === 'hourly'
+                              ? "bg-blue-50 border-blue-200 text-blue-700"
+                              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                          )}
+                        >
+                          Per Hour
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHotelData(prev => ({ ...prev, lateCheckoutFeeType: 'room_rate' }))}
+                          className={clsx(
+                            "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all",
+                            hotelData.lateCheckoutFeeType === 'room_rate'
+                              ? "bg-blue-50 border-blue-200 text-blue-700"
+                              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                          )}
+                        >
+                          Room Rate
+                        </button>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                        Fee Amount {hotelData.lateCheckoutFeeType === 'hourly' ? '(per hour)' : hotelData.lateCheckoutFeeType === 'room_rate' ? '(uses room rate)' : ''}
+                      </label>
+                      {hotelData.lateCheckoutFeeType === 'room_rate' ? (
+                        <div className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 italic">
+                          Will charge the room's nightly rate at checkout
+                        </div>
+                      ) : (
+                        <input
+                          type="number"
+                          min="0"
+                          value={hotelData.lateCheckoutFee || ''}
+                          onChange={(e) => setHotelData(prev => ({ ...prev, lateCheckoutFee: Number(e.target.value) }))}
+                          className="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          placeholder="0"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Checkout Window */}
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Recently Checked Out (days)</label>
+                <p className="text-xs text-gray-500 mb-2">Number of days to show in "Recently Checked Out" bookings card</p>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={hotelData.recentCheckoutDays || 7}
+                  onChange={(e) => setHotelData(prev => ({ ...prev, recentCheckoutDays: Number(e.target.value) || 7 }))}
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"
+                />
+              </div>
+
+              {/* Checkout Duration */}
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Checkout Duration</label>
+                <p className="text-xs text-gray-500 mb-3">Default duration for bookings. Can be overridden per booking.</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setHotelData(prev => ({ ...prev, checkoutDuration: '12hr' }))}
+                    className={clsx(
+                      "flex-1 py-3 px-4 rounded-xl text-sm font-semibold border-2 transition-all",
+                      (hotelData.checkoutDuration || '24hr') === '12hr'
+                        ? "bg-blue-50 border-blue-400 text-blue-700 shadow-sm"
+                        : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
+                    )}
+                  >
+                    <div className="text-center">
+                      <div className="font-bold">12 Hours</div>
+                      <div className="text-[10px] opacity-70 mt-0.5">Half-day stay</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHotelData(prev => ({ ...prev, checkoutDuration: '24hr' }))}
+                    className={clsx(
+                      "flex-1 py-3 px-4 rounded-xl text-sm font-semibold border-2 transition-all",
+                      (hotelData.checkoutDuration || '24hr') === '24hr'
+                        ? "bg-blue-50 border-blue-400 text-blue-700 shadow-sm"
+                        : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
+                    )}
+                  >
+                    <div className="text-center">
+                      <div className="font-bold">24 Hours</div>
+                      <div className="text-[10px] opacity-70 mt-0.5">Full-day stay</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex justify-end">

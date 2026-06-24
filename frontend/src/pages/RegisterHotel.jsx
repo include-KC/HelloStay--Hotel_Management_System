@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Hotel, ArrowRight, CheckCircle2, Search, Globe, DollarSign } from 'lucide-react';
+import { Hotel, ArrowRight, CheckCircle2, Search, Globe, DollarSign, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 
@@ -102,15 +102,35 @@ const FACILITIES_LIST = [
   "Tiffin Service", "Tea / Coffee", "Daily Housekeeping", "Wake-up Service",
 ];
 
+const CHECKOUT_TIMES = [
+  { time: '10:00', label: '10:00 AM', description: 'Early / Budget (Common in India)' },
+  { time: '10:30', label: '10:30 AM', description: 'Early checkout' },
+  { time: '11:00', label: '11:00 AM', description: 'Industry Standard (Most Common Worldwide)' },
+  { time: '11:30', label: '11:30 AM', description: 'Slightly extended standard' },
+  { time: '12:00', label: '12:00 PM', description: 'Noon Standard (Hilton, IHG)' },
+  { time: '12:30', label: '12:30 PM', description: 'Mid-day checkout' },
+  { time: '13:00', label: '1:00 PM', description: 'Late Standard (Boutique Hotels)' },
+  { time: '14:00', label: '2:00 PM', description: 'Extended (Luxury Properties)' },
+  { time: 'custom', label: 'Custom Time', description: 'Set your own checkout time' },
+];
+
 export default function RegisterHotel() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [checkoutSearch, setCheckoutSearch] = useState('');
+  const [showCheckoutDropdown, setShowCheckoutDropdown] = useState(false);
   const [formData, setFormData] = useState({
     hotelName: '',
     totalRooms: '',
     country: '',
     currency: '',
-    facilities: []
+    facilities: [],
+    checkoutTime: '11:00',
+    checkoutTimeLabel: '11:00 AM',
+    customCheckoutTime: '',
+    chargeForLateCheckout: true,
+    lateCheckoutFeeType: 'flat',
+    lateCheckoutFee: '',
   });
 
   const toggleFacility = (facility) => {
@@ -132,12 +152,22 @@ export default function RegisterHotel() {
   };
 
   const handleSaveAndContinue = () => {
+    const effectiveCheckoutTime = formData.checkoutTime === 'custom' ? formData.customCheckoutTime : formData.checkoutTime;
+    const effectiveLabel = formData.checkoutTime === 'custom'
+      ? `${formData.customCheckoutTime} (Custom)`
+      : CHECKOUT_TIMES.find(t => t.time === formData.checkoutTime)?.label || formData.checkoutTimeLabel;
+
     localStorage.setItem('helloStay_hotelData', JSON.stringify({
       hotelName: formData.hotelName || 'My Awesome Hotel',
       totalRooms: formData.totalRooms || '50',
       country: formData.country,
       currency: formData.currency || 'INR',
-      facilities: formData.facilities
+      facilities: formData.facilities,
+      checkoutTime: effectiveCheckoutTime || '11:00',
+      checkoutTimeLabel: effectiveLabel || '11:00 AM',
+      chargeForLateCheckout: formData.chargeForLateCheckout,
+      lateCheckoutFeeType: formData.lateCheckoutFeeType,
+      lateCheckoutFee: parseFloat(formData.lateCheckoutFee) || 0,
     }));
 
     navigate('/dashboard');
@@ -148,6 +178,15 @@ export default function RegisterHotel() {
       facility.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [searchQuery]);
+
+  const filteredCheckoutTimes = useMemo(() => {
+    if (!checkoutSearch.trim()) return CHECKOUT_TIMES;
+    const q = checkoutSearch.toLowerCase();
+    return CHECKOUT_TIMES.filter(ct =>
+      ct.label.toLowerCase().includes(q) ||
+      ct.description.toLowerCase().includes(q)
+    );
+  }, [checkoutSearch]);
 
   const selectedCountry = COUNTRIES.find(c => c.code === formData.country);
   const selectedCurrency = CURRENCY_OPTIONS.find(c => c.code === formData.currency);
@@ -308,6 +347,164 @@ export default function RegisterHotel() {
                     </p>
                   </div>
                 )}
+              </div>
+
+              <div className="pt-8 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      Standard Checkout Time
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">Industry standard is 11:00 AM. This determines when guests are expected to check out.</p>
+                  </div>
+                </div>
+
+                <div className="relative" ref={(el) => { if (el) el.dataset.checkoutDropdown = 'true'; }}>
+                  <div
+                    onClick={() => setShowCheckoutDropdown(!showCheckoutDropdown)}
+                    className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-sm cursor-pointer hover:border-indigo-200 transition-all flex items-center justify-between"
+                  >
+                    <span className={formData.checkoutTime ? 'text-gray-800' : 'text-gray-400'}>
+                      {formData.checkoutTime === 'custom'
+                        ? (formData.customCheckoutTime || 'Select custom time...')
+                        : (formData.checkoutTimeLabel || 'Select checkout time...')}
+                    </span>
+                    <svg className={`w-4 h-4 text-gray-400 transition-transform ${showCheckoutDropdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+
+                  {showCheckoutDropdown && (
+                    <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg">
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={checkoutSearch}
+                            onChange={(e) => setCheckoutSearch(e.target.value)}
+                            className="pl-9 w-full p-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Search checkout times..."
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-56 overflow-y-auto">
+                        {filteredCheckoutTimes.map((ct) => (
+                          <button
+                            key={ct.time}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                checkoutTime: ct.time,
+                                checkoutTimeLabel: ct.label,
+                              }));
+                              setShowCheckoutDropdown(false);
+                              setCheckoutSearch('');
+                            }}
+                            className={clsx(
+                              "w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors border-b border-gray-50 last:border-0",
+                              formData.checkoutTime === ct.time && "bg-indigo-50"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-800">{ct.label}</p>
+                                <p className="text-xs text-gray-500">{ct.description}</p>
+                              </div>
+                              {formData.checkoutTime === ct.time && (
+                                <CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {formData.checkoutTime === 'custom' && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Custom Checkout Time</label>
+                    <input
+                      type="time"
+                      value={formData.customCheckoutTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customCheckoutTime: e.target.value }))}
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 text-sm"
+                    />
+                  </div>
+                )}
+
+                {/* Late Checkout Fee */}
+                <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Charge for late checkout</p>
+                      <p className="text-xs text-gray-500">Apply extra charges when guests stay past the standard checkout time</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, chargeForLateCheckout: !prev.chargeForLateCheckout }))}
+                      className={clsx(
+                        "relative w-11 h-6 rounded-full transition-colors",
+                        formData.chargeForLateCheckout ? "bg-indigo-600" : "bg-gray-300"
+                      )}
+                    >
+                      <div className={clsx(
+                        "w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-transform",
+                        formData.chargeForLateCheckout ? "translate-x-5.5 left-0.5" : "left-0.5"
+                      )} style={{ transform: formData.chargeForLateCheckout ? 'translateX(22px)' : 'translateX(2px)' }} />
+                    </button>
+                  </div>
+
+                  {formData.chargeForLateCheckout && (
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1.5">Fee Type</label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, lateCheckoutFeeType: 'flat' }))}
+                            className={clsx(
+                              "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all",
+                              formData.lateCheckoutFeeType === 'flat'
+                                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                            )}
+                          >
+                            Flat Fee
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, lateCheckoutFeeType: 'hourly' }))}
+                            className={clsx(
+                              "flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all",
+                              formData.lateCheckoutFeeType === 'hourly'
+                                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                            )}
+                          >
+                            Per Hour
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                          Fee Amount {formData.lateCheckoutFeeType === 'hourly' ? '(per hour)' : ''}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.lateCheckoutFee}
+                          onChange={(e) => setFormData(prev => ({ ...prev, lateCheckoutFee: e.target.value }))}
+                          className="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="pt-8 border-t border-gray-100 flex justify-end">

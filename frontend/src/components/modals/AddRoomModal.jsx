@@ -29,9 +29,11 @@ const INITIAL_FORM = {
   roomNumber: '',
   roomType: '',
   pricePerNight: '',
+  pricingModel: 'per_night',
   maxOccupancy: '2',
   roomStatus: 'Available',
   facilities: '',
+  freeServices: '',
 };
 
 const INITIAL_ERRORS = {
@@ -50,9 +52,11 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom
         roomNumber: editingRoom.roomNumber,
         roomType: editingRoom.roomType,
         pricePerNight: editingRoom.pricePerNight,
+        pricingModel: editingRoom.pricingModel || 'per_night',
         maxOccupancy: String(editingRoom.maxOccupancy),
         roomStatus: editingRoom.roomStatus,
         facilities: editingRoom.facilities || '',
+        freeServices: editingRoom.freeServices || '',
       };
     }
     return INITIAL_FORM;
@@ -154,8 +158,10 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom
         roomNumber: formData.roomNumber.trim(),
         roomType: formData.roomType.trim(),
         pricePerNight: parseFloat(formData.pricePerNight),
+        pricingModel: formData.pricingModel,
         maxOccupancy: parseInt(formData.maxOccupancy),
         facilities: formData.facilities.trim(),
+        freeServices: formData.freeServices.trim(),
       };
 
       const existing = JSON.parse(localStorage.getItem('helloStay_rooms') || '[]');
@@ -173,9 +179,11 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom
         roomNumber: formData.roomNumber.trim(),
         roomType: formData.roomType.trim(),
         pricePerNight: parseFloat(formData.pricePerNight),
+        pricingModel: formData.pricingModel,
         maxOccupancy: parseInt(formData.maxOccupancy),
         roomStatus: formData.roomStatus,
         facilities: formData.facilities.trim(),
+        freeServices: formData.freeServices.trim(),
       };
 
       const existing = JSON.parse(localStorage.getItem('helloStay_rooms') || '[]');
@@ -343,10 +351,10 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price Per Night ({currencySymbol}) <span className="text-red-500">*</span>
+                    Price ({currencySymbol}) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500">
@@ -368,6 +376,20 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom
                   {errors.pricePerNight && (
                     <p className="text-xs text-red-500 mt-1">{errors.pricePerNight}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pricing Model <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.pricingModel}
+                    onChange={(e) => handleChange('pricingModel', e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm"
+                  >
+                    <option value="per_night">Per Night</option>
+                    <option value="per_person">Per Person</option>
+                  </select>
                 </div>
 
                 <div>
@@ -400,6 +422,17 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom
                   onChange={(e) => handleChange('facilities', e.target.value)}
                   className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm"
                   placeholder="e.g. AC, Mini Bar, Lake View (comma separated)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Free Services</label>
+                <input
+                  type="text"
+                  value={formData.freeServices}
+                  onChange={(e) => handleChange('freeServices', e.target.value)}
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 transition-all text-sm"
+                  placeholder="e.g. Free WiFi, Free Breakfast, Free Parking (comma separated)"
                 />
               </div>
 

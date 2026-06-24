@@ -2,10 +2,12 @@
 import { motion } from 'framer-motion';
 import {
   Plus, Search, BedDouble, Pencil, Trash2, ChevronUp, ChevronDown,
-  ChevronLeft, ChevronRight, Users, Filter, Wrench, SprayCan
+  ChevronLeft, ChevronRight, Users, Filter, Activity, Wrench, SprayCan,
+  CalendarClock
 } from 'lucide-react';
 import clsx from 'clsx';
 import AddRoomModal from '../components/modals/AddRoomModal';
+import RoomStatusSidebar from '../components/modals/RoomStatusSidebar';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
 
 const STATUS_STYLES = {
@@ -26,14 +28,25 @@ export default function Rooms() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [bookings, setBookings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('helloStay_bookings');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [facilityFilter, setFacilityFilter] = useState('All');
+  const [freeServiceFilter, setFreeServiceFilter] = useState('All');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'roomNumber', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState(null);
   const [editingStatusId, setEditingStatusId] = useState(null);
+  const [statusSidebarRoom, setStatusSidebarRoom] = useState(null);
 
   const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
   const canOverrideStatus = userRole === 'owner' || userRole === 'manager';
@@ -43,6 +56,32 @@ export default function Rooms() {
     const data = saved ? JSON.parse(saved) : {};
     return CURRENCY_SYMBOLS[data.currency] || '₹';
   }, []);
+
+  const allFacilities = useMemo(() => {
+    const set = new Set();
+    rooms.forEach(r => {
+      if (r.facilities) {
+        r.facilities.split(',').forEach(f => {
+          const trimmed = f.trim();
+          if (trimmed) set.add(trimmed);
+        });
+      }
+    });
+    return Array.from(set).sort();
+  }, [rooms]);
+
+  const allFreeServices = useMemo(() => {
+    const set = new Set();
+    rooms.forEach(r => {
+      if (r.freeServices) {
+        r.freeServices.split(',').forEach(s => {
+          const trimmed = s.trim();
+          if (trimmed) set.add(trimmed);
+        });
+      }
+    });
+    return Array.from(set).sort();
+  }, [rooms]);
 
   const handleRoomAdded = (newRoom) => {
     setRooms(prev => [...prev, newRoom]);
@@ -80,6 +119,7 @@ export default function Rooms() {
     setRooms(updated);
     localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
     setEditingStatusId(null);
+    setStatusSidebarRoom(prev => prev && prev.id === roomId ? { ...prev, roomStatus: newStatus } : prev);
   };
 
   const handleSort = (key) => {
@@ -96,6 +136,54 @@ export default function Rooms() {
       : <ChevronDown className="w-3.5 h-3.5" />;
   };
 
+  const getNextAvailableInfo = (room) => {
+    const now = new Date();
+    const upcoming = bookings
+      .filter(b => {
+        if (b.status === 'Cancelled') return false;
+        if (b.status === 'Checked Out') {
+          const checkoutDate = b.actualCheckoutDate
+            ? new Date(b.actualCheckoutDate)
+            : b.checkoutDate
+              ? new Date(b.checkoutDate)
+              : null;
+          return checkoutDate && checkoutDate > now;
+        }
+        if (b.status === 'Checked In') {
+          const checkoutDate = b.checkoutDate ? new Date(b.checkoutDate) : null;
+          return checkoutDate && checkoutDate > now;
+        }
+        if (b.status === 'Reservation') {
+          const checkinDate = b.checkinDate ? new Date(b.checkinDate) : null;
+          return checkinDate && checkinDate > now;
+        }
+        return false;
+      })
+      .filter(b => b.roomNumber === room.roomNumber || b.roomId === room.id)
+      .sort((a, b) => {
+        const dateA = a.status === 'Checked In' || a.status === 'Checked Out'
+          ? new Date(a.actualCheckoutDate || a.checkoutDate)
+          : new Date(a.checkinDate);
+        const dateB = b.status === 'Checked In' || b.status === 'Checked Out'
+          ? new Date(b.actualCheckoutDate || b.checkoutDate)
+          : new Date(b.checkinDate);
+        return dateA - dateB;
+      });
+
+    if (upcoming.length === 0) return null;
+
+    const next = upcoming[0];
+    if (next.status === 'Reservation') {
+      return { label: 'Free till', date: new Date(next.checkinDate) };
+    }
+    if (next.status === 'Checked In' || next.status === 'Checked Out') {
+      return { label: 'Free till', date: new Date(next.actualCheckoutDate || next.checkoutDate) };
+    }
+    return null;
+  };
+
+  const hasActiveFilters = searchQuery || facilityFilter !== 'All' || freeServiceFilter !== 'All' || priceMin || priceMax;
+
   const filteredRooms = useMemo(() => {
     let result = [...rooms];
 
@@ -107,8 +195,23 @@ export default function Rooms() {
       );
     }
 
-    if (statusFilter !== 'All') {
-      result = result.filter(r => r.roomStatus === statusFilter);
+    if (facilityFilter !== 'All') {
+      result = result.filter(r =>
+        r.facilities && r.facilities.split(',').some(f => f.trim() === facilityFilter)
+      );
+    }
+
+    if (freeServiceFilter !== 'All') {
+      result = result.filter(r =>
+        r.freeServices && r.freeServices.split(',').some(s => s.trim() === freeServiceFilter)
+      );
+    }
+
+    if (priceMin) {
+      result = result.filter(r => r.pricePerNight >= parseFloat(priceMin));
+    }
+    if (priceMax) {
+      result = result.filter(r => r.pricePerNight <= parseFloat(priceMax));
     }
 
     result.sort((a, b) => {
@@ -124,13 +227,22 @@ export default function Rooms() {
     });
 
     return result;
-  }, [rooms, searchQuery, statusFilter, sortConfig]);
+  }, [rooms, searchQuery, facilityFilter, freeServiceFilter, priceMin, priceMax, sortConfig]);
 
   const totalPages = Math.ceil(filteredRooms.length / ROWS_PER_PAGE);
   const paginatedRooms = filteredRooms.slice(
     (currentPage - 1) * ROWS_PER_PAGE,
     currentPage * ROWS_PER_PAGE
   );
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setFacilityFilter('All');
+    setFreeServiceFilter('All');
+    setPriceMin('');
+    setPriceMax('');
+    setCurrentPage(1);
+  };
 
   return (
     <motion.div
@@ -158,6 +270,7 @@ export default function Rooms() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        {/* Search + Quick Filters Row */}
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -172,16 +285,71 @@ export default function Rooms() {
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+              value={facilityFilter}
+              onChange={(e) => { setFacilityFilter(e.target.value); setCurrentPage(1); }}
               className="pl-9 pr-8 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 appearance-none cursor-pointer transition-all"
             >
-              <option value="All">All Status</option>
-              {Object.keys(STATUS_STYLES).map(status => (
-                <option key={status} value={status}>{status}</option>
+              <option value="All">All Facilities</option>
+              {allFacilities.map(f => (
+                <option key={f} value={f}>{f}</option>
               ))}
             </select>
           </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <select
+              value={freeServiceFilter}
+              onChange={(e) => { setFreeServiceFilter(e.target.value); setCurrentPage(1); }}
+              className="pl-9 pr-8 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 appearance-none cursor-pointer transition-all"
+            >
+              <option value="All">All Free Services</option>
+              {allFreeServices.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Price Range + Clear Filters Row */}
+        <div className="px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-500 whitespace-nowrap">Price Range:</span>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">{currencySymbol}</span>
+              <input
+                type="number"
+                min="0"
+                value={priceMin}
+                onChange={(e) => { setPriceMin(e.target.value); setCurrentPage(1); }}
+                className="pl-7 pr-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 w-28 transition-all"
+                placeholder="Min"
+              />
+            </div>
+            <span className="text-gray-400 text-xs">to</span>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">{currencySymbol}</span>
+              <input
+                type="number"
+                min="0"
+                value={priceMax}
+                onChange={(e) => { setPriceMax(e.target.value); setCurrentPage(1); }}
+                className="pl-7 pr-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 w-28 transition-all"
+                placeholder="Max"
+              />
+            </div>
+          </div>
+          <div className="flex-1" />
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium px-3 py-2 hover:bg-indigo-50 rounded-lg transition-colors"
+            >
+              Clear All Filters
+            </button>
+          )}
+          <span className="text-sm text-gray-500">
+            {filteredRooms.length} room{filteredRooms.length !== 1 ? 's' : ''} found
+          </span>
         </div>
 
         {paginatedRooms.length === 0 ? (
@@ -216,7 +384,7 @@ export default function Rooms() {
                     {[
                       { key: 'roomNumber', label: 'Room No.' },
                       { key: 'roomType', label: 'Type' },
-                      { key: 'pricePerNight', label: 'Price/Night' },
+                      { key: 'pricePerNight', label: 'Price' },
                       { key: 'roomStatus', label: 'Status' },
                       { key: 'maxOccupancy', label: 'Occupancy' },
                     ].map(col => (
@@ -252,9 +420,14 @@ export default function Rooms() {
                         <span className="text-sm text-gray-600">{room.roomType}</span>
                       </td>
                       <td className="px-5 py-4">
-                        <span className="text-sm font-medium text-gray-800">
-                          {currencySymbol}{room.pricePerNight.toLocaleString('en-IN')}
-                        </span>
+                        <div>
+                          <span className="text-sm font-medium text-gray-800">
+                            {currencySymbol}{room.pricePerNight.toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-gray-400 ml-1">
+                            {room.pricingModel === 'per_person' ? '/person' : '/night'}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         {canOverrideStatus && editingStatusId === room.id ? (
@@ -270,19 +443,29 @@ export default function Rooms() {
                             ))}
                           </select>
                         ) : (
-                          <button
-                            onClick={() => canOverrideStatus && setEditingStatusId(room.id)}
-                            className={clsx(
-                              'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all',
-                              canOverrideStatus ? 'cursor-pointer hover:shadow-sm' : 'cursor-default',
-                              STATUS_STYLES[room.roomStatus] || STATUS_STYLES.Available
-                            )}
-                            title={canOverrideStatus ? 'Click to change status' : room.roomStatus}
-                          >
-                            {room.roomStatus === 'Maintenance' && <Wrench className="w-3 h-3 mr-1" />}
-                            {room.roomStatus === 'Cleaning' && <SprayCan className="w-3 h-3 mr-1" />}
-                            {room.roomStatus}
-                          </button>
+                          (() => {
+                            const nextInfo = getNextAvailableInfo(room);
+                            return (
+                              <button
+                                onClick={() => canOverrideStatus && setEditingStatusId(room.id)}
+                                className={clsx(
+                                  'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all',
+                                  canOverrideStatus ? 'cursor-pointer hover:shadow-sm' : 'cursor-default',
+                                  STATUS_STYLES[room.roomStatus] || STATUS_STYLES.Available
+                                )}
+                                title={canOverrideStatus ? 'Click to change status' : room.roomStatus}
+                              >
+                                {room.roomStatus === 'Maintenance' && <Wrench className="w-3 h-3 mr-1" />}
+                                {room.roomStatus === 'Cleaning' && <SprayCan className="w-3 h-3 mr-1" />}
+                                {room.roomStatus}
+                                {nextInfo && (
+                                  <span className="text-[10px] opacity-70 ml-1.5 normal-case font-normal">
+                                    till {nextInfo.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })()
                         )}
                       </td>
                       <td className="px-5 py-4">
@@ -311,6 +494,13 @@ export default function Rooms() {
                             </div>
                           ) : (
                             <>
+                              <button
+                                onClick={() => setStatusSidebarRoom(room)}
+                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Check Status"
+                              >
+                                <Activity className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => handleEdit(room)}
                                 className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
@@ -395,6 +585,15 @@ export default function Rooms() {
         onRoomAdded={handleRoomAdded}
         editingRoom={editingRoom}
         onRoomUpdated={handleRoomUpdated}
+      />
+
+      <RoomStatusSidebar
+        isOpen={!!statusSidebarRoom}
+        onClose={() => setStatusSidebarRoom(null)}
+        room={statusSidebarRoom}
+        bookings={bookings}
+        currencySymbol={currencySymbol}
+        onStatusChange={handleStatusChange}
       />
     </motion.div>
   );

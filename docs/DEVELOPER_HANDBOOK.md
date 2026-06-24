@@ -6397,3 +6397,81 @@ const [formData, setFormData] = useState(() => {
 
 ### HelloStay Usage
 `Rooms.jsx` uses `key={editingRoom ? \`edit-${editingRoom.id}\` : 'add'}` on `AddRoomModal` to cleanly switch between Add and Edit modes.
+
+---
+
+## Pattern 16: Chart-Panel Cross-Highlight Pattern
+
+### When to Use
+When the same data is displayed in two views (e.g., a Recharts chart + a status panel) and hovering one view should visually highlight the corresponding item in the other view.
+
+### Structure
+```jsx
+const [hoveredKey, setHoveredKey] = useState(null);
+
+// --- Chart segment ---
+<Pie
+  onMouseEnter={(_, index) => setHoveredKey(data[index]?.name)}
+  onMouseLeave={() => setHoveredKey(null)}
+>
+  {data.map((entry) => (
+    <Cell
+      key={entry.name}
+      fillOpacity={hoveredKey === null || hoveredKey === entry.name ? 1 : 0.3}
+    />
+  ))}
+</Pie>
+
+// --- Panel row ---
+{data.map((entry) => {
+  const isActive = hoveredKey === null || hoveredKey === entry.name;
+  return (
+    <div
+      key={entry.name}
+      onMouseEnter={() => setHoveredKey(entry.name)}
+      onMouseLeave={() => setHoveredKey(null)}
+      style={{
+        opacity: isActive ? 1 : 0.4,
+        backgroundColor: hoveredKey && isActive ? `${color}0D` : 'transparent',
+      }}
+    />
+  );
+})}
+```
+
+### Key Rules
+1. **Single state variable** — One `hoveredKey` state controls both chart and panel; never use two separate state variables
+2. **Null convention** — `hoveredKey === null` means "nothing hovered" → everything full brightness. Always handle the null case in the ternary
+3. **Dimming mechanism** — Use `fillOpacity` for SVG elements, CSS `opacity` for HTML elements. Do NOT use `display: none` or `visibility: hidden` (causes layout shift)
+4. **Subtle background tint** — Adding a tinted background (e.g., `color + '0D'` for ~5% opacity) on the active row improves feedback without being distracting
+5. **CSS transitions over animation libraries** — Use Tailwind `duration-200`/`duration-300` for hover effects; Framer Motion is overkill for simple opacity changes
+6. **Empty state** — Always guard with `data.length > 0` check and render a fallback message when no data exists
+
+### Implementation
+```jsx
+// 1. Single state
+const [hoveredStatus, setHoveredStatus] = useState(null);
+
+// 2. Chart event handlers (on Pie or Cell)
+onMouseEnter={(_, index) => setHoveredStatus(occupancyData[index]?.name)}
+onMouseLeave={() => setHoveredStatus(null)}
+
+// 3. Cell fillOpacity
+fillOpacity={hoveredStatus === null || hoveredStatus === entry.name ? 1 : 0.3}
+
+// 4. Panel row with inline style
+style={{
+  backgroundColor: hoveredStatus && isActive ? `${OCCUPANCY_COLORS[entry.name]}0D` : 'transparent',
+  opacity: isActive ? 1 : 0.4,
+}}
+
+// 5. Same handlers on panel rows
+onMouseEnter={() => setHoveredStatus(entry.name)}
+onMouseLeave={() => setHoveredStatus(null)}
+
+// 6. Empty state
+{occupancyData.length > 0 ? (<Chart + Panel />) : (<EmptyFallback />)}
+```
+
+### HelloStay Usage
+`Dashboard.jsx` — Room Occupancy Overview. `hoveredStatus` state links the Recharts donut chart segments with the status breakdown panel. Hovering a chart segment highlights the matching panel row; hovering a panel row dims non-matching chart segments via `fillOpacity`.

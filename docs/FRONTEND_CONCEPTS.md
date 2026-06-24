@@ -2850,3 +2850,487 @@ When a modal needs to display different initial data (e.g., Add vs Edit), using 
 
 >HelloStay Usage
 Used in `Rooms.jsx` → `AddRoomModal` to cleanly switch between Add and Edit modes without stale form state.
+
+---
+
+## Concept 74: Cross-Highlight Interaction Pattern
+>Definition
+Two sibling UI elements (e.g., a chart and a data panel) share a single state variable. Hovering one element highlights the matching element in the other, while dimming non-matching elements. This creates a visual link between related data representations.
+
+>Purpose
+When the same data is shown in multiple views (chart + table, chart + list), cross-highlighting helps users understand which data point in one view corresponds to which in the other — without requiring tooltips or popups.
+
+>Syntax Example
+```jsx
+const [hoveredItem, setHoveredItem] = useState(null);
+
+// Chart segment
+<Cell
+  fillOpacity={hoveredItem === null || hoveredItem === entry.name ? 1 : 0.3}
+  onMouseEnter={() => setHoveredItem(entry.name)}
+  onMouseLeave={() => setHoveredItem(null)}
+/>
+
+// Panel row
+<div
+  style={{
+    opacity: hoveredItem === null || hoveredItem === entry.name ? 1 : 0.4,
+    backgroundColor: hoveredItem && isActive ? `${color}0D` : 'transparent',
+  }}
+  onMouseEnter={() => setHoveredItem(entry.name)}
+  onMouseLeave={() => setHoveredItem(null)}
+/>
+```
+
+>Industry Practice
+- Dashboards often pair a chart with a data table; cross-highlighting reduces cognitive load
+- `fillOpacity` (SVG) and CSS `opacity` are the standard mechanisms for dimming
+- The "null means nothing hovered" convention (`hoveredItem === null || hoveredItem === match`) ensures full brightness when idle
+- Single state variable avoids sync bugs between two separate highlight states
+
+>Common Mistakes
+- Using two separate state variables for chart and panel (leads to sync issues)
+- Not handling the `null` case (elements stay dimmed when nothing is hovered)
+- Using `display: none` or `visibility: hidden` instead of opacity (layout shift)
+- Applying heavy animation libraries (Framer Motion) for simple hover dimming
+
+>HelloStay Usage
+Used in `Dashboard.jsx` — Room Occupancy Overview. `hoveredStatus` state links the donut chart segments with the status breakdown panel rows. Hovering a chart segment highlights the matching panel row, and vice versa. Uses `fillOpacity` on chart `Cell` and CSS `opacity` + tinted background on panel rows.
+
+---
+
+## Concept 75: Empty State Fallback Pattern
+>Definition
+When a data-driven component has no data to display, instead of showing a blank or broken UI, render a meaningful fallback message or illustration.
+
+>Purpose
+Prevents confusing empty screens. Users understand that data is expected but currently unavailable, rather than assuming the app is broken.
+
+>Syntax Example
+```jsx
+{data.length > 0 ? (
+  <DataVisualization data={data} />
+) : (
+  <div className="h-44 flex items-center justify-center text-sm text-gray-400">
+    No data available
+  </div>
+)}
+```
+
+>Industry Practice
+- Always provide empty states for data-driven components
+- Use neutral, non-alarming language ("No data available" not "Error!")
+- Match the empty state height to the data view to prevent layout shift
+- Optionally include a call-to-action ("Add your first room" button)
+
+>Common Mistakes
+- Showing a blank space when data is empty (looks like a bug)
+- Showing raw `undefined` or `null` text in the UI
+- Empty state height drastically different from data state (layout jump)
+
+>HelloStay Usage
+Used in `Dashboard.jsx` — Room Occupancy Overview. When `occupancyData.length === 0`, a centered "No room data available" message is shown instead of the donut chart and panel.
+
+---
+
+## Concept 76: Try/Catch JSON Parsing Safety Pattern
+>Definition
+Wrapping `localStorage.getItem()` + `JSON.parse()` in a try/catch block with fallback defaults to prevent app crashes from corrupt data.
+
+>Purpose
+localStorage data can become corrupted or be `null` on first use. Without try/catch, `JSON.parse(null)` throws `SyntaxError` and crashes the component. The try/catch gracefully falls back to an empty array or object.
+
+>Syntax Example
+```jsx
+const [bookings, setBookings] = useState(() => {
+  try {
+    const saved = localStorage.getItem('helloStay_bookings');
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+});
+```
+
+>Industry Practice
+- Always wrap JSON.parse in try/catch when reading from external storage
+- Provide meaningful fallback values (empty array, empty object, default config)
+- Use the `catch { }` shorthand (without parameter) when the error doesn't need analysis
+- Never assume localStorage data is valid JSON
+
+>Common Mistakes
+- Using `JSON.parse()` without try/catch — app crashes silently on corrupt data
+- Not providing a fallback — component receives `undefined` for state
+- Using `||` operator instead of try/catch — doesn't catch JSON parse errors
+
+>HelloStay Usage
+Used in every module that reads from localStorage: `Bookings.jsx` (lines 36-39), `Guests.jsx` (lines 25-28), `Dashboard.jsx`, `Rooms.jsx`, etc.
+
+---
+
+## Concept 77: useCallback Hook
+>Definition
+A React Hook that returns a memoized version of a callback function that only changes if one of its dependencies changes. Prevents unnecessary re-renders of child components.
+
+>Purpose
+When a function is passed as a prop to a child component, React creates a new function reference on every render. `useCallback` preserves the reference between renders unless dependencies change, preventing unnecessary re-renders.
+
+>Syntax Example
+```jsx
+import { useCallback } from 'react';
+
+const saveBookings = useCallback((updated) => {
+  setBookings(updated);
+  localStorage.setItem('helloStay_bookings', JSON.stringify(updated));
+}, []);  // Empty deps = function never recreates
+```
+
+>Industry Practice
+- Use `useCallback` for functions passed as props to child components
+- Use `useCallback` for functions used in `useEffect` dependencies
+- Always list all external variables in the dependency array
+- Don't use `useCallback` for every function — only when referential stability matters
+
+>Common Mistakes
+- Empty dependency array when the function uses external state — causes stale closures
+- Using `useCallback` for every handler — adds unnecessary complexity
+- Forgetting to list dependencies — function captures stale values
+
+>HelloStay Usage
+Used in `Bookings.jsx` for `saveBookings`, `syncRoomStatus`, `handleBookingCreated`, `handleStatusChange`, `handleDelete` — ensuring stable references for state update functions.
+
+---
+
+## Concept 78: Inline IIFE Pattern in JSX
+>Definition
+An Immediately Invoked Function Expression (IIFE) used inside JSX curly braces to execute complex logic inline without extracting it to a separate variable.
+
+>Purpose
+Sometimes you need to run conditional logic, variable assignment, or complex calculations inside JSX. An IIFE `{(() => { ... })()}` lets you write multi-line logic directly in the render output without creating a separate function.
+
+>Syntax Example
+```jsx
+{(() => {
+  const st = BOOKING_STATUS_STYLES[booking.status] || BOOKING_STATUS_STYLES['Reserved'];
+  const StatusIcon = booking.status === 'Reserved' ? Clock
+    : booking.status === 'Checked In' ? CheckCircle
+    : booking.status === 'Checked Out' ? LogOut
+    : XCircle;
+  return (
+    <span className={`...${st.gradient} ${st.text} ${st.border}`}>
+      <StatusIcon className={st.iconColor} />
+      {booking.status}
+    </span>
+  );
+})()}
+```
+
+>Industry Practice
+- Use IIFE for inline conditional rendering with complex logic
+- Keep IIFEs small — if logic exceeds 10-15 lines, extract to a separate component
+- Always wrap in `{(() => { ... })()}` — note the outer parentheses
+- Alternative: Extract to a render function inside the component
+
+>Common Mistakes
+- Missing the outer parentheses — JSX treats it as a function declaration, not invocation
+- Nesting IIFEs inside IIFEs — unreadable. Extract to component instead
+- Forgetting the closing `})()` — syntax error
+
+>HelloStay Usage
+Used in `Bookings.jsx` line 433 for rendering the booking status badge with conditional icon and gradient styling.
+
+---
+
+## Concept 79: Gradient Header Pattern in Modals
+>Definition
+A design pattern where modals and detail views use a gradient background section at the top for visual hierarchy and premium appearance.
+
+>Purpose
+Creates a clear visual separation between the modal title/actions area and the content area. The gradient adds a premium, modern feel consistent with the HelloStay design language (AD 59).
+
+>Syntax Example
+```jsx
+<div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white rounded-t-2xl">
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="text-xl font-bold">{title}</h3>
+      <p className="text-blue-100 text-sm mt-1">{subtitle}</p>
+    </div>
+    <button onClick={onClose} className="text-white/70 hover:text-white p-1">
+      <X className="w-6 h-6" />
+    </button>
+  </div>
+</div>
+```
+
+>Industry Practice
+- Use `rounded-t-2xl` on the header to match the modal's `rounded-2xl`
+- Use white text on dark gradient for contrast
+- Include close button with `text-white/70 hover:text-white` for visibility
+- Keep subtitle in a lighter tint (`text-blue-100`) for hierarchy
+
+>Common Mistakes
+- Using `rounded-2xl` on header and modal — double rounding creates visible overlap
+- Text too dark on gradient background — becomes unreadable
+- Missing close button — user can't dismiss without clicking backdrop
+
+>HelloStay Usage
+Used in `Bookings.jsx` (View Details modal line 560, BillingModal line 710), `Guests.jsx` (View Guest modal), `Employees.jsx`, and `AddRoomModal.jsx`.
+
+---
+
+## Concept 80: Smart Pagination with Sliding Window
+>Definition
+A pagination algorithm that displays a maximum number of page buttons (e.g., 5) and uses a sliding window that adjusts based on the current page position.
+
+>Purpose
+When there are many pages (e.g., 50), showing all 50 buttons is visually overwhelming. Smart pagination shows only 5 buttons at a time, sliding the window as the user navigates.
+
+>Syntax Example
+```jsx
+{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+  let page;
+  if (totalPages <= 5) page = i + 1;                           // All pages visible
+  else if (currentPage <= 3) page = i + 1;                     // Start window
+  else if (currentPage >= totalPages - 2) page = totalPages - 4 + i; // End window
+  else page = currentPage - 2 + i;                              // Middle window
+  return (
+    <button key={page} onClick={() => setCurrentPage(page)}
+      className={currentPage === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}>
+      {page}
+    </button>
+  );
+})}
+```
+
+>Industry Practice
+- Always show max 5-7 page buttons for usability
+- Use sliding window: start (1-5), middle (current-2 to current+2), end (total-4 to total)
+- Highlight active page with contrasting color
+- Include Previous/Next buttons with disabled state at boundaries
+- Show "Showing X to Y of Z" text for context
+
+>Common Mistakes
+- Showing all pages — overwhelming when there are 50+ pages
+- Not handling edge cases (first page, last page, under 5 pages)
+- Missing disabled state on Previous/Next — user clicks nothing happens
+- Off-by-one errors in window calculation — page 1 shows wrong numbers
+
+>HelloStay Usage
+Used in `Bookings.jsx` lines 505-520, `Rooms.jsx`, `Guests.jsx`, and all modules with paginated tables.
+
+---
+
+## Concept 81: Static Data Constants Outside Components
+>Definition
+Defining static data (status options, color maps, configuration arrays, payment types) as module-level constants outside the component function rather than inside it.
+
+>Purpose
+- Prevents redefinition on every render
+- Keeps JSX clean and focused on logic
+- Centralizes configuration for easy updates
+- Enables reuse across multiple functions within the file
+- Makes the code self-documenting
+
+>Syntax Example
+```jsx
+// Module-level constants (NOT inside component)
+const PAYMENT_STYLES = {
+  'Pending': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  'Paid': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  'Refunded': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+};
+
+const BOOKING_STATUS_STYLES = {
+  'Reserved': { gradient: 'from-blue-50 to-indigo-50', text: 'text-blue-700' },
+  'Checked In': { gradient: 'from-emerald-50 to-green-50', text: 'text-emerald-700' },
+};
+
+const ITEMS_PER_PAGE = 8;
+
+export default function Bookings() {
+  // Component logic uses PAYMENT_STYLES, BOOKING_STATUS_STYLES directly
+}
+```
+
+>Industry Practice
+- Define all static maps, arrays, and config values outside the component
+- Use `const` for values that never change
+- Use `UPPER_SNAKE_CASE` or `PascalCase` for constant names to distinguish from state
+- Place constants between imports and the component definition
+
+>Common Mistakes
+- Defining constants inside the component — recreated on every render, causing unnecessary memory allocation
+- Hardcoding values in JSX — scattered, hard to update, error-prone
+- Using `let` instead of `const` for truly constant values
+
+>HelloStay Usage
+Used in every module file: `Bookings.jsx` (PAYMENT_STYLES, BOOKING_STATUS_STYLES, STATUS_CARDS), `Dashboard.jsx` (OCCUPANCY_COLORS), `Reports.jsx` (REPORT_TYPES, CHART_COLORS), `Guests.jsx` (ID_PROOF_TYPES, INITIAL_GUEST).
+
+---
+
+## Concept 82: Vite Dev Server Proxy
+>Definition
+A Vite configuration that forwards requests from the frontend dev server to the backend API server, bypassing CORS during development.
+
+>Purpose
+When the frontend (localhost:5173) and backend (localhost:8000) run on different ports, browsers block cross-origin requests. The Vite proxy intercepts `/api/*` requests and forwards them to the backend, making them appear same-origin.
+
+>Syntax Example
+```jsx
+// vite.config.js
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
+});
+```
+
+>Request Flow:
+```
+Browser → /api/rooms → Vite Proxy → http://127.0.0.1:8000/rooms
+```
+
+>Industry Practice
+- Proxy is for development only — production uses a reverse proxy (Nginx) or same-origin deployment
+- The `rewrite` option strips the `/api` prefix so the backend receives clean URLs
+- `changeOrigin: true` is required for proper host header forwarding
+
+>Common Mistakes
+- Forgetting `rewrite` — backend receives `/api/rooms` instead of `/rooms`
+- Relying on proxy in production — use CORS middleware on the backend instead
+- Not restarting Vite after config changes — proxy changes don't hot-reload
+
+>HelloStay Usage
+Configured in `frontend/vite.config.js`. All frontend API calls go through the proxy during development. The backend also has CORSMiddleware as a fallback for production or direct access.
+
+---
+
+## Concept 83: Blob Download Pattern (Data Export)
+>Definition
+A pattern for triggering file downloads in the browser by creating a Blob from data, generating an object URL, creating a temporary anchor element, and programmatically clicking it.
+
+>Purpose
+To allow users to download application data as a JSON file without needing a backend endpoint. This enables offline backups and data portability.
+
+>Syntax Example
+```jsx
+const handleExport = () => {
+  const data = {
+    rooms: JSON.parse(localStorage.getItem('helloStay_rooms') || '[]'),
+    bookings: JSON.parse(localStorage.getItem('helloStay_bookings') || '[]'),
+    exportDate: new Date().toISOString(),
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);  // Clean up memory
+};
+```
+
+>Industry Practice
+- Always call `URL.revokeObjectURL()` after download to prevent memory leaks
+- Use `JSON.stringify(data, null, 2)` for pretty-printed, human-readable output
+- Include timestamp and data source in the filename
+- Wrap in try/catch for robustness
+
+>Common Mistakes
+- Forgetting `URL.revokeObjectURL()` — memory leak in long-running apps
+- Not including `null, 2` in stringify — file is one unreadable line
+- Setting wrong `type` — browser may not recognize the file as JSON
+
+>HelloStay Usage
+Used in `Settings.jsx` for the Export Data feature. Exports all `helloStay_*` localStorage keys as a single timestamped JSON file.
+
+---
+
+## Concept 84: FileReader Import Pattern (Data Import)
+>Definition
+A pattern for reading uploaded files using the browser's FileReader API, parsing the content, and restoring application state.
+
+>Purpose
+To restore previously exported data by reading a JSON file, validating its structure, and writing each key back to localStorage.
+
+>Syntax Example
+```jsx
+const handleImport = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'exportDate') {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+      });
+      window.location.reload();
+    } catch {
+      alert('Invalid backup file');
+    }
+  };
+  reader.readAsText(file);
+};
+
+// Hidden file input triggered by button
+<input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+```
+
+>Industry Practice
+- Validate JSON structure before importing — catch parse errors with try/catch
+- Skip metadata keys (exportDate, version) when restoring data
+- Reload the page after import to refresh all component state from localStorage
+- Use `accept=".json"` on the file input for UX
+
+>Common Mistakes
+- Not validating JSON — app crashes on corrupt files
+- Importing without reloading — stale React state still shows old data
+- Not resetting the file input value — importing the same file twice doesn't trigger onChange
+
+>HelloStay Usage
+Used in `Settings.jsx` for the Import Data feature. Restores all localStorage keys from a previously exported JSON backup file.
+
+---
+
+## Concept 85: Health Check Endpoint Pattern
+>Definition
+A simple root endpoint (`GET /`) that returns application metadata to verify the backend server is running and accessible.
+
+>Purpose
+Provides a quick way to check backend availability, display version info, and serve as a minimal test endpoint for frontend-backend connectivity.
+
+>Syntax Example
+```python
+@app.get("/", tags=["Health Check"])
+def root():
+    return {
+        "application": "HelloStay",
+        "version": "1.0.0",
+        "message": "Backend server is running successfully"
+    }
+```
+
+>Industry Practice
+- Keep health check endpoints lightweight and fast (no database queries)
+- Include version and application name for CI/CD pipeline verification
+- Tag with "Health Check" for Swagger documentation grouping
+- Return HTTP 200 when healthy, 503 when degraded
+
+>Common Mistakes
+- Making health check too heavy (querying database) — defeats purpose of quick check
+- Not tagging in Swagger — mixed with business endpoints
+- Returning sensitive information (server paths, environment vars)
+
+>HelloStay Usage
+Used in `backend/app/main.py` line 27. Accessed at `http://127.0.0.1:8000/`. Returns app name, version, and status message. Tagged for Swagger documentation.
