@@ -1,30 +1,30 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, BedDouble, CalendarDays, Users, Contact,
-  Briefcase, Wallet, Package, UtensilsCrossed, BarChart3,
-  Settings, UserCircle, LogOut, Sparkles
+  LayoutDashboard, BedDouble, CalendarDays, Users,
+  Settings, UserCircle, LogOut, Hotel
 } from 'lucide-react';
 import clsx from 'clsx';
 
 const ALL_NAV_ITEMS = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'manager', 'employee'] },
-  { name: 'Rooms', path: '/rooms', icon: BedDouble, roles: ['owner', 'manager', 'employee'] },
-  { name: 'Bookings', path: '/bookings', icon: CalendarDays, roles: ['owner'] },
-  { name: 'Guests', path: '/guests', icon: Users, roles: ['owner'] },
-  { name: 'Employees', path: '/employees', icon: Contact, roles: ['owner'] },
-  { name: 'HR & Payroll', path: '/hr-payroll', icon: Briefcase, roles: ['owner'] },
-  { name: 'Expenses', path: '/expenses', icon: Wallet, roles: ['owner', 'manager'] },
-  { name: 'Inventory', path: '/inventory', icon: Package, roles: ['owner', 'manager', 'employee'] },
-  { name: 'Facilities', path: '/facilities', icon: Sparkles, roles: ['owner', 'manager'] },
-  { name: 'Restaurant', path: '/restaurant', icon: UtensilsCrossed, roles: ['owner', 'manager'], facility: 'In-house Restaurant' },
-  { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['owner'] },
-  { name: 'Settings', path: '/settings', icon: Settings, roles: ['owner'] },
-  { name: 'Profile', path: '/profile', icon: UserCircle, roles: ['owner', 'manager', 'employee'] },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, requiredPermission: null }, // Always visible
+  { name: 'Rooms', path: '/rooms', icon: BedDouble, requiredPermission: 'Rooms' },
+  { name: 'Bookings', path: '/bookings', icon: CalendarDays, requiredPermission: 'Bookings' },
+  { name: 'Guests', path: '/guests', icon: Users, requiredPermission: 'Guests' },
+  { name: 'Hotel Info', path: '/hotel-info', icon: Hotel, requiredPermission: 'Hotel Information' },
+  { name: 'Settings', path: '/settings', icon: Settings, requiredPermission: 'Settings' },
+  { name: 'Profile', path: '/profile', icon: UserCircle, requiredPermission: null }, // Always visible
 ];
 
 export default function Sidebar() {
+  const navigate = useNavigate();
   const savedData = localStorage.getItem('helloStay_hotelData');
-  const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
+  
+  // Read from session object
+  const sessionData = localStorage.getItem('helloStay_session');
+  const session = sessionData ? JSON.parse(sessionData) : null;
+  const userRole = session?.role?.toLowerCase() || 'employee';
+  const permissions = session?.permissions || [];
+  const hasFullAccess = session?.role === 'Owner' || permissions.includes('Full Access');
 
   let hasRestaurant = true;
   if (savedData) {
@@ -33,10 +33,24 @@ export default function Sidebar() {
   }
 
   const activeNavItems = ALL_NAV_ITEMS.filter(item => {
-    if (!item.roles.includes(userRole)) return false;
+    // 1. Check module-specific permissions
+    if (item.requiredPermission) {
+      if (!hasFullAccess && !permissions.includes(item.requiredPermission)) {
+        return false;
+      }
+    }
+    
+    // 2. Check facility configurations (e.g., if restaurant module is ever added back)
     if (item.facility && item.facility === 'In-house Restaurant' && !hasRestaurant) return false;
+    
     return true;
   });
+
+  const handleLogout = () => {
+    localStorage.removeItem('helloStay_session');
+    localStorage.removeItem('helloStay_keepLoggedIn');
+    navigate('/login');
+  };
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col hidden md:flex z-10 shadow-sm">
@@ -52,7 +66,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
         {activeNavItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -74,13 +88,13 @@ export default function Sidebar() {
       </div>
 
       <div className="p-4 border-t border-gray-200">
-        <NavLink
-          to="/login"
-          className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
         >
           <LogOut className="w-5 h-5 mr-3" />
           Logout
-        </NavLink>
+        </button>
       </div>
     </aside>
   );

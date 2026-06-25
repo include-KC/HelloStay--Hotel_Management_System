@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, BedDouble, Search, Plus, Check, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
+import { autoSetOccupancyFromRoomType } from '../../utils/dataStore';
 
 const INDUSTRY_ROOM_TYPES = [
   'Standard Room', 'Deluxe Room', 'Suite', 'Executive Suite', 'Presidential Suite',
@@ -98,7 +99,12 @@ export default function AddRoomModal({ isOpen, onClose, onRoomAdded, editingRoom
   }, []);
 
   const handleTypeSelect = (type) => {
-    setFormData(prev => ({ ...prev, roomType: type }));
+    const autoOccupancy = autoSetOccupancyFromRoomType(type);
+    setFormData(prev => ({
+      ...prev,
+      roomType: type,
+      ...(autoOccupancy !== null && !editingRoom ? { maxOccupancy: String(autoOccupancy) } : {}),
+    }));
     setTypeSearch(type);
     setShowTypeDropdown(false);
     if (errors.roomType) {

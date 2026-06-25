@@ -36,7 +36,7 @@ Future versions may support automatic extraction of customer information from sc
 ### Billing System
 During checkout, the application should: Generate bill automatically, Calculate charges, Produce printable invoice. Printing support should be available from within the application.
 
----
+
 
 ## Technology Stack
 
@@ -481,6 +481,44 @@ All `localStorage.getItem()` + `JSON.parse()` calls are wrapped in try/catch wit
 
 All modals use a gradient header section (`bg-gradient-to-r from-blue-600 to-indigo-700`) for visual hierarchy. Consistent across BookingModal, BillingModal, GuestView, and EmployeeDetail modals.
 
+### AD 86: Authentication Flow, Profile Selection & Startup Sequence
+**Status:** Accepted
+
+The application needs a seamless and professional entry point that gracefully handles different authentication states while supporting multiple users (e.g., Owner, Manager, Employee) for a single hotel instance. The standard username/password flow was too tedious for locally saved roles.
+- **Animated Splash Entry**: A new `<Splash />` component acts as the global entry point (`/`). It displays a premium animation. After 2 seconds, it provides a "Get Started" gateway button that unconditionally routes all users to the Profile Selection screen.
+- **Local Profile Selection**: Instead of a traditional login form, we implemented an "Account Selection" screen similar to modern streaming services (Netflix/Hulu). Local accounts are stored in `localStorage` under `helloStay_accounts`.
+- **Profile Authentication & Remember Me**: Clicking a profile does not log the user in instantly. Instead, it transitions to a Password Entry view dedicated to that specific profile. The "Remember Me" toggle (which sets `helloStay_keepLoggedIn`) is located on this specific authentication screen.
+- **Session Persistence**: Session state is managed via `helloStay_session` and `helloStay_keepLoggedIn`. If successful, the user is routed to the Dashboard (or Hotel Setup if incomplete).
+
+### AD 87: V2 Features / Deferred Modules
+**Status:** Accepted
+
+To streamline the initial Minimum Viable Product (MVP) and focus on the core booking experience, several advanced operational modules have been temporarily removed from the project and deferred to Version 2.0.
+When planning Version 2.0, the following modules should be restored:
+1. **Employees**: Staff records, roles, statuses.
+2. **HR and Payroll**: Management of employee shifts, salaries, deductions, and performance reviews.
+3. **Expenses**: A ledger for tracking hotel operational costs (electricity, maintenance) against revenue.
+4. **Inventory**: Management of hotel supplies (linens, toiletries, housekeeping carts) to track usage.
+5. **Manage Facilities**: Administrative module for updating, pricing, and scheduling maintenance.
+6. **Restaurant**: POS integration specifically for in-house dining, table management, and room service.
+7. **Reports**: Advanced analytics dashboards for revenue visualization and occupancy forecasting.
+
+### AD 88: Profiles, Permissions & Hotel Information Restructure
+**Status:** Accepted | **Date:** 2026-06-25
+
+Significant architectural improvements were made to identity, permissions, and initial routing:
+- **Enhanced Profile Management:** Added inline "Edit Role" and "Delete Role" capabilities to both the `Login` screen and the dashboard `Profile` screen. Extended profile data to support updating credentials and assigned permissions. Prevented deletion of the final Owner profile.
+- **Permission Management System:** Replaced hardcoded string roles with a flexible, array-based module permission system (e.g., `Bookings`, `Rooms`, `Settings`). The Owner manages these from the profile edit modal. `Sidebar.jsx` and `AppRoutes.jsx` (via `ProtectedRoute`) now dynamically render and protect routes based on the active session's permission array. Owners implicitly inherit `Full Access`.
+- **Hotel Information Hub:** Replaced `RegisterHotel.jsx` with a dual-purpose `HotelInfo.jsx`. It sits immediately after the `Splash` screen. If unconfigured, it acts as the setup form. If configured, it acts as a read-only display hub with "Edit", "Delete", and "Proceed" actions.
+- **Security & Owner Authentication:** Introduced `OwnerAuthModal`. Privileged actions—such as Editing/Deleting the Hotel, or Editing/Deleting *another* Owner profile—now prompt for the target Owner's password. Editing/Deleting an Employee profile does not require the password prompt when initiated by an Owner, smoothing UX while maintaining strict security for administrative accounts.
+
+### AD 89: Simplified Checkout Configuration
+**Status:** Accepted | **Date:** 2026-06-25
+
+Based on user feedback, the fixed checkout time settings (e.g., global 11:00 AM checkout) and the associated late checkout fee automatic calculations have been removed from the application modules (`Settings`, `HotelInfo`).
+- **Deferred Feature:** Fixed global checkout times are documented here for potential future addition in a V2 billing update.
+- **Current Approach:** The application retains the 12hr / 24hr "Checkout Duration" setting, which dictates stay length logic. Check-in and check-out logic during Bookings continues to rely on explicitly user-selected dates and times rather than a globally enforced hour.
+
 ---
 
 ## Application Modules
@@ -497,7 +535,7 @@ Manage all hotel rooms. Data table with sort/search/filter/pagination. Inline st
 Handle room reservations. Full data table, New Booking modal with room selection, auto-calculate total, room availability validation, status workflow, payment tracking, billing modal with late checkout fee calculation. Target: Owner (planned).
 
 ### Guests
-Maintain guest database. Card-based layout with avatar initials, stay history derived from bookings, total spent calculation, search/filter/pagination. Target: Owner (planned).
+Maintain guest database. Card-based layout with avatar initials, stay history derived from bookings (guestId-based with legacy name+phone fallback), total spent calculation, search/filter/pagination. Tabbed View Modal: Profile (personal info), Stays (full stay history), Facilities (Coming Soon), Expenses (Coming Soon), All Activity (unified timeline of booking lifecycle + profile events). Target: Owner (planned).
 
 ### Employees
 Manage hotel staff records. Data table with sort/search/role filter/status filter. Edit/View modals, quick Active/Inactive toggle. Target: Owner.
@@ -633,3 +671,39 @@ All 10 remaining modules implemented: Bookings, Guests, Employees, HR & Payroll,
 ### Milestone 25 — Bug Fixes, Room-Booking Sync & Role-Based Status
 **Status:** COMPLETED | **Date:** 2026-06-24
 Login-first route, Dashboard donut chart + single-screen layout, Edit button fix (reuse AddRoomModal), bidirectional booking-room sync, role-based manual status overrides. AD 74-78 recorded.
+
+### Milestone 26 — Centralized Data Store, Referential Integrity & Enhanced Guest Views
+**Status:** COMPLETED | **Date:** 2026-06-25
+Centralized `dataStore.js` as single source of truth for all cross-module mutations. Strict guestId referential integrity across Bookings, Guests, and Rooms. Room type → occupancy automation (Single→1, Double/Twin→2, Suite/Family/Deluxe→4, Triple→3, Quad→4). Guarded room state transitions (manual override blocked when active booking exists). Owner-only Force Available override with confirmation dialog. Tabbed Guest View Modal (Profile/Stays/Facilities~Soon/Expenses~Soon/All Activity) with filtered activity feed. Legacy migration (one-time on startup) matches old bookings to guests by exact name+phone.
+
+## Architecture Decisions (AD 90-95)
+
+### AD 90: Centralized Data Store as Single Source of Truth
+**Status:** Accepted | **Date:** 2026-06-25
+
+All cross-module data mutations now route through `frontend/src/utils/dataStore.js`. Modules no longer write directly to `localStorage` for shared entities. Exports include `SYNC_EVENT`, `triggerSync()`, `getRooms/saveRooms`, `getGuests/saveGuests`, `getBookings/saveBookings`, `createBookingWithGuest`, `updateBookingStatus`, `deleteBooking`, `deleteRoom`. Components use `get*()` for lazy state initialization and listen to `SYNC_EVENT` to re-fetch data when another module mutates it.
+
+### AD 91: Strict GuestId Referential Integrity
+**Status:** Accepted | **Date:** 2026-06-25
+
+Bookings store `guestId` for primary guest and `guests[].guestId` for additional guests. The Guests module matches bookings via `booking.guestId === guest.id`. A legacy fallback matches by exact `guestName + guestPhone` for pre-migration bookings. This replaces unreliable name-based matching that broke on name changes or duplicates.
+
+### AD 92: Type-Driven Occupancy Automation
+**Status:** Accepted | **Date:** 2026-06-25
+
+Room maxOccupancy is auto-populated from room type when creating a new room: Single→1, Double/Twin→2, Suite/Family/Deluxe→4, Triple→3, Quad→4. Implemented via `autoSetOccupancyFromRoomType()` in dataStore, triggered only on create (not edit). Guest count in BookingModal is capped to the room's `maxOccupancy`.
+
+### AD 93: Guarded Room State Transitions
+**Status:** Accepted | **Date:** 2026-06-25
+
+Room status is primarily derived from booking lifecycle. Manual overrides are blocked when an active Reserved or Checked In booking exists for that room. The status state machine: `Reserved → Occupied → Cleaning → Available` (with `Cancelled` as terminal state). Only the Owner can Force a room to Available via a confirmation dialog (for emergency cases like guest left without checkout).
+
+### AD 94: Unified Activity Feed
+**Status:** Accepted | **Date:** 2026-06-25
+
+`getGuestActivity(guestId)` in dataStore returns a sorted, combined array of booking lifecycle events and guest profile changes. Activity types: `booking_created`, `check_in`, `check_out`, `booking_cancelled`, `guest_updated`, `guest_created`. Each entry has `{ id, type, description, timestamp }`. Rendered as a timeline in the Guest View Modal's "All Activity" tab with type-specific icons and colors.
+
+### AD 95: One-Time Legacy Migration
+**Status:** Accepted | **Date:** 2026-06-25
+
+A startup migration (`migrateLegacyBookings()`) runs once on app load, guarded by the `helloStay_migration_v1_complete` localStorage flag. It matches each booking without a `guestId` to a guest profile by exact `guestName + guestPhone` match, then writes the matched `guestId` back to the booking. The migration runs silently and is transparent to the user.

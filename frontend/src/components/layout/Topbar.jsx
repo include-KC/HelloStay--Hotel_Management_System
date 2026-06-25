@@ -1,10 +1,16 @@
 import { Bell, Search } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Topbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const pathName = location.pathname.split('/').pop();
   const title = pathName ? pathName.charAt(0).toUpperCase() + pathName.slice(1) : 'Dashboard';
+
+  const sessionData = localStorage.getItem('helloStay_session');
+  const session = sessionData ? JSON.parse(sessionData) : null;
+  const userName = session?.name || 'Admin User';
+  const userAvatar = session?.avatar || 'AD';
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-0 shadow-sm">
@@ -20,9 +26,9 @@ export default function Topbar() {
           <span className="absolute inset-y-0 left-0 flex items-center pl-3">
             <Search className="w-4 h-4 text-gray-400" />
           </span>
-          <input 
-            type="text" 
-            placeholder="Search everywhere..." 
+          <input
+            type="text"
+            placeholder="Search everywhere..."
             className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 w-64 transition-all"
           />
         </div>
@@ -33,14 +39,18 @@ export default function Topbar() {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
         </button>
 
-        {/* User Profile */}
-        <div className="flex items-center border-l border-gray-200 pl-4 ml-2 cursor-pointer">
-          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
-            AD
+        {/* User Profile / Switch Profile */}
+        <div
+          onClick={() => navigate('/login')}
+          className="flex items-center border-l border-gray-200 pl-4 ml-2 cursor-pointer group"
+          title="Switch Profile"
+        >
+          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+            {userAvatar}
           </div>
           <div className="ml-3 hidden sm:block">
-            <p className="text-sm font-medium text-gray-700">Admin User</p>
-            <p className="text-xs text-gray-500">Owner</p>
+            <p className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{userName}</p>
+            <p className="text-xs text-gray-500">Switch Profile</p>
           </div>
         </div>
       </div>

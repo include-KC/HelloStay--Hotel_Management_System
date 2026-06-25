@@ -1,14 +1,14 @@
-﻿import { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Search, BedDouble, Pencil, Trash2, ChevronUp, ChevronDown,
-  ChevronLeft, ChevronRight, Users, Filter, Activity, Wrench, SprayCan,
-  CalendarClock
+  ChevronLeft, ChevronRight, Users, Filter, Activity, Wrench, SprayCan, AlertCircle, User
 } from 'lucide-react';
 import clsx from 'clsx';
 import AddRoomModal from '../components/modals/AddRoomModal';
 import RoomStatusSidebar from '../components/modals/RoomStatusSidebar';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
+import { getRooms, getBookings, deleteRoom, triggerSync } from '../utils/dataStore';
 
 const STATUS_STYLES = {
   Available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -23,17 +23,8 @@ const MANUAL_STATUS_OPTIONS = ['Available', 'Maintenance', 'Cleaning'];
 const ROWS_PER_PAGE = 10;
 
 export default function Rooms() {
-  const [rooms, setRooms] = useState(() => {
-    const saved = localStorage.getItem('helloStay_rooms');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [bookings, setBookings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('helloStay_bookings');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [rooms, setRooms] = useState(() => getRooms());
+  const [bookings, setBookings] = useState(() => getBookings());
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
@@ -47,9 +38,11 @@ export default function Rooms() {
   const [deletingId, setDeletingId] = useState(null);
   const [editingStatusId, setEditingStatusId] = useState(null);
   const [statusSidebarRoom, setStatusSidebarRoom] = useState(null);
+  const [forceAvailableId, setForceAvailableId] = useState(null);
 
   const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
   const canOverrideStatus = userRole === 'owner' || userRole === 'manager';
+  const isOwner = userRole === 'owner';
 
   const currencySymbol = useMemo(() => {
     const saved = localStorage.getItem('helloStay_hotelData');
@@ -98,6 +91,14 @@ export default function Rooms() {
   };
 
   const handleDelete = (roomId) => {
+    const hasFutureOrActive = bookings.some(b =>
+      b.roomId === roomId &&
+      !['Cancelled', 'Checked Out'].includes(b.status)
+    );
+    if (hasFutureOrActive) {
+      alert('Cannot delete — Room has active or future bookings');
+      return;
+    }
     setDeletingId(roomId);
   };
 
@@ -110,16 +111,57 @@ export default function Rooms() {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
+    triggerSync();
+  };
+
+  const forceAvailable = (roomId) => {
+    if (!isOwner) return;
+    const activeBooking = bookings.find(b =>
+      b.roomId === roomId &&
+      ['Reserved', 'Checked In'].includes(b.status)
+    );
+    if (activeBooking) {
+      if (!window.confirm(`Force Available?\n\nRoom has active ${activeBooking.status} booking for ${activeBooking.guestName}.\nThis will mark the booking as Checked Out without payment recording.\n\nAre you sure?`)) {
+        return;
+      }
+      // Force update room status
+      const updated = rooms.map(r => r.id === roomId ? { ...r, roomStatus: 'Available' } : r);
+      setRooms(updated);
+      localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
+      triggerSync();
+    }
+    setForceAvailableId(null);
   };
 
   const handleStatusChange = (roomId, newStatus) => {
-    const updated = rooms.map(r =>
-      r.id === roomId ? { ...r, roomStatus: newStatus } : r
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    // Check for active bookings (Reserved or Checked In)
+    const activeBooking = bookings.find(b =>
+      b.roomId === roomId &&
+      ['Reserved', 'Checked In'].includes(b.status)
     );
+
+    // Block manual override to Available/Cleaning/Maintenance if active booking exists
+    if (activeBooking && ['Available', 'Cleaning', 'Maintenance'].includes(newStatus)) {
+      alert(`Cannot change status — Room has active ${activeBooking.status} booking for ${activeBooking.guestName}`);
+      return;
+    }
+
+    // Block manual Occupied/Reserved (booking-driven only)
+    if (['Occupied', 'Reserved'].includes(newStatus)) {
+      alert('Room status is managed by bookings');
+      return;
+    }
+
+    // Proceed with update
+    const updated = rooms.map(r => r.id === roomId ? { ...r, roomStatus: newStatus } : r);
     setRooms(updated);
     localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
     setEditingStatusId(null);
     setStatusSidebarRoom(prev => prev && prev.id === roomId ? { ...prev, roomStatus: newStatus } : prev);
+    triggerSync();
   };
 
   const handleSort = (key) => {
@@ -445,25 +487,61 @@ export default function Rooms() {
                         ) : (
                           (() => {
                             const nextInfo = getNextAvailableInfo(room);
+                            const activeBooking = bookings.find(b =>
+                              b.roomId === room.id &&
+                              b.status === 'Checked In'
+                            );
                             return (
-                              <button
-                                onClick={() => canOverrideStatus && setEditingStatusId(room.id)}
-                                className={clsx(
-                                  'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all',
-                                  canOverrideStatus ? 'cursor-pointer hover:shadow-sm' : 'cursor-default',
-                                  STATUS_STYLES[room.roomStatus] || STATUS_STYLES.Available
+                              <div className="space-y-1">
+                                <button
+                                  onClick={() => canOverrideStatus && setEditingStatusId(room.id)}
+                                  className={clsx(
+                                    'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all w-full',
+                                    canOverrideStatus ? 'cursor-pointer hover:shadow-sm' : 'cursor-default',
+                                    STATUS_STYLES[room.roomStatus] || STATUS_STYLES.Available
+                                  )}
+                                  title={canOverrideStatus ? 'Click to change status' : room.roomStatus}
+                                >
+                                  {room.roomStatus === 'Maintenance' && <Wrench className="w-3 h-3 mr-1" />}
+                                  {room.roomStatus === 'Cleaning' && <SprayCan className="w-3 h-3 mr-1" />}
+                                  {room.roomStatus}
+                                  {nextInfo && (
+                                    <span className="text-[10px] opacity-70 ml-1.5 normal-case font-normal">
+                                      till {nextInfo.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  )}
+                                </button>
+                                {activeBooking && (
+                                  <div className="flex items-center gap-1 text-[10px] text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
+                                    <User className="w-3 h-3" />
+                                    <span className="font-medium">{activeBooking.guestName}</span>
+                                  </div>
                                 )}
-                                title={canOverrideStatus ? 'Click to change status' : room.roomStatus}
-                              >
-                                {room.roomStatus === 'Maintenance' && <Wrench className="w-3 h-3 mr-1" />}
-                                {room.roomStatus === 'Cleaning' && <SprayCan className="w-3 h-3 mr-1" />}
-                                {room.roomStatus}
-                                {nextInfo && (
-                                  <span className="text-[10px] opacity-70 ml-1.5 normal-case font-normal">
-                                    till {nextInfo.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                  </span>
+                                {isOwner && activeBooking && room.roomStatus !== 'Available' && (
+                                  <button
+                                    onClick={() => setForceAvailableId(room.id)}
+                                    className="w-full text-[10px] text-red-600 hover:text-red-800 font-medium underline"
+                                  >
+                                    Force Available (Emergency)
+                                  </button>
                                 )}
-                              </button>
+                                {forceAvailableId === room.id && (
+                                  <div className="flex items-center gap-1 w-full">
+                                    <button
+                                      onClick={() => forceAvailable(room.id)}
+                                      className="flex-1 text-[10px] font-semibold text-red-600 hover:text-red-800 px-2 py-1 rounded bg-red-50 border border-red-200"
+                                    >
+                                      Yes, Force
+                                    </button>
+                                    <button
+                                      onClick={() => setForceAvailableId(null)}
+                                      className="flex-1 text-[10px] font-semibold text-gray-600 hover:text-gray-800 px-2 py-1 rounded bg-gray-100 border border-gray-200"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             );
                           })()
                         )}

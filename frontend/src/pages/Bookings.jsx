@@ -1,12 +1,13 @@
-﻿import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Search, Plus, ChevronLeft, ChevronRight, Eye, Trash2,
-  Clock, CheckCircle, XCircle, LogOut, User, BedDouble, CreditCard, X
+  Clock, CheckCircle, XCircle, LogOut, User, BedDouble, X, AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
 import BookingModal from '../components/modals/BookingModal';
+import { createBookingWithGuest, updateBookingStatus, deleteBooking, triggerSync, getBookings, getRooms } from '../utils/dataStore';
 
 const PAYMENT_STYLES = {
   'Pending': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', gradient: 'from-amber-50 to-orange-50' },
@@ -32,19 +33,8 @@ const STATUS_CARDS = [
 const ITEMS_PER_PAGE = 8;
 
 export default function Bookings() {
-  const [bookings, setBookings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('helloStay_bookings');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  const [rooms, setRooms] = useState(() => {
-    try {
-      const saved = localStorage.getItem('helloStay_rooms');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [bookings, setBookings] = useState(() => getBookings());
+  const [rooms, setRooms] = useState(() => getRooms());
 
   const hotelData = useMemo(() => {
     try {
@@ -72,102 +62,51 @@ export default function Bookings() {
   const userRole = localStorage.getItem('helloStay_userRole') || 'owner';
   const isOwner = userRole === 'owner';
 
-  const saveBookings = useCallback((updated) => {
-    setBookings(updated);
-    localStorage.setItem('helloStay_bookings', JSON.stringify(updated));
-  }, []);
-
-  const syncRoomStatus = useCallback((roomId, newRoomStatus) => {
-    setRooms(prev => {
-      const updated = prev.map(r =>
-        r.id === roomId ? { ...r, roomStatus: newRoomStatus } : r
-      );
-      localStorage.setItem('helloStay_rooms', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
   const handleBookingCreated = useCallback((newBooking) => {
-    saveBookings([...bookings, newBooking]);
-    syncRoomStatus(newBooking.roomId, 'Reserved');
-  }, [bookings, saveBookings, syncRoomStatus]);
+    setBookings(prev => [...prev, newBooking]);
+    triggerSync();
+  }, []);
 
-  const handleStatusChange = useCallback((bookingId, newStatus) => {
-    const booking = bookings.find(b => b.id === billingModal?.id || b.id === bookingId);
-    if (newStatus === 'Checked Out' && booking) {
+  const handleStatusChange = useCallback((bookingId, newStatus, paymentDetails = null) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    if (newStatus === 'Checked Out' && !paymentDetails) {
       setBillingModal(booking);
       return;
     }
 
-    const now = new Date().toISOString();
-    const updated = bookings.map(b =>
-      b.id === bookingId
-        ? {
-          ...b,
-          status: newStatus,
-          ...(newStatus === 'Checked In' ? { actualCheckIn: now } : {}),
-          ...(newStatus === 'Checked Out' ? { actualCheckOut: now } : {}),
-          updatedAt: now,
-        }
-        : b
-    );
-    saveBookings(updated);
-
-    if (newStatus === 'Checked In') {
-      syncRoomStatus(booking.roomId, 'Occupied');
-    } else if (newStatus === 'Checked Out') {
-      syncRoomStatus(booking.roomId, 'Cleaning');
-    } else if (newStatus === 'Cancelled') {
-      const hasOtherActive = updated.some(b =>
-        b.roomId === booking.roomId &&
-        b.id !== bookingId &&
-        b.status !== 'Cancelled' &&
-        b.status !== 'Checked Out'
-      );
-      if (!hasOtherActive) {
-        syncRoomStatus(booking.roomId, 'Available');
-      }
-    }
-  }, [bookings, billingModal, saveBookings, syncRoomStatus]);
+    updateBookingStatus(bookingId, newStatus, paymentDetails);
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus, updatedAt: new Date().toISOString() } : b));
+    triggerSync();
+  }, [bookings, billingModal]);
 
   const handleBillingConfirm = useCallback((bookingId, extraCharge, totalAmount, amountPaid) => {
     const now = new Date().toISOString();
-    const updated = bookings.map(b =>
-      b.id === billingModal.id
-        ? {
-          ...b,
-          status: 'Checked Out',
-          actualCheckOut: now,
-          totalAmount: totalAmount,
-          amountPaid: amountPaid,
-          paymentStatus: amountPaid >= totalAmount ? 'Paid' : amountPaid > 0 ? 'Partial' : 'Pending',
-          extraCharge: extraCharge,
-          updatedAt: now,
-        }
-        : b
-    );
-    saveBookings(updated);
-    syncRoomStatus(billingModal.roomId, 'Cleaning');
+    updateBookingStatus(bookingId, 'Checked Out', { extraCharge, totalAmount, amountPaid });
+    setBookings(prev => prev.map(b => b.id === bookingId ? { 
+      ...b, 
+      status: 'Checked Out', 
+      actualCheckOut: now,
+      totalAmount, 
+      amountPaid, 
+      paymentStatus: amountPaid >= totalAmount ? 'Paid' : amountPaid > 0 ? 'Partial' : 'Pending',
+      extraCharge,
+      updatedAt: now,
+    } : b));
     setBillingModal(null);
-  }, [bookings, billingModal, saveBookings, syncRoomStatus]);
+    triggerSync();
+  }, []);
 
   const handleDelete = useCallback((bookingId) => {
     const booking = bookings.find(b => b.id === bookingId);
-    saveBookings(bookings.filter(b => b.id !== bookingId));
-    setDeletingId(null);
+    if (!booking) return;
 
-    if (booking && booking.status !== 'Checked Out' && booking.status !== 'Cancelled') {
-      const hasOtherActive = bookings.some(b =>
-        b.roomId === booking.roomId &&
-        b.id !== bookingId &&
-        b.status !== 'Cancelled' &&
-        b.status !== 'Checked Out'
-      );
-      if (!hasOtherActive) {
-        syncRoomStatus(booking.roomId, 'Available');
-      }
-    }
-  }, [bookings, saveBookings, syncRoomStatus]);
+    deleteBooking(bookingId);
+    setBookings(prev => prev.filter(b => b.id !== bookingId));
+    setDeletingId(null);
+    triggerSync();
+  }, [bookings]);
 
   const cardStats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];

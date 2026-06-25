@@ -1,7 +1,8 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Plus, ChevronLeft, ChevronRight, Eye, Edit3, Trash2, XCircle, ArrowRight, Phone, MapPin, User, BedDouble, Mail, FileText } from 'lucide-react';
+import { Users, Search, Plus, ChevronLeft, ChevronRight, Eye, Edit3, Trash2, XCircle, ArrowRight, Phone, MapPin, User, BedDouble, Mail, FileText, Clock, LogIn, LogOut, CreditCard, AlertCircle } from 'lucide-react';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
+import { getGuests, saveGuests, getBookings, getGuestActivity, triggerSync, SYNC_EVENT } from '../utils/dataStore';
 
 const ID_PROOF_TYPES = ['Aadhaar Card', 'Passport', 'Driving License', 'Voter ID', 'PAN Card', 'National ID'];
 
@@ -21,47 +22,51 @@ const INITIAL_GUEST = {
 const ITEMS_PER_PAGE = 8;
 
 export default function Guests() {
-  const [guests, setGuests] = useState(() => {
-    try {
-      const saved = localStorage.getItem('helloStay_guests');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [guests, setGuests] = useState(() => getGuests());
+  const [bookings, setBookings] = useState(() => getBookings());
 
-  const [bookings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('helloStay_bookings');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  const hotelData = useMemo(() => {
-    try {
-      const saved = localStorage.getItem('helloStay_hotelData');
-      return saved ? JSON.parse(saved) : { currency: 'INR' };
-    } catch { return { currency: 'INR' }; }
+  useEffect(() => {
+    const handleSync = () => {
+      setGuests(getGuests());
+      setBookings(getBookings());
+    };
+    window.addEventListener(SYNC_EVENT, handleSync);
+    return () => window.removeEventListener(SYNC_EVENT, handleSync);
   }, []);
 
-  const currencySymbol = useMemo(() => CURRENCY_SYMBOLS[hotelData.currency] || '₹', [hotelData.currency]);
+  const [currencySymbol, setCurrencySymbol] = useState('₹');
+
+  useEffect(() => {
+    try {
+      const hd = JSON.parse(localStorage.getItem('helloStay_hotelData') || '{}');
+      setCurrencySymbol(CURRENCY_SYMBOLS[hd.currency] || '₹');
+    } catch { setCurrencySymbol('₹'); }
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewGuest, setViewGuest] = useState(null);
+  const [viewTab, setViewTab] = useState('profile');
   const [editingGuest, setEditingGuest] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState(INITIAL_GUEST);
   const [formErrors, setFormErrors] = useState({});
 
-  const saveGuests = (updated) => {
+  const persistGuests = (updated) => {
     setGuests(updated);
-    localStorage.setItem('helloStay_guests', JSON.stringify(updated));
+    saveGuests(updated);
+    triggerSync();
   };
 
-  const getGuestStayHistory = (guestId) => {
-    return bookings.filter(b =>
-      b.guestName?.toLowerCase() === guests.find(g => g.id === guestId)?.name?.toLowerCase()
-    );
+  const getGuestStayHistory = (guest) => {
+    return bookings.filter(b => {
+      if (b.guestId === guest.id) return true;
+      if (b.guests && b.guests.some(g => g.guestId === guest.id)) return true;
+      if (!b.guestId && b.guestName === guest.name && b.guestPhone === guest.phone) return true;
+      if (b.guests && b.guests.some(g => !g.guestId && g.guestName === guest.name && g.guestPhone === guest.phone)) return true;
+      return false;
+    });
   };
 
   const handleFormChange = (field, value) => {
@@ -89,7 +94,7 @@ export default function Guests() {
       const updated = guests.map(g =>
         g.id === editingGuest.id ? { ...g, ...formData, updatedAt: now } : g
       );
-      saveGuests(updated);
+      persistGuests(updated);
     } else {
       const newGuest = {
         id: Date.now(),
@@ -98,7 +103,7 @@ export default function Guests() {
         createdAt: now,
         updatedAt: now,
       };
-      saveGuests([...guests, newGuest]);
+      persistGuests([...guests, newGuest]);
     }
     setIsModalOpen(false);
     setEditingGuest(null);
@@ -124,7 +129,7 @@ export default function Guests() {
   };
 
   const handleDelete = (guestId) => {
-    saveGuests(guests.filter(g => g.id !== guestId));
+    persistGuests(guests.filter(g => g.id !== guestId));
     setDeletingId(null);
     setViewGuest(null);
   };
@@ -154,9 +159,7 @@ export default function Guests() {
       return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
     }).length,
     withBookings: guests.filter(g => {
-      return bookings.filter(b =>
-        b.guestName?.toLowerCase() === g.name?.toLowerCase()
-      ).length > 0;
+      return getGuestStayHistory(g).length > 0;
     }).length,
     countries: [...new Set(guests.map(g => g.nationality).filter(Boolean))].length,
   }), [guests, bookings]);
@@ -261,8 +264,8 @@ export default function Guests() {
             </div>
           ) : (
             paginatedGuests.map((guest, index) => {
-              const stayCount = getStayCount(guest.name);
-              const totalSpent = getTotalSpent(guest.name);
+              const stayCount = getStayCount(guest);
+              const totalSpent = getTotalSpent(guest);
               const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-indigo-500'];
               const avatarColor = colors[guest.name.charCodeAt(0) % colors.length];
               return (
@@ -288,7 +291,7 @@ export default function Guests() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => setViewGuest(guest)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View">
+                        <button onClick={() => { setViewGuest(guest); setViewTab('profile'); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleEdit(guest)} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Edit">
@@ -570,9 +573,10 @@ export default function Guests() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
             >
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white rounded-t-2xl">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold">
@@ -589,70 +593,176 @@ export default function Guests() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: 'Email', value: viewGuest.email || '—' },
-                    { label: 'Gender', value: viewGuest.gender || '—' },
-                    { label: 'Date of Birth', value: viewGuest.dateOfBirth || '—' },
-                    { label: 'Nationality', value: viewGuest.nationality || '—' },
-                    { label: 'ID Type', value: viewGuest.idProofType || '—' },
-                    { label: 'ID Number', value: viewGuest.idProofNumber || '—' },
-                    { label: 'Total Stays', value: getStayCount(viewGuest.name) },
-                    { label: 'Total Spent', value: `${currencySymbol}${getTotalSpent(viewGuest.name).toLocaleString('en-IN')}` },
-                  ].map((item) => (
-                    <div key={item.label}>
-                      <p className="text-xs font-medium text-gray-500 uppercase">{item.label}</p>
-                      <p className="text-sm font-semibold text-gray-900 mt-1">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
+              {/* Tabs */}
+              <div className="flex border-b border-gray-100 bg-gray-50 flex-shrink-0">
+                {[
+                  { id: 'profile', label: 'Profile', icon: User },
+                  { id: 'stays', label: 'Stays', icon: BedDouble },
+                  { id: 'facilities', label: 'Facilities', icon: FileText },
+                  { id: 'expenses', label: 'Expenses', icon: CreditCard },
+                  { id: 'activity', label: 'All Activity', icon: Clock },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setViewTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-4 py-3 text-xs font-semibold border-b-2 transition-colors ${
+                      viewTab === tab.id
+                        ? 'border-blue-600 text-blue-600 bg-white'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/50'
+                    } ${tab.id === 'facilities' || tab.id === 'expenses' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={tab.id === 'facilities' || tab.id === 'expenses'}
+                  >
+                    <tab.icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                    {(tab.id === 'facilities' || tab.id === 'expenses') && (
+                      <span className="text-[9px] text-gray-400 ml-1">Soon</span>
+                    )}
+                  </button>
+                ))}
+              </div>
 
-                {viewGuest.address && (
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                    <p className="text-xs font-medium text-gray-500 uppercase mb-1">Address</p>
-                    <p className="text-sm text-gray-700">{viewGuest.address}</p>
-                  </div>
-                )}
-
-                {viewGuest.notes && (
-                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                    <p className="text-xs font-medium text-amber-600 uppercase mb-1">Notes</p>
-                    <p className="text-sm text-amber-800">{viewGuest.notes}</p>
-                  </div>
-                )}
-
-                {/* Stay History */}
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Stay History</h4>
-                  {getGuestStayHistory(viewGuest.id).length === 0 ? (
-                    <p className="text-sm text-gray-400">No stays recorded</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {getGuestStayHistory(viewGuest.id).slice(0, 5).map(booking => (
-                        <div key={booking.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-100">
-                          <div className="flex items-center gap-3">
-                            <BedDouble className="w-4 h-4 text-gray-400" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">Room {booking.roomNumber}</p>
-                              <p className="text-xs text-gray-500">{booking.checkInDate} → {booking.checkOutDate}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-gray-900">{currencySymbol}{booking.totalAmount?.toLocaleString('en-IN')}</p>
-                            <span className={`text-xs font-medium ${booking.status === 'Checked In' ? 'text-emerald-600' : booking.status === 'Reserved' ? 'text-blue-600' : 'text-gray-500'}`}>
-                              {booking.status}
-                            </span>
-                          </div>
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {/* Profile Tab */}
+                {viewTab === 'profile' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { label: 'Email', value: viewGuest.email || '—' },
+                        { label: 'Gender', value: viewGuest.gender || '—' },
+                        { label: 'Date of Birth', value: viewGuest.dateOfBirth || '—' },
+                        { label: 'Nationality', value: viewGuest.nationality || '—' },
+                        { label: 'ID Type', value: viewGuest.idProofType || '—' },
+                        { label: 'ID Number', value: viewGuest.idProofNumber || '—' },
+                        { label: 'Total Stays', value: getStayCount(viewGuest) },
+                        { label: 'Total Spent', value: `${currencySymbol}${getTotalSpent(viewGuest).toLocaleString('en-IN')}` },
+                      ].map((item) => (
+                        <div key={item.label}>
+                          <p className="text-xs font-medium text-gray-500 uppercase">{item.label}</p>
+                          <p className="text-sm font-semibold text-gray-900 mt-1">{item.value}</p>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
 
-                <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">
-                  Added: {new Date(viewGuest.createdAt).toLocaleString('en-IN')}
-                </div>
+                    {viewGuest.address && (
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 uppercase mb-1">Address</p>
+                        <p className="text-sm text-gray-700">{viewGuest.address}</p>
+                      </div>
+                    )}
+
+                    {viewGuest.notes && (
+                      <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                        <p className="text-xs font-medium text-amber-600 uppercase mb-1">Notes</p>
+                        <p className="text-sm text-amber-800">{viewGuest.notes}</p>
+                      </div>
+                    )}
+
+                    <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">
+                      Added: {new Date(viewGuest.createdAt).toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                )}
+
+                {/* Stays Tab */}
+                {viewTab === 'stays' && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Stay History ({getGuestStayHistory(viewGuest).length})</h4>
+                    {getGuestStayHistory(viewGuest).length === 0 ? (
+                      <p className="text-sm text-gray-400">No stays recorded</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {getGuestStayHistory(viewGuest).map(booking => (
+                          <div key={booking.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-100">
+                            <div className="flex items-center gap-3">
+                              <BedDouble className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Room {booking.roomNumber}</p>
+                                <p className="text-xs text-gray-500">{booking.checkInDate} → {booking.checkOutDate}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-gray-900">{currencySymbol}{booking.totalAmount?.toLocaleString('en-IN')}</p>
+                              <span className={`text-xs font-medium ${booking.status === 'Checked In' ? 'text-emerald-600' : booking.status === 'Reserved' ? 'text-blue-600' : 'text-gray-500'}`}>
+                                {booking.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Facilities Tab (Coming Soon) */}
+                {viewTab === 'facilities' && (
+                  <div className="text-center py-12">
+                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">Facilities & Services</p>
+                    <p className="text-sm text-gray-400 mt-1">Coming in a future update</p>
+                  </div>
+                )}
+
+                {/* Expenses Tab (Coming Soon) */}
+                {viewTab === 'expenses' && (
+                  <div className="text-center py-12">
+                    <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">Expense Tracking</p>
+                    <p className="text-sm text-gray-400 mt-1">Coming in a future update</p>
+                  </div>
+                )}
+
+                {/* All Activity Tab */}
+                {viewTab === 'activity' && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Activity Feed</h4>
+                    {(() => {
+                      const activity = getGuestActivity(viewGuest.id);
+                      if (activity.length === 0) {
+                        return <p className="text-sm text-gray-400">No activity recorded yet</p>;
+                      }
+                      return (
+                        <div className="relative space-y-0">
+                          {activity.map((entry, idx) => {
+                            const activityIcons = {
+                              booking_created: BedDouble,
+                              check_in: LogIn,
+                              check_out: LogOut,
+                              booking_cancelled: XCircle,
+                              guest_updated: Edit3,
+                              guest_created: User,
+                            };
+                            const activityColors = {
+                              booking_created: 'text-blue-600 bg-blue-50 border-blue-200',
+                              check_in: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+                              check_out: 'text-gray-600 bg-gray-50 border-gray-200',
+                              booking_cancelled: 'text-red-600 bg-red-50 border-red-200',
+                              guest_updated: 'text-amber-600 bg-amber-50 border-amber-200',
+                              guest_created: 'text-purple-600 bg-purple-50 border-purple-200',
+                            };
+                            const Icon = activityIcons[entry.type] || Clock;
+                            const color = activityColors[entry.type] || 'text-gray-600 bg-gray-50 border-gray-200';
+
+                            return (
+                              <div key={entry.id} className="flex gap-3 pb-4 relative">
+                                {idx < activity.length - 1 && (
+                                  <div className="absolute left-[15px] top-8 bottom-0 w-px bg-gray-200" />
+                                )}
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center border flex-shrink-0 ${color}`}>
+                                  <Icon className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900">{entry.description}</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">{entry.timestamp}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>

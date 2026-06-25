@@ -1,8 +1,14 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 export default function MainLayout() {
+  const session = localStorage.getItem('helloStay_session');
+
+  if (!session) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-900">
       {/* Left Sidebar */}

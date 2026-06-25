@@ -1,10 +1,11 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, BedDouble, Search, User, Phone, CreditCard, CalendarDays, Clock,
-  CheckCircle, ChevronRight, ChevronLeft, Users, Filter, Plus, Trash2, FileText
+  X, BedDouble, User, CalendarDays, Search,
+  CheckCircle, ChevronRight, ChevronLeft, Users, Filter, Plus, Trash2, Check
 } from 'lucide-react';
 import clsx from 'clsx';
+import { createBookingWithGuest, getGuests, autoSetOccupancyFromRoomType, triggerSync } from '../../utils/dataStore';
 
 const ID_PROOF_TYPES = ['Aadhaar Card', 'Passport', "Driver's License", 'Voter ID', 'PAN Card', 'Other'];
 
@@ -12,8 +13,12 @@ const INITIAL_GUEST = {
   name: '',
   phone: '',
   address: '',
+  email: '',
   idProofType: '',
   idProofNumber: '',
+  nationality: '',
+  gender: '',
+  guestId: null,
 };
 
 function StepIndicator({ currentStep }) {
@@ -57,7 +62,7 @@ function StepIndicator({ currentStep }) {
   );
 }
 
-function Step1({ rooms, bookings, currencySymbol, onSelectRoom, onClose }) {
+function Step1({ rooms, bookings, currencySymbol, onSelectRoom }) {
   const [checkInDate, setCheckInDate] = useState('');
   const [checkInTime, setCheckInTime] = useState('14:00');
   const [checkOutDate, setCheckOutDate] = useState('');
@@ -404,11 +409,232 @@ function Step1({ rooms, bookings, currencySymbol, onSelectRoom, onClose }) {
   );
 }
 
+function GuestSelector({ guestIndex, guest, allGuests, errors, onSelectExisting, onFieldChange, isPrimary }) {
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [mode, setMode] = useState(() => guest.guestId ? 'selected' : (guest.name ? 'manual' : 'search'));
+
+  const allGuestsList = useMemo(() => {
+    try { return getGuests(); }
+    catch { return []; }
+  }, []);
+
+  const selectedGuest = useMemo(() => {
+    if (guest.guestId) return allGuestsList.find(g => g.id === guest.guestId);
+    return null;
+  }, [guest.guestId, allGuestsList]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return allGuestsList.slice(0, 20);
+    const q = search.toLowerCase();
+    return allGuestsList.filter(g =>
+      g.name.toLowerCase().includes(q) ||
+      g.phone.includes(q) ||
+      (g.email && g.email.toLowerCase().includes(q))
+    );
+  }, [allGuestsList, search]);
+
+  const handleSelectGuest = (g) => {
+    onSelectExisting(guestIndex, g);
+    setSearch('');
+    setShowDropdown(false);
+    setMode('selected');
+  };
+
+  const handleCreateNew = () => {
+    setMode('manual');
+    setShowDropdown(false);
+    setSearch('');
+  };
+
+  const prefix = isPrimary ? 'Primary Guest' : `Guest ${guestIndex + 1}`;
+
+  if (mode === 'selected' && selectedGuest) {
+    return (
+      <div className="bg-gray-50 rounded-xl p-4 border border-indigo-200 relative">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-indigo-600 uppercase flex items-center gap-1">
+            <Check className="w-3 h-3" /> {prefix} — Existing Guest
+          </span>
+          <button onClick={() => { setMode('search'); onSelectExisting(guestIndex, null); }} className="text-[10px] text-gray-500 hover:text-red-500 transition-colors underline">
+            Change
+          </button>
+        </div>
+        <div className="bg-white rounded-lg p-3 border border-gray-100">
+          <p className="text-sm font-semibold text-gray-900">{selectedGuest.name}</p>
+          <p className="text-xs text-gray-500">{selectedGuest.phone}</p>
+          {selectedGuest.email && <p className="text-xs text-gray-400">{selectedGuest.email}</p>}
+          {selectedGuest.nationality && <p className="text-xs text-gray-400">{selectedGuest.nationality}</p>}
+          <p className="text-[10px] text-indigo-500 mt-1">Guest ID: {selectedGuest.id}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 relative">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold text-gray-500 uppercase">{prefix}</span>
+      </div>
+
+      {mode === 'search' && (
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="Search guest by name or phone..."
+            />
+          </div>
+
+          {showDropdown && (
+            <div className="absolute z-30 mt-1 left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+              {filtered.length > 0 ? (
+                filtered.map(g => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => handleSelectGuest(g)}
+                    className="w-full text-left p-3 hover:bg-indigo-50 border-b border-gray-50 last:border-0 transition-colors flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{g.name}</p>
+                      <p className="text-xs text-gray-500">{g.phone}{g.email ? ` • ${g.email}` : ''}</p>
+                    </div>
+                    <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Select</span>
+                  </button>
+                ))
+              ) : (
+                <div className="p-3 text-center">
+                  <p className="text-xs text-gray-500">No guests found</p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleCreateNew}
+                className="w-full text-left p-3 text-indigo-600 hover:bg-indigo-50 border-t border-gray-200 font-medium text-sm flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Create New Guest
+              </button>
+            </div>
+          )}
+
+          {!showDropdown && (
+            <button type="button" onClick={handleCreateNew} className="w-full text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 justify-center py-1">
+              <Plus className="w-3 h-3" /> Or create new guest
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'manual' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-gray-400">Manually entering guest details</span>
+            {allGuestsList.length > 0 && (
+              <button type="button" onClick={() => setMode('search')} className="text-[10px] text-indigo-600 hover:underline">
+                Search existing instead
+              </button>
+            )}
+          </div>
+          <GuestFormFields guestIndex={guestIndex} guest={guest} errors={errors} onFieldChange={onFieldChange} />
+        </div>
+      )}
+
+      {guestIndex === 0 && mode === 'search' && (
+        <p className="text-[10px] text-gray-400 mt-2">Primary guest details will be used for billing contact</p>
+      )}
+    </div>
+  );
+}
+
+function GuestFormFields({ guestIndex, guest, errors, onFieldChange }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Full Name *</label>
+        <input
+          type="text"
+          value={guest.name}
+          onChange={(e) => onFieldChange(guestIndex, 'name', e.target.value)}
+          className={clsx(
+            "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
+            errors[`guest_${guestIndex}_name`] ? "border-red-300" : "border-gray-200"
+          )}
+          placeholder="Full name"
+        />
+        {errors[`guest_${guestIndex}_name`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${guestIndex}_name`]}</p>}
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Phone *</label>
+        <input
+          type="tel"
+          value={guest.phone}
+          onChange={(e) => onFieldChange(guestIndex, 'phone', e.target.value)}
+          className={clsx(
+            "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
+            errors[`guest_${guestIndex}_phone`] ? "border-red-300" : "border-gray-200"
+          )}
+          placeholder="+91 XXXXX XXXXX"
+        />
+        {errors[`guest_${guestIndex}_phone`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${guestIndex}_phone`]}</p>}
+      </div>
+      <div className="col-span-2">
+        <label className="block text-xs font-medium text-gray-600 mb-1">Address *</label>
+        <textarea
+          rows="2"
+          value={guest.address}
+          onChange={(e) => onFieldChange(guestIndex, 'address', e.target.value)}
+          className={clsx(
+            "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
+            errors[`guest_${guestIndex}_address`] ? "border-red-300" : "border-gray-200"
+          )}
+          placeholder="Full address"
+        />
+        {errors[`guest_${guestIndex}_address`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${guestIndex}_address`]}</p>}
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">ID Proof Type *</label>
+        <select
+          value={guest.idProofType}
+          onChange={(e) => onFieldChange(guestIndex, 'idProofType', e.target.value)}
+          className={clsx(
+            "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
+            errors[`guest_${guestIndex}_idProofType`] ? "border-red-300" : "border-gray-200"
+          )}
+        >
+          <option value="">Select...</option>
+          {ID_PROOF_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        {errors[`guest_${guestIndex}_idProofType`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${guestIndex}_idProofType`]}</p>}
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">ID Proof Number *</label>
+        <input
+          type="text"
+          value={guest.idProofNumber}
+          onChange={(e) => onFieldChange(guestIndex, 'idProofNumber', e.target.value)}
+          className={clsx(
+            "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
+            errors[`guest_${guestIndex}_idProofNumber`] ? "border-red-300" : "border-gray-200"
+          )}
+          placeholder="ID number"
+        />
+        {errors[`guest_${guestIndex}_idProofNumber`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${guestIndex}_idProofNumber`]}</p>}
+      </div>
+    </div>
+  );
+}
+
 function Step2({ room, stayData, onUpdateStay, onBack, onContinue, currencySymbol }) {
   const guestCount = room.maxOccupancy;
   const [guests, setGuests] = useState(() => {
     if (stayData.guests && stayData.guests.length > 0) return stayData.guests;
-    return Array.from({ length: guestCount }, () => ({ ...INITIAL_GUEST }));
+    return Array.from({ length: Math.min(1, guestCount) }, () => ({ ...INITIAL_GUEST }));
   });
   const [errors, setErrors] = useState({});
 
@@ -418,6 +644,25 @@ function Step2({ room, stayData, onUpdateStay, onBack, onContinue, currencySymbo
     if (errors[`guest_${index}_${field}`]) {
       setErrors(prev => ({ ...prev, [`guest_${index}_${field}`]: '' }));
     }
+  };
+
+  const handleSelectExisting = (index, existingGuest) => {
+    const updated = guests.map((g, i) => {
+      if (i !== index) return g;
+      if (!existingGuest) return { ...INITIAL_GUEST, guestId: null };
+      return {
+        name: existingGuest.name || '',
+        phone: existingGuest.phone || '',
+        address: existingGuest.address || '',
+        email: existingGuest.email || '',
+        idProofType: existingGuest.idProofType || '',
+        idProofNumber: existingGuest.idProofNumber || '',
+        nationality: existingGuest.nationality || '',
+        gender: existingGuest.gender || '',
+        guestId: existingGuest.id,
+      };
+    });
+    setGuests(updated);
   };
 
   const addGuest = () => {
@@ -437,9 +682,11 @@ function Step2({ room, stayData, onUpdateStay, onBack, onContinue, currencySymbo
     guests.forEach((g, i) => {
       if (!g.name.trim()) newErrors[`guest_${i}_name`] = 'Required';
       if (!g.phone.trim()) newErrors[`guest_${i}_phone`] = 'Required';
-      if (!g.address.trim()) newErrors[`guest_${i}_address`] = 'Required';
-      if (!g.idProofType) newErrors[`guest_${i}_idProofType`] = 'Required';
-      if (!g.idProofNumber.trim()) newErrors[`guest_${i}_idProofNumber`] = 'Required';
+      if (!g.guestId) {
+        if (!g.address.trim()) newErrors[`guest_${i}_address`] = 'Required';
+        if (!g.idProofType) newErrors[`guest_${i}_idProofType`] = 'Required';
+        if (!g.idProofNumber.trim()) newErrors[`guest_${i}_idProofNumber`] = 'Required';
+      }
     });
 
     if (Object.keys(newErrors).length > 0) {
@@ -456,13 +703,12 @@ function Step2({ room, stayData, onUpdateStay, onBack, onContinue, currencySymbo
 
   return (
     <div className="space-y-4">
-      {/* Room Summary */}
       <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <BedDouble className="w-5 h-5 text-indigo-600" />
           <div>
             <p className="text-sm font-bold text-indigo-800">Room {room.roomNumber}</p>
-            <p className="text-xs text-indigo-600">{room.roomType} • {currencySymbol}{room.pricePerNight?.toLocaleString('en-IN')}{room.pricingModel === 'per_person' ? '/person' : '/night'}</p>
+            <p className="text-xs text-indigo-600">{room.roomType} • {currencySymbol}{room.pricePerNight?.toLocaleString('en-IN')}{room.pricingModel === 'per_person' ? '/person' : '/night'} • Max {guestCount} guest{guestCount > 1 ? 's' : ''}</p>
           </div>
         </div>
         <button onClick={onBack} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 underline">
@@ -470,117 +716,43 @@ function Step2({ room, stayData, onUpdateStay, onBack, onContinue, currencySymbo
         </button>
       </div>
 
-      {/* Guest Forms */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
             <User className="w-4 h-4" /> Guest Details ({guests.length}/{guestCount})
           </h4>
           {guests.length < guestCount && (
-            <button
-              onClick={addGuest}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-            >
+            <button onClick={addGuest} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
               <Plus className="w-3 h-3" /> Add Guest
             </button>
           )}
         </div>
 
-        <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
           {guests.map((guest, i) => (
-            <div key={i} className="bg-gray-50 rounded-xl p-4 border border-gray-100 relative">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-gray-500 uppercase">
-                  {i === 0 ? 'Primary Guest' : `Guest ${i + 1}`}
-                </span>
-                {i > 0 && (
-                  <button
-                    onClick={() => removeGuest(i)}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    value={guest.name}
-                    onChange={(e) => handleGuestChange(i, 'name', e.target.value)}
-                    className={clsx(
-                      "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors[`guest_${i}_name`] ? "border-red-300" : "border-gray-200"
-                    )}
-                    placeholder="Full name"
-                  />
-                  {errors[`guest_${i}_name`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${i}_name`]}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Phone *</label>
-                  <input
-                    type="tel"
-                    value={guest.phone}
-                    onChange={(e) => handleGuestChange(i, 'phone', e.target.value)}
-                    className={clsx(
-                      "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors[`guest_${i}_phone`] ? "border-red-300" : "border-gray-200"
-                    )}
-                    placeholder="+91 XXXXX XXXXX"
-                  />
-                  {errors[`guest_${i}_phone`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${i}_phone`]}</p>}
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Address *</label>
-                  <textarea
-                    rows="2"
-                    value={guest.address}
-                    onChange={(e) => handleGuestChange(i, 'address', e.target.value)}
-                    className={clsx(
-                      "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors[`guest_${i}_address`] ? "border-red-300" : "border-gray-200"
-                    )}
-                    placeholder="Full address"
-                  />
-                  {errors[`guest_${i}_address`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${i}_address`]}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">ID Proof Type *</label>
-                  <select
-                    value={guest.idProofType}
-                    onChange={(e) => handleGuestChange(i, 'idProofType', e.target.value)}
-                    className={clsx(
-                      "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors[`guest_${i}_idProofType`] ? "border-red-300" : "border-gray-200"
-                    )}
-                  >
-                    <option value="">Select...</option>
-                    {ID_PROOF_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  {errors[`guest_${i}_idProofType`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${i}_idProofType`]}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">ID Proof Number *</label>
-                  <input
-                    type="text"
-                    value={guest.idProofNumber}
-                    onChange={(e) => handleGuestChange(i, 'idProofNumber', e.target.value)}
-                    className={clsx(
-                      "w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors[`guest_${i}_idProofNumber`] ? "border-red-300" : "border-gray-200"
-                    )}
-                    placeholder="ID number"
-                  />
-                  {errors[`guest_${i}_idProofNumber`] && <p className="text-[10px] text-red-500 mt-0.5">{errors[`guest_${i}_idProofNumber`]}</p>}
-                </div>
-              </div>
+            <div key={i} className="relative">
+              {i > 0 && (
+                <button
+                  onClick={() => removeGuest(i)}
+                  className="absolute -top-1 -right-1 z-10 p-1 text-gray-400 hover:text-red-500 transition-colors bg-white rounded-full border border-gray-200 shadow-sm"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+              <GuestSelector
+                guestIndex={i}
+                guest={guest}
+                allGuests={guests}
+                errors={errors}
+                onSelectExisting={handleSelectExisting}
+                onFieldChange={handleGuestChange}
+                isPrimary={i === 0}
+              />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Special Requests */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">Special Requests (optional)</label>
         <textarea
@@ -592,7 +764,6 @@ function Step2({ room, stayData, onUpdateStay, onBack, onContinue, currencySymbo
         />
       </div>
 
-      {/* Continue Button */}
       <div className="flex justify-end pt-2">
         <button
           onClick={handleContinue}
@@ -605,7 +776,7 @@ function Step2({ room, stayData, onUpdateStay, onBack, onContinue, currencySymbo
   );
 }
 
-function Step3({ room, stayData, onUpdateStay, onBack, currencySymbol, onConfirm }) {
+function Step3({ room, stayData, onBack, currencySymbol, onConfirm }) {
   const hotelData = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('helloStay_hotelData') || '{}'); }
     catch { return {}; }
@@ -854,7 +1025,7 @@ function Step3({ room, stayData, onUpdateStay, onBack, currencySymbol, onConfirm
   );
 }
 
-export default function BookingModal({ isOpen, onClose, rooms, bookings, currencySymbol, onBookingCreated, editingBooking }) {
+export default function BookingModal({ isOpen, onClose, rooms, bookings, currencySymbol, onBookingCreated }) {
   const [step, setStep] = useState(1);
   const [stayData, setStayData] = useState({
     checkInDate: '',
@@ -901,15 +1072,35 @@ export default function BookingModal({ isOpen, onClose, rooms, bookings, currenc
 
   const handleConfirm = (paymentData) => {
     const now = new Date().toISOString();
-    const newBooking = {
-      id: Date.now(),
+    const primaryGuest = stayData.guests[0] || {};
+
+    const guestData = {
+      name: primaryGuest.name || '',
+      phone: primaryGuest.phone || '',
+      address: primaryGuest.address || '',
+      email: primaryGuest.email || '',
+      idProofType: primaryGuest.idProofType || '',
+      idProofNumber: primaryGuest.idProofNumber || '',
+      nationality: primaryGuest.nationality || '',
+      gender: primaryGuest.gender || '',
+      id: primaryGuest.guestId || null,
+    };
+
+    const isNewGuest = !primaryGuest.guestId;
+
+    const guestsWithIds = stayData.guests.map(g => ({
+      ...g,
+      guestId: g.guestId || null,
+    }));
+
+    const bookingData = {
       roomId: selectedRoom.id,
       roomNumber: selectedRoom.roomNumber,
       roomType: selectedRoom.roomType,
-      primaryGuest: stayData.guests[0],
-      guests: stayData.guests,
-      guestName: stayData.guests[0]?.name || '',
-      guestPhone: stayData.guests[0]?.phone || '',
+      primaryGuest: guestsWithIds[0],
+      guests: guestsWithIds,
+      guestName: primaryGuest.name || '',
+      guestPhone: primaryGuest.phone || '',
       adults: stayData.guests.length,
       children: 0,
       checkInDate: stayData.checkInDate,
@@ -923,11 +1114,10 @@ export default function BookingModal({ isOpen, onClose, rooms, bookings, currenc
       paymentStatus: paymentData.paymentStatus,
       specialRequests: stayData.specialRequests,
       status: 'Reserved',
-      createdAt: now,
-      updatedAt: now,
     };
 
-    onBookingCreated(newBooking);
+    createBookingWithGuest(bookingData, guestData, isNewGuest);
+    onBookingCreated(bookingData);
     handleClose();
   };
 

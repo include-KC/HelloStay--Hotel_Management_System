@@ -27,7 +27,43 @@ To easily download dependencies (like React, Bootstrap, or Vite) without having 
 Always rely on `package.json` to keep track of dependencies rather than remembering what you installed. `npm install` automatically reads `package.json` and installs everything needed.
 
 >HelloStay Usage
-Used to install Vite, React, and future frontend libraries in the `frontend` folder.
+Used to elegantly flip the `ArrowRight` icon on the `Sidebar` active tab and handle hover states for the `Facilities` grid.
+
+---
+
+## Splash Screen Routing & Layouts
+>Definition
+A technique where the application uses a "gatekeeper" route (often `/` or `/splash`) to evaluate the environment or user session before rendering the main application layout.
+
+>Purpose
+Prevents UI flickering or exposing protected dashboards to unauthenticated users by evaluating `localStorage` state *before* mounting the `<MainLayout />`.
+
+>Example Flow
+```jsx
+// Splash.jsx (Entry Point)
+useEffect(() => {
+  const session = localStorage.getItem('helloStay_session');
+  if (session) navigate('/dashboard');
+  else navigate('/login');
+}, []);
+```
+
+>HelloStay Usage
+Used in `Splash.jsx` to create a premium entry experience. Because the desktop (Electron) version opens offline instantly, a Splash screen gives the app time to load data while displaying a professional animation.
+
+---
+
+## Local Storage Session Management
+>Definition
+Storing serialized user profile data in the browser's `localStorage` to persist authentication state across page reloads.
+
+>Keys Used in HelloStay
+- `helloStay_session`: The active authenticated user object. If missing, the user is logged out.
+- `helloStay_accounts`: An array of saved user profiles. Used in `Login.jsx` to render the "Profile Selection" screen.
+- `helloStay_keepLoggedIn`: Boolean. If true, the Splash screen instantly routes to Dashboard. If false, the session is cleared upon explicit logout or ignored on restart.
+
+>Industry Practice
+While acceptable for non-sensitive data and Profile Selection lists (like Netflix profiles), real session tokens should be stored in `HttpOnly` cookies in production to prevent Cross-Site Scripting (XSS) attacks.er.
 
 ---
 
@@ -3334,3 +3370,265 @@ def root():
 
 >HelloStay Usage
 Used in `backend/app/main.py` line 27. Accessed at `http://127.0.0.1:8000/`. Returns app name, version, and status message. Tagged for Swagger documentation.
+
+---
+
+## Array-Based Permissions Control (RBAC)
+>Definition
+A Role-Based Access Control (RBAC) strategy where a user's access rights are defined by an array of string permissions (e.g., `['Bookings', 'Rooms', 'Settings']`) rather than a single string role (e.g., `'Manager'`).
+
+>Purpose
+To allow granular access control for different employee types. A single "Manager" string role is rigid, whereas permission arrays allow custom roles (like a receptionist who can only see Bookings, or an accountant who can only see Expenses and Reports).
+
+>Syntax Example
+```jsx
+// AppRoutes.jsx - Protecting a route using the permissions array
+const ProtectedRoute = ({ children, requiredPermission }) => {
+  const sessionData = localStorage.getItem('helloStay_session');
+  if (!sessionData) return <Navigate to="/login" replace />;
+  
+  const session = JSON.parse(sessionData);
+  
+  // Owners bypass all permission checks
+  if (session.role === 'Owner') return children;
+  
+  // Check if the user's permission array includes the required module
+  if (requiredPermission && !session.permissions?.includes(requiredPermission)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+};
+```
+
+>Industry Practice
+- Store permissions as an array of strings in the database or JWT payload.
+- Always include an implicit bypass for `Admin` or `Owner` roles so they don't explicitly need every string in their array.
+- Use the exact same permission strings for both routing guards (`ProtectedRoute`) and UI visibility (hiding Sidebar links).
+
+>Common Mistakes
+- Using simple strings instead of arrays for permissions, leading to combinatoric explosions of roles (e.g., `ReceptionistAndAccountant`).
+- Forgetting to hide the UI element (Sidebar link) even if the Route itself is protected, leading to a frustrating user experience where they click a visible link and get redirected.
+
+>HelloStay Usage
+Implemented during AD 88. Used in `AppRoutes.jsx` to guard modules and `Sidebar.jsx` to dynamically render navigation items based on the active user's `permissions` array stored in `localStorage`.
+
+---
+
+## Targeted Authentication Modal (OwnerAuthModal)
+>Definition
+A security pattern where destructive or highly privileged actions (like deleting the hotel or modifying another administrator's profile) trigger an inline authentication modal asking for the password, rather than executing immediately.
+
+>Purpose
+To prevent unauthorized users from performing critical actions if an administrator walks away from an unlocked terminal. It acts as a "sudo" prompt.
+
+>Syntax Example
+```jsx
+// OwnerAuthModal.jsx handling specific targeting
+let validOwners;
+if (targetOwnerId) {
+  // Must authenticate as the SPECIFIC owner being modified
+  validOwners = accounts.filter(a => a.id === targetOwnerId && a.role === 'Owner');
+} else {
+  // Can authenticate as ANY owner
+  validOwners = accounts.filter(a => a.role === 'Owner');
+}
+```
+
+>Industry Practice
+- Common in financial apps, billing settings, or when deleting workspaces.
+- The modal should completely block the UI (`z-50`, `fixed inset-0`).
+- Validate the credential immediately without logging the user out.
+
+>HelloStay Usage
+Used in `HotelInfo.jsx` (before editing/deleting hotel properties) and `ProfileEditModal.jsx` (before editing/deleting another Owner). When an Owner edits an Employee, the prompt is skipped for UX fluidity, but modifying another Owner enforces the prompt for strict security.
+
+---
+
+## Concept 86: Centralized Data Store Pattern
+
+>Definition
+A pattern where all cross-module data operations (read, write, delete) are routed through a single utility module (`dataStore.js`) rather than being performed directly in component files. The data store acts as the single source of truth for localStorage access.
+
+>Purpose
+- Prevent data inconsistency when multiple modules operate on the same entity (e.g., Bookings and Rooms both modify room status).
+- Provide a clear API surface for data operations — components don't need to know localStorage key names or JSON parse/serialize logic.
+- Enable cross-module synchronization via custom events (`triggerSync` / `SYNC_EVENT`).
+- Encapsulate business logic (e.g., `createBookingWithGuest` handles both booking creation and guest linking) in one place.
+
+>Syntax Example
+```javascript
+// dataStore.js — centralized exports
+export function getRooms() {
+  return JSON.parse(localStorage.getItem('helloStay_rooms') || '[]');
+}
+
+export function saveRooms(rooms, silent = false) {
+  localStorage.setItem('helloStay_rooms', JSON.stringify(rooms));
+  if (!silent) triggerSync();
+}
+
+// Components use dataStore, never localStorage directly
+import { getRooms, saveRooms, triggerSync, SYNC_EVENT } from '../utils/dataStore';
+const [rooms, setRooms] = useState(() => getRooms());
+```
+
+>Industry Practice
+- Centralize all localStorage key references in one file to avoid key name typos.
+- Use a `silent` parameter for bulk operations to avoid excessive sync events.
+- Export a `SYNC_EVENT` constant so all modules listen for the same event.
+- Always provide `get*()` functions for lazy state initialization (pass to `useState` as initializer).
+
+>Common Mistakes
+- Modules still writing directly to localStorage — bypasses sync and causes stale state in other components.
+- Forgetting to call `triggerSync()` after write operations — other modules don't refresh.
+- Not handling the `silent` parameter — bulk operations cause cascade of sync events.
+- Importing dataStore functions but still accessing localStorage directly for some operations.
+
+>HelloStay Usage
+Used in `dataStore.js`. All page components (`Rooms.jsx`, `Bookings.jsx`, `Guests.jsx`) import and use dataStore functions exclusively. The `SYNC_EVENT` ensures all open modules refresh when data changes.
+
+---
+
+## Concept 87: GuestId Referential Integrity + Legacy Fallback
+
+>Definition
+A data matching strategy where Bookings store a `guestId` field pointing to a Guest profile, and the Guests module uses this direct ID to match bookings. A legacy fallback matches by exact `guestName + guestPhone` for bookings created before the guestId system.
+
+>Purpose
+- Eliminate unreliable name-based matching that breaks when guest names are edited or duplicated.
+- Guarantee that a guest's stay history, total spent, and activity feed are always correct.
+- Support backwards compatibility with pre-migration bookings that lack guestId.
+
+>Syntax Example
+```javascript
+// Strict guestId matching with legacy fallback
+const getGuestStayHistory = (guest) => {
+  return bookings.filter(b => {
+    if (b.guestId === guest.id) return true;                    // direct match
+    if (b.guests?.some(g => g.guestId === guest.id)) return true; // multi-guest booking
+    // Legacy fallback: exact name+phone match
+    if (!b.guestId && b.guestName === guest.name && b.guestPhone === guest.phone) return true;
+    return false;
+  });
+};
+```
+
+>Industry Practice
+- Always store a foreign key (guestId) when creating new records — never rely on name matching.
+- For legacy data, prefer exact field-by-field matching over fuzzy matching to avoid false positives.
+- Run a one-time migration script at startup to backfill guestId on legacy records.
+- After migration phase, the fallback can be removed entirely.
+
+>Common Mistakes
+- Using `includes()` or case-insensitive matching for legacy fallback — matches wrong guests.
+- Not handling multi-guest bookings (guests array) — misses secondary guests' history.
+- Forgetting to update the legacy fallback when guest profile is edited — history disappears.
+- Only matching on `guestId` without fallback — pre-migration bookings show "No stays".
+
+>HelloStay Usage
+Used in `Guests.jsx` for `getGuestStayHistory()`, `stayStats`, and `spentStats` memos. The legacy fallback matches on exact `guestName === guest.name && guestPhone === guest.phone`. `dataStore.js` has `migrateLegacyBookings()` that runs once on startup to backfill guestId.
+
+---
+
+## Concept 88: Guarded State Transitions
+
+>Definition
+A pattern where state changes are validated against business rules and current system state before being applied. Invalid transitions are blocked with user-facing messages explaining why.
+
+>Purpose
+- Enforce business logic at the UI level (e.g., cannot manually set a room to Available if it has an active booking).
+- Prevent data corruption from invalid state combinations.
+- Provide clear feedback to users when an action is not allowed.
+- Support override mechanisms (e.g., Force Available) for authorized users.
+
+>Syntax Example
+```javascript
+const handleStatusChange = (roomId, newStatus) => {
+  const room = rooms.find(r => r.id === roomId);
+  const activeBooking = bookings.find(b =>
+    b.roomId === roomId && (b.status === 'Reserved' || b.status === 'Checked In')
+  );
+
+  if (activeBooking && (newStatus === 'Occupied' || newStatus === 'Reserved')) {
+    setStatusMessage('Room status is managed by active bookings');
+    return;
+  }
+
+  if (newStatus === 'Available' && activeBooking) {
+    if (currentUserRole !== 'Owner') {
+      setStatusMessage('Only Owner can override active booking status');
+      return;
+    }
+    setShowForceConfirm(roomId); // Require confirmation
+    return;
+  }
+
+  // Valid transition — proceed
+  const updated = rooms.map(r => r.id === roomId ? { ...r, roomStatus: newStatus } : r);
+  saveRooms(updated);
+};
+```
+
+>Industry Practice
+- Define allowed transitions in a state machine (e.g., Reserved→Occupied→Cleaning→Available).
+- Check for active business constraints (bookings, check-ins) before allowing manual overrides.
+- Use role checks for sensitive operations (e.g., Owner-only force override).
+- Show clear status messages instead of silently failing.
+
+>Common Mistakes
+- Blocking all manual changes — some transitions (Available→Maintenance) should always be allowed.
+- Not differentiating between booking-driven and manual statuses — Occupied should only come from check-in.
+- Allowing forced overrides without confirmation — accidental data loss.
+- Not checking for future bookings — a room with future reservation should not be set to Maintenance.
+
+>HelloStay Usage
+Used in `Rooms.jsx` `handleStatusChange()`. Blocks manual Occupied/Reserved if no active booking. Blocks manual Available if active booking exists (unless Owner uses Force Available with confirmation dialog). Only Available→Maintenance/Cleaning are freely allowed.
+
+---
+
+## Concept 89: Unified Activity Feed with Timeline Visualization
+
+>Definition
+A chronological timeline combining events from multiple data sources (booking lifecycle, profile changes) into a single feed. Each event has a type-specific icon, color, description, and timestamp, rendered with a vertical connecting line.
+
+>Purpose
+- Provide a complete history of a guest's interactions with the hotel in one view.
+- Combine scattered data (booking events from bookings[] + profile events from guest record) into a unified story.
+- Enable staff to quickly understand what happened and when without switching between tabs.
+
+>Syntax Example
+```javascript
+// dataStore.js — getGuestActivity
+export function getGuestActivity(guestId) {
+  const bookings = getBookings();
+  const activities = [];
+
+  // Collect booking events
+  bookings.forEach(b => {
+    if (b.guestId !== guestId) return;
+    activities.push({ type: 'booking_created', description: `Booked Room ${b.roomNumber}`, timestamp: b.createdAt });
+    if (b.status === 'Checked In') activities.push({ type: 'check_in', description: `Checked into Room ${b.roomNumber}`, timestamp: b.checkInTime });
+    if (b.status === 'Checked Out' || b.status === 'Checked Out') activities.push({ type: 'check_out', description: `Checked out of Room ${b.roomNumber}`, timestamp: b.checkOutTime });
+  });
+
+  return activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+```
+
+>Industry Practice
+- Merge events from multiple sources and sort by timestamp descending.
+- Use a small, fixed set of event types (6-8 max) for visual consistency.
+- Map each type to a specific icon and color for instant recognition.
+- Show newest events first (reverse chronological).
+- Use a vertical connecting line between items for the timeline look.
+
+>Common Mistakes
+- Not deduplicating events from overlapping sources.
+- Using too many event types — overwhelms the user.
+- Forgetting to sort — events appear in arbitrary order.
+- Not using a connecting line — looks like a flat list, not a timeline.
+- Not handling empty state — blank tab with no feedback.
+
+>HelloStay Usage
+Used in `Guests.jsx` "All Activity" tab. `getGuestActivity(guest.id)` in dataStore merges booking events (created, checked in, checked out, cancelled) with guest profile events (created, updated). Rendered with Lucide icons (BedDouble, LogIn, LogOut, XCircle, Edit3, User) and corresponding colors.
