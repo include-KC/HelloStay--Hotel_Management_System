@@ -133,9 +133,7 @@ export function updateBookingStatus(bookingId, newStatus, paymentDetails = null)
   if (newRoomStatus) {
     const updatedRooms = rooms.map(r => {
       if (r.id === booking.roomId) {
-        // If room becomes available, clear statusUntil if it was set
-        const { statusUntil, ...rest } = r;
-        return { ...rest, roomStatus: newRoomStatus };
+        return { ...r, roomStatus: newRoomStatus, statusUntil: undefined };
       }
       return r;
     });
@@ -180,8 +178,7 @@ export function checkTimeBoundStatuses() {
       const untilDate = new Date(r.statusUntil);
       if (now >= untilDate) {
         changed = true;
-        const { statusUntil, ...rest } = r;
-        return { ...rest, roomStatus: 'Available' };
+        return { ...r, roomStatus: 'Available', statusUntil: undefined };
       }
     }
     return r;

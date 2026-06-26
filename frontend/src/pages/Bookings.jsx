@@ -2,12 +2,12 @@ import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Search, Plus, ChevronLeft, ChevronRight, Eye, Trash2,
-  Clock, CheckCircle, XCircle, LogOut, User, BedDouble, X, AlertCircle
+  Clock, CheckCircle, XCircle, LogOut, User, BedDouble, X
 } from 'lucide-react';
 import clsx from 'clsx';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
 import BookingModal from '../components/modals/BookingModal';
-import { createBookingWithGuest, updateBookingStatus, deleteBooking, triggerSync, getBookings, getRooms } from '../utils/dataStore';
+import { updateBookingStatus, deleteBooking, triggerSync, getBookings, getRooms } from '../utils/dataStore';
 
 const PAYMENT_STYLES = {
   'Pending': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', gradient: 'from-amber-50 to-orange-50' },
@@ -34,7 +34,7 @@ const ITEMS_PER_PAGE = 8;
 
 export default function Bookings() {
   const [bookings, setBookings] = useState(() => getBookings());
-  const [rooms, setRooms] = useState(() => getRooms());
+  const [rooms] = useState(() => getRooms());
 
   const hotelData = useMemo(() => {
     try {
@@ -79,7 +79,7 @@ export default function Bookings() {
     updateBookingStatus(bookingId, newStatus, paymentDetails);
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus, updatedAt: new Date().toISOString() } : b));
     triggerSync();
-  }, [bookings, billingModal]);
+  }, [bookings]);
 
   const handleBillingConfirm = useCallback((bookingId, extraCharge, totalAmount, amountPaid) => {
     const now = new Date().toISOString();

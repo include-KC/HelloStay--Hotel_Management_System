@@ -2,13 +2,13 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Search, BedDouble, Pencil, Trash2, ChevronUp, ChevronDown,
-  ChevronLeft, ChevronRight, Users, Filter, Activity, Wrench, SprayCan, AlertCircle, User
+  ChevronLeft, ChevronRight, Users, Filter, Activity, Wrench, SprayCan, User
 } from 'lucide-react';
 import clsx from 'clsx';
 import AddRoomModal from '../components/modals/AddRoomModal';
 import RoomStatusSidebar from '../components/modals/RoomStatusSidebar';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
-import { getRooms, getBookings, deleteRoom, triggerSync } from '../utils/dataStore';
+import { getRooms, getBookings, triggerSync } from '../utils/dataStore';
 
 const STATUS_STYLES = {
   Available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -24,7 +24,7 @@ const ROWS_PER_PAGE = 10;
 
 export default function Rooms() {
   const [rooms, setRooms] = useState(() => getRooms());
-  const [bookings, setBookings] = useState(() => getBookings());
+  const [bookings] = useState(() => getBookings());
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);

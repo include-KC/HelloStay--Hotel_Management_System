@@ -1,6 +1,6 @@
-﻿import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Plus, ChevronLeft, ChevronRight, Eye, Edit3, Trash2, XCircle, ArrowRight, Phone, MapPin, User, BedDouble, Mail, FileText, Clock, LogIn, LogOut, CreditCard, AlertCircle } from 'lucide-react';
+import { Users, Search, Plus, ChevronLeft, ChevronRight, Eye, Edit3, Trash2, XCircle, ArrowRight, Phone, MapPin, User, BedDouble, Mail, FileText, Clock, LogIn, LogOut, CreditCard } from 'lucide-react';
 import { CURRENCY_SYMBOLS } from '../utils/currencies';
 import { getGuests, saveGuests, getBookings, getGuestActivity, triggerSync, SYNC_EVENT } from '../utils/dataStore';
 
@@ -34,13 +34,11 @@ export default function Guests() {
     return () => window.removeEventListener(SYNC_EVENT, handleSync);
   }, []);
 
-  const [currencySymbol, setCurrencySymbol] = useState('₹');
-
-  useEffect(() => {
+  const currencySymbol = useMemo(() => {
     try {
       const hd = JSON.parse(localStorage.getItem('helloStay_hotelData') || '{}');
-      setCurrencySymbol(CURRENCY_SYMBOLS[hd.currency] || '₹');
-    } catch { setCurrencySymbol('₹'); }
+      return CURRENCY_SYMBOLS[hd.currency] || '₹';
+    } catch { return '₹'; }
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,7 +57,7 @@ export default function Guests() {
     triggerSync();
   };
 
-  const getGuestStayHistory = (guest) => {
+  const getGuestStayHistory = useCallback((guest) => {
     return bookings.filter(b => {
       if (b.guestId === guest.id) return true;
       if (b.guests && b.guests.some(g => g.guestId === guest.id)) return true;
@@ -67,7 +65,7 @@ export default function Guests() {
       if (b.guests && b.guests.some(g => !g.guestId && g.guestName === guest.name && g.guestPhone === guest.phone)) return true;
       return false;
     });
-  };
+  }, [bookings]);
 
   const handleFormChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -162,7 +160,7 @@ export default function Guests() {
       return getGuestStayHistory(g).length > 0;
     }).length,
     countries: [...new Set(guests.map(g => g.nationality).filter(Boolean))].length,
-  }), [guests, bookings]);
+  }), [guests, getGuestStayHistory]);
 
   const openAddModal = () => {
     setEditingGuest(null);

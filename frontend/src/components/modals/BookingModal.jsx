@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, BedDouble, User, CalendarDays, Search,
   CheckCircle, ChevronRight, ChevronLeft, Users, Filter, Plus, Trash2, Check
 } from 'lucide-react';
 import clsx from 'clsx';
-import { createBookingWithGuest, getGuests, autoSetOccupancyFromRoomType, triggerSync } from '../../utils/dataStore';
+import { createBookingWithGuest, getGuests } from '../../utils/dataStore';
 
 const ID_PROOF_TYPES = ['Aadhaar Card', 'Passport', "Driver's License", 'Voter ID', 'PAN Card', 'Other'];
 
@@ -409,7 +409,7 @@ function Step1({ rooms, bookings, currencySymbol, onSelectRoom }) {
   );
 }
 
-function GuestSelector({ guestIndex, guest, allGuests, errors, onSelectExisting, onFieldChange, isPrimary }) {
+function GuestSelector({ guestIndex, guest, errors, onSelectExisting, onFieldChange, isPrimary }) {
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [mode, setMode] = useState(() => guest.guestId ? 'selected' : (guest.name ? 'manual' : 'search'));
@@ -1071,7 +1071,6 @@ export default function BookingModal({ isOpen, onClose, rooms, bookings, currenc
   };
 
   const handleConfirm = (paymentData) => {
-    const now = new Date().toISOString();
     const primaryGuest = stayData.guests[0] || {};
 
     const guestData = {
