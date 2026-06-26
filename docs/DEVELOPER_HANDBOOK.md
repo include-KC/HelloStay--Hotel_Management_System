@@ -6475,23 +6475,3 @@ onMouseLeave={() => setHoveredStatus(null)}
 
 ### HelloStay Usage
 `Dashboard.jsx` — Room Occupancy Overview. `hoveredStatus` state links the Recharts donut chart segments with the status breakdown panel. Hovering a chart segment highlights the matching panel row; hovering a panel row dims non-matching chart segments via `fillOpacity`.
-
----
-
-# CMD Command Tricks
-
-## mkdir
-> Definition: 
-This command is used to create single or multiple directories/files.
-
->SYNTAX:
-mkdir file 1, file2, file3
-
----
-
-## ni
-> Definition:
-This function is used to create single or multiple files in a folder directory.
-
->SYNTAX:
-ni file1.extension, file2.extension
