@@ -2509,6 +2509,15 @@ Interactive rebase allows:
 
 This is commonly used before publishing a branch.
 
+### Deletinmg Commits using git rebase
+1. use <git rebase -i HEAD`3>
+2. Under the vim terminal, press i to enter INSERT MODE.
+3. Replace pick with drop in the commit which you want to delete.
+4. Press ESC to get out from INSERT MODE.
+5. Press ":" then type wq andw press enter to save changes.
+6. After that use <git rebase --continue> to continue the change.
+7. At last, use <git push origin main> to sync changes to github.
+
 ---
 
 ## Squashing Commits
