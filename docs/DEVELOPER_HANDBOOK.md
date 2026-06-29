@@ -6484,3 +6484,42 @@ onMouseLeave={() => setHoveredStatus(null)}
 
 ### HelloStay Usage
 `Dashboard.jsx` — Room Occupancy Overview. `hoveredStatus` state links the Recharts donut chart segments with the status breakdown panel. Hovering a chart segment highlights the matching panel row; hovering a panel row dims non-matching chart segments via `fillOpacity`.
+
+---
+
+# CMD Commands
+
+## mkdir
+Used to create a new folder in the current path.
+
+>Syntax:
+mkdir folder-name
+
+---
+
+## Create a File
+Used to create new file under the current path.
+
+>Syntax:
+New-Item -Name "filename with extension" -ItemType File
+
+---
+
+## Create multiple files
+>Syntax:
+New-Item -Path "Path with new file name", "path with new file name" -ItemType File
+
+>Example
+```powershell
+New-Item -Path "c:\temp\test01.txt","c:\temp\test02.txt" -ItemType File
+```
+
+---
+
+## Create file in specific path
+Used to create a file in any specific path.
+
+>Syntax:
+New-Item -Path "path" -Name "filename with extension" -ItemType File
+
+---

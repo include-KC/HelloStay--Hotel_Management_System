@@ -377,287 +377,778 @@ A startup migration (`migrateLegacyBookings()`) runs once on app load, guarded b
 
 ---
 
-## Architecture Decisions
+## Backend Architecture Decisions
 
-### AD 1: Backend Layer Separation
+### Backend AD 1: Backend Layer Separation
 **Status:** Accepted
 
 Backend follows a layered architecture: `api/`, `core/`, `database/`, `models/`, `schemas/`. Each folder has a single responsibility for cleaner code, easier debugging, better scalability, and simpler testing.
 
-### AD 2: Database Choice
+### Backend AD 2: Database Choice
 **Status:** Accepted
 
 **Chosen:** SQLite. HelloStay is an offline desktop application requiring no server setup, easy backup, easy deployment, and lightweight footprint.
 
-### AD 3: Database Layer Separation
+### Backend AD 3: Database Layer Separation
 **Status:** Accepted
 
 Database-related code (`base.py`, `connection.py`, `session.py`) is stored separately from API code for reusability and maintainability.
 
-### AD 4: Model-Based Database Design
+### Backend AD 4: Model-Based Database Design
 **Status:** Accepted
 
 Database tables are defined using SQLAlchemy models for object-oriented design, cleaner code, and easier maintenance.
 
-### AD 5: ORM-Based Table Generation
+### Backend AD 5: ORM-Based Table Generation
 **Status:** Accepted (Superseded by AD 48 for production)
 
 Tables were initially generated from SQLAlchemy models rather than raw SQL for consistent schema definition.
 
-### AD 6: Session-Based Database Access
+### Backend AD 6: Session-Based Database Access
 **Status:** Accepted
 
 Database operations performed through SQLAlchemy sessions for centralized access, better transaction control, and industry-standard patterns.
 
-### AD 7: Separate API Layer
+### Backend AD 7: Separate API Layer
 **Status:** Accepted
 
 API endpoints are stored in dedicated router files per module for better organization and scalability.
 
-### AD 8: Documentation-Driven Development
+### Backend AD 8: Documentation-Driven Development
 **Status:** Accepted
 
 Documentation maintained alongside development. Knowledge gained during development is preserved for future reference.
 
-### AD 9: Hotel-Level Business Settings
+### Backend AD 9: Hotel-Level Business Settings
 **Status:** Accepted (Future)
 
 Business configuration settings (check-in time, checkout time, GST, invoice settings) will be stored in a dedicated `hotel_settings` table rather than the `rooms` or `system_info` table.
 
-### AD 10: V1 First, V2 Later Strategy
+### Backend AD 10: V1 First, V2 Later Strategy
 **Status:** Accepted
 
 Prioritize completing a fully functional V1 (core functionality, complete hotel workflow) before implementing advanced architecture improvements. V2 will focus on normalization, relationships, enhanced validation, and performance optimizations.
 
-### AD 11: Room Facilities Storage
+### Backend AD 11: Room Facilities Storage
 **Status:** Accepted (V1)
 
 Room facilities stored as a comma-separated string in V1 for simplicity. A dedicated facilities table may be introduced in V2.
 
-### AD 12: Room Status Validation Strategy
+### Backend AD 12: Room Status Validation Strategy
 **Status:** Accepted (V1)
 
 Room status stored as a String field in V1 with allowed values: Available, Occupied, Reserved, Maintenance. Validation on frontend dropdown and API.
 
-### AD 13: Optional Maximum Occupancy
+### Backend AD 13: Optional Maximum Occupancy
 **Status:** Accepted
 
 `max_occupancy` field is optional and nullable to accommodate hotel owners who may not define it.
 
-### AD 14: Room Status vs Reservation Availability
+### Backend AD 14: Room Status vs Reservation Availability
 **Status:** Accepted
 
 `room_status` represents current operational state only. Date-based availability is determined through reservation records.
 
-### AD 15: Upcoming Reservation Visibility
+### Backend AD 15: Upcoming Reservation Visibility
 **Status:** Accepted
 
 Future reservations are not stored in `room_status`. They are obtained from reservation records.
 
-### AD 16: Room Configuration vs Room Operations
+### Backend AD 16: Room Configuration vs Room Operations
 **Status:** Accepted (V1)
 
 Single `RoomUpdate` schema used for simplicity in V1. Room operations (status) and configuration (price, type) may be separated in V2.
 
-### AD 17: Centralized Database Session Management
+### Backend AD 17: Centralized Database Session Management
 **Status:** Accepted
 
 Database sessions managed through a shared `get_db()` dependency to avoid repetitive session creation code.
 
-### AD 18: Database Session Dependency
+### Backend AD 18: Database Session Dependency
 **Status:** Accepted
 
 Shared `get_db()` dependency uses yield/finally pattern for automatic session cleanup.
 
-### AD 19: Database Access Pattern
+### Backend AD 19: Database Access Pattern
 **Status:** Accepted
 
 FastAPI dependency injection (`db: Session = Depends(get_db)`) replaces manual session creation per endpoint.
 
-### AD 20: Explicit Schema-to-Model Mapping
+### Backend AD 20: Explicit Schema-to-Model Mapping
 **Status:** Accepted (V1)
 
 Explicit field mapping (`room_number=room.room_number`) used in V1 instead of `Room(**room.model_dump())` for easier learning and debugging.
 
-### AD 21: Room API Response Strategy
+### Backend AD 21: Room API Response Strategy
 **Status:** Accepted
 
 Room APIs use FastAPI `response_model` instead of manual response dictionaries for cleaner code and validation.
 
-### AD 22: Pydantic ORM Serialization
+### Backend AD 22: Pydantic ORM Serialization
 **Status:** Accepted
 
 `model_config = ConfigDict(from_attributes=True)` enables direct ORM-to-Pydantic serialization.
 
-### AD 23: Room Creation API Pattern
+### Backend AD 23: Room Creation API Pattern
 **Status:** Accepted
 
 Standard pattern: Create ORM object → `db.add()` → `db.commit()` → `db.refresh()` → Return ORM object.
 
-### AD 24: Router Registration Pattern
+### Backend AD 24: Router Registration Pattern
 **Status:** Accepted
 
 Each module exports an `APIRouter` registered in `main.py` via `app.include_router()`.
 
-### AD 25: Room Number Uniqueness
+### Backend AD 25: Room Number Uniqueness
 **Status:** Accepted
 
 `room_number` has a database-level UNIQUE constraint to prevent duplicates.
 
-### AD 26: Single Room Retrieval Pattern
+### Backend AD 26: Single Room Retrieval Pattern
 **Status:** Accepted
 
 `GET /rooms/{room_id}` with 404 HTTPException when room not found.
 
-### AD 27: Room Partial Update Strategy
+### Backend AD 27: Room Partial Update Strategy
 **Status:** Accepted
 
 Uses `model_dump(exclude_unset=True)` + `setattr()` for partial updates, preserving existing values.
 
-### AD 28: Missing Resource Handling
+### Backend AD 28: Missing Resource Handling
 **Status:** Accepted
 
 All endpoints return HTTP 404 when a requested resource does not exist (REST-compliant).
 
-### AD 29: Delete Response Strategy
+### Backend AD 29: Delete Response Strategy
 **Status:** Accepted
 
 Delete endpoints return a success message object since the resource no longer exists.
 
-### AD 30: Guest Information Storage
+### Backend AD 30: Guest Information Storage
 **Status:** Accepted
 
 Guest table stores identity info only. Booking-related fields (room_number, check_in/out) belong to the Booking/Stay table.
 
-### AD 31: Guest Phone Number Strategy
+### Backend AD 31: Guest Phone Number Strategy
 **Status:** Accepted (V1)
 
 Phone numbers stored as strings to support international numbers and preserve formatting. Future versions will separate country_code.
 
-### AD 32: Guest Update Strategy
+### Backend AD 32: Guest Update Strategy
 **Status:** Accepted
 
 `GuestUpdate` schemas use all-optional fields for partial updates. `GuestCreate` requires all fields.
 
-### AD 33: Migration-Based Schema Management
+### Backend AD 33: Migration-Based Schema Management
 **Status:** Accepted
 
 Alembic migrations manage all database schema changes to prevent data loss and keep schema synchronized with models.
 
-### AD 34: Router Prefix Pattern
+### Backend AD 34: Router Prefix Pattern
 **Status:** Accepted
 
 Each router defines its own `prefix` and `tags` for cleaner routes and Swagger grouping.
 
-### AD 35: Separate Guest Identity From Room Assignment
+### Backend AD 35: Separate Guest Identity From Room Assignment
 **Status:** Accepted
 
 Guest records store only identity information. Room assignment handled through separate occupancy/check-in logic.
 
-### AD 36: Room Occupancy Model
+### Backend AD 36: Room Occupancy Model
 **Status:** Accepted
 
 A room may contain multiple guests simultaneously (families, couples, group bookings). No one-guest-per-room restriction.
 
-### AD 37: Separate Guest Identity From Stay Records
+### Backend AD 37: Separate Guest Identity From Stay Records
 **Status:** Accepted
 
 Guest information and hotel stay information in separate tables. The same guest may stay multiple times.
 
-### AD 38: Stay Status Simplification
+### Backend AD 38: Stay Status Simplification
 **Status:** Accepted (V1)
 
 Stay table supports only two statuses initially: Checked In, Checked Out.
 
-### AD 39: Avoid Duplicate Room Information
+### Backend AD 39: Avoid Duplicate Room Information
 **Status:** Accepted
 
 Stay table stores `room_id` only (not `room_number`). Room data retrieved through relationship.
 
-### AD 40: Nullable Check-Out Timestamp
+### Backend AD 40: Nullable Check-Out Timestamp
 **Status:** Accepted
 
 `check_out_datetime` is nullable. Active stays identified by `check_out_datetime IS NULL`.
 
-### AD 41: Store Price Snapshot In Stay Records
+### Backend AD 41: Store Price Snapshot In Stay Records
 **Status:** Accepted
 
 Stay table contains `price_per_night` as a snapshot at check-in time. Future room price changes do not affect historical records.
 
-### AD 42: Stay Records Preserve Historical Relationships
+### Backend AD 42: Stay Records Preserve Historical Relationships
 **Status:** Accepted
 
 Stay table does not enforce uniqueness on `guest_id`/`room_id`. Same guest or room can appear in multiple stays.
 
-### AD 43: Introduce Stay Entity for Occupancy Tracking
+### Backend AD 43: Introduce Stay Entity for Occupancy Tracking
 **Status:** Accepted
 
 Stay entity introduced as a transactional record linking Guest and Room with price snapshot and timestamps.
 
-### AD 44: Normalize Guest–Stay Relationship Using a Junction Table
+### Backend AD 44: Normalize Guest–Stay Relationship Using a Junction Table
 **Status:** Accepted
 
 `GuestStay` junction table supports multiple guests per stay and multiple stays per guest, with `is_primary_guest` flag for billing.
 
-### AD 45: Keep Direct Model Imports During Learning Phase
+### Backend AD 45: Keep Direct Model Imports During Learning Phase
 **Status:** Temporary
 
 Models use direct imports during learning phase. Will refactor to `TYPE_CHECKING` strategy later.
 
-### AD 46: Resolve Model Circular Imports Using TYPE_CHECKING
+### Backend AD 46: Resolve Model Circular Imports Using TYPE_CHECKING
 **Status:** Accepted
 
 Bidirectional relationships resolved using `from typing import TYPE_CHECKING` with forward references.
 
-### AD 47: Adopt Alembic as the Sole Database Schema Manager
+### Backend AD 47: Adopt Alembic as the Sole Database Schema Manager
 **Status:** Accepted
 
 `Base.metadata.create_all()` removed. All schema changes through Alembic migrations.
 
-### AD 48: Rebuild Initial Migration History Before Feature Development
+### Backend AD 48: Rebuild Initial Migration History Before Feature Development
 **Status:** Accepted
 
 Existing dev database and incomplete migration files discarded. Clean initial migration generated.
 
-### AD 49: Store Historical Stay Price Independently from Room Price
+### Backend AD 49: Store Historical Stay Price Independently from Room Price
 **Status:** Accepted
 
 Stay model stores agreed nightly rate at check-in. Room model stores only current price. Small intentional duplication in exchange for accurate historical billing.
 
-### AD 50: Validate Auto-Generated Migrations Before Applying
+### Backend AD 50: Validate Auto-Generated Migrations Before Applying
 **Status:** Accepted
 
 Every autogenerated migration must be manually reviewed before applying to the database.
 
-### AD 51: Verify ORM Metadata Before Generating Migrations
+### Backend AD 51: Verify ORM Metadata Before Generating Migrations
 **Status:** Accepted
 
 Verify all expected tables are present in `Base.metadata.tables` before generating important migrations.
 
-### AD 52: Review Auto-Generated Migrations Before Database Upgrade
+### Backend AD 52: Review Auto-Generated Migrations Before Database Upgrade
 **Status:** Accepted
 
 Review confirms: table creation, column definitions, primary keys, foreign keys, constraints, indexes, cascade behavior.
 
-### AD 53: Use Alembic as the Sole Database Schema Manager
+### Backend AD 53: Use Alembic as the Sole Database Schema Manager
 **Status:** Accepted
 
 Alembic is the single source of truth. `Base.metadata.create_all()` removed from application startup.
 
-### AD 54: Adopt Version-Controlled Database Evolution
+### Backend AD 54: Adopt Version-Controlled Database Evolution
 **Status:** Accepted
 
 Workflow: Update ORM models → Generate migration → Review → Apply via `alembic upgrade head`.
 
-### AD 55: Separate Documentation by Technology Layer
+### Backend AD 55: Separate Documentation by Technology Layer
 **Status:** Accepted
 
 Monolithic LEARNING_NOTEBOOK.md split into: BACKEND_CONCEPTS.md, FRONTEND_CONCEPTS.md, ELECTRON_CONCEPTS.md, FULLSTACK_FLOW.md.
 
 ---
 
-## Application Modules
+## Frontend Architecture Decisions
 
+### Frontend AD 0: Backend-Contract-First Frontend Rebuild Orientation
+**Status:** Accepted
+**Date Recorded:** 2026-06-29
+**Milestone:** Frontend Milestone 0 — Frontend Orientation, Backend Contract Review, and Architecture Boundary Confirmation
+
+The HelloStay frontend rebuild begins with a backend-contract-first orientation before adding React code, Electron code, routing, authentication, dashboard, rooms, guests, stays/bookings, finance, or history.
+
+**Decision:**
+Use Milestone 0 to confirm the frontend architecture direction before implementation. The frontend must be designed from the actual FastAPI backend contracts, not from assumptions or the deleted frontend implementation.
+
+This single architecture decision includes the following accepted decisions from Milestone 0:
+* The backend API contract must drive frontend development.
+* FastAPI remains the source of truth for business logic, validation, authentication, database operations, hotel workflows, and finance truth.
+* React is responsible only for the renderer UI: screens, forms, components, routing, state, loading states, error states, and API calls.
+* Electron is responsible only for the desktop shell: app lifecycle, BrowserWindow creation, startup flow, native OS integration, packaging, and future backend startup/checking.
+* Preload/IPC should be used only for safe desktop communication between React renderer and Electron main process.
+* React must not directly access SQLite, filesystem APIs, or backend internals.
+* Electron must not contain room, guest, stay, booking, finance, or database business logic.
+* A central API client must be used later instead of scattered `fetch()` calls.
+* The future frontend structure should be feature-based.
+* Authentication must not be implemented as real frontend integration until backend auth routes exist.
+* The current backend term `Stay` should be used internally instead of pretending there is a complete `/bookings` API.
+* The first frontend-backend integration should be the backend health check using `GET /`.
+* Rooms should be built before Guests, and Guests should be built before Stays.
+* Dashboard should not be implemented first because it depends on existing module data or a future backend summary endpoint.
+* Finance should eventually come from backend-calculated APIs, not permanent frontend-only calculations.
+
+**Why this decision was made:**
+HelloStay is being rebuilt as a production-oriented offline desktop hotel management system. The frontend must be understandable, maintainable, and aligned with the completed backend architecture.
+
+Starting with an orientation milestone prevents these mistakes:
+* Building UI screens that do not match backend schemas.
+* Creating fake API services.
+* Implementing fake authentication before backend auth routes exist.
+* Moving backend business rules into React.
+* Moving hotel workflow logic into Electron.
+* Rebuilding the deleted frontend blindly.
+* Adding routing, dashboard, or modules before the foundation is clear.
+* Confusing `Booking` and `Stay` while the backend currently exposes `/stay`.
+
+This decision protects the project architecture and supports the learning goal: understanding how professional engineers plan before implementation.
+
+**Affected files:**
+No frontend source files were created or modified during this milestone.
+
+Backend files reviewed during this milestone included:
+* Backend `main.py`
+* Backend room API file
+* Backend guest API file
+* Backend stay API file
+* Backend guest-stay API file
+* Backend system-info API file
+* Backend security utility file
+* Backend token schema file
+* Backend database connection/session/base files
+* Backend Room model
+* Backend Guest model
+* Backend Stay model
+* Backend GuestStay model
+* Backend SystemInfo model
+* Backend Room schema
+* Backend Guest schema
+* Backend Stay schema
+* Backend GuestStay schema
+* Existing `PROJECT_NOTES.md`
+
+**Frontend structure after cleanup:**
+No frontend structure was changed during Milestone 0.
+
+Approved future direction:
+frontend/
+src/
+features/
+startup/
+rooms/
+guests/
+stays/
+guestStays/
+shared/
+components/
+services/
+hooks/
+utils/
+
+**Accepted implementation details:**
+* No implementation was performed in this milestone.
+* Milestone 0 was treated as a planning, review, and architecture-boundary milestone.
+* The current backend was reviewed as the source of truth.
+* The currently registered backend areas were identified as:
+
+  * Health Check
+  * System Info
+  * Rooms
+  * Guests
+  * Stays
+  * Guest-Stays
+* The first future frontend API integration should use:
+
+  * `GET /`
+* A future shared API client should be introduced before feature API services.
+* Future API service files should be organized by feature:
+
+  * `systemApi.js`
+  * `roomsApi.js`
+  * `guestsApi.js`
+  * `staysApi.js`
+  * `guestStaysApi.js`
+* Real authentication should wait until backend authentication routes are implemented and registered.
+* The frontend should use `Stay` internally because the backend currently exposes `/stay`, not `/bookings`.
+
+**Backend contract considered:**
+Current backend APIs confirmed:
+
+Health Check:
+* `GET /`
+
+System Info:
+* `GET /system-info`
+
+Rooms:
+* `POST /rooms`
+* `GET /rooms`
+* `GET /rooms/{room_id}`
+* `PUT /rooms/{room_id}`
+* `DELETE /rooms/{room_id}`
+
+Guests:
+* `POST /guests`
+* `GET /guests`
+* `GET /guests/{guest_id}`
+* `PUT /guests/{guest_id}`
+* `DELETE /guests/{guest_id}`
+
+Stays:
+* `POST /stay`
+* `GET /stay`
+* `GET /stay/{stay_id}`
+* `PUT /stay/{stay_id}`
+* `DELETE /stay/{stay_id}`
+
+Guest-Stays:
+* `POST /guest-stays`
+* `GET /guest-stays`
+* `GET /guest-stays/{guest_stay_id}`
+* `PUT /guest-stays/{guest_stay_id}`
+* `DELETE /guest-stays/{guest_stay_id}`
+
+Backend/API gaps identified:
+* No registered auth router was visible in the uploaded backend entry file.
+* No confirmed register endpoint.
+* No confirmed login endpoint.
+* No confirmed current-user/session endpoint.
+* No dashboard summary endpoint.
+* No finance summary endpoint.
+* No true `/bookings` API.
+* No available-room search endpoint.
+* No dedicated check-in/check-out workflow endpoints.
+
+**What was intentionally not added:**
+* No React code
+* No Electron code
+* No React Router
+* No API client
+* No Axios/fetch services
+* No authentication UI
+* No dashboard
+* No rooms UI
+* No guests UI
+* No stays/bookings UI
+* No finance/history UI
+* No shared components
+* No shared context/state management
+* No custom hooks
+* No utility modules
+* No preload/IPC implementation
+* No backend startup from Electron
+* No desktop packaging
+
+**Bugs/issues found and resolved:**
+* No source-code bugs were fixed because Milestone 0 did not modify code.
+* A major planning issue was identified: authentication utilities exist, but real auth routes were not confirmed as registered in the uploaded backend entry file.
+* A naming mismatch was identified: V1 product language says “Bookings,” but the current backend exposes “Stays.”
+* A sequencing issue was resolved: Dashboard, authentication, and bookings should not be the first implementation targets.
+* The correct first integration was selected: Start Page plus backend health check.
+
+**Remaining tasks:**
+* Start Frontend Milestone 1 if not already completed in the active project timeline.
+* Keep frontend implementation aligned with actual backend contracts.
+* Add real authentication only after backend auth endpoints are available.
+* Add dashboard only after enough backend data or a dashboard summary endpoint exists.
+* Add finance only after backend finance support exists, or clearly mark any frontend-derived finance as temporary.
+* Revisit the Booking vs Stay model when the backend supports true reservation workflows.
+* Introduce a central API client before building feature-level API services.
+* Keep Electron limited to desktop shell responsibilities.
+
+**Next recommended step:**
+Proceed to the next milestone in the frontend rebuild sequence.
+
+If Frontend Milestone 1 is already completed, continue with:
+
+Frontend Milestone 2 — Electron Desktop Shell Setup.
+
+Keep Electron limited to desktop shell responsibilities: app lifecycle, BrowserWindow creation, secure preload planning, and renderer loading.
+
+Do not add hotel features, routing, backend integration, authentication, dashboard, rooms, guests, stays/bookings, finance, or history during the Electron shell setup milestone.
+
+
+---
+
+### Frontend AD 1: Minimal React Foundation Before Features
+**Status:** Accepted
+**Date Recorded:** 2026-06-29
+**Milestone:** Frontend Milestone 1 — React Project Setup
+
+The HelloStay frontend rebuild begins with a minimal Vite + React foundation before adding hotel features, routing, backend integration, authentication, or Electron.
+
+**Decision:**
+Create a clean React frontend using Vite with JavaScript, not TypeScript. Keep the first milestone focused only on app startup, root rendering, basic global CSS, and fixed development port configuration.
+
+**Why this decision was made:**
+The frontend is being rebuilt from scratch for learning, maintainability, and production clarity. Starting with a small foundation prevents confusion and avoids mixing React setup with unrelated concerns such as routing, authentication, API services, dashboard UI, rooms, guests, bookings, or Electron. This also keeps React clearly separated as the future Electron renderer process.
+
+**Affected files:**
+* `frontend/src/main.jsx`
+* `frontend/src/App.jsx`
+* `frontend/src/styles/global.css`
+* `frontend/vite.config.js`
+
+**Frontend structure after cleanup:**
+frontend/
+  src/
+    main.jsx
+    App.jsx
+    styles/
+      global.css
+
+**Accepted implementation details:**
+* `main.jsx` imports React, `createRoot`, `App.jsx`, and `./styles/global.css`.
+* `App.jsx` renders a minimal HelloStay setup screen only.
+* `global.css` contains only basic reset styles, typography, body layout, and temporary welcome-card styling.
+* `vite.config.js` fixes the Vite dev server to port `5173` with `strictPort: true`.
+* Unused Vite starter files were removed:
+
+  * `src/App.css`
+  * `src/index.css`
+  * `src/assets/react.svg`
+  * `src/assets/vite.svg`
+  * `src/assets/hero.png`
+  * empty `src/assets/` folder
+
+**Backend contract considered:**
+The backend already allows the React development origin at `http://localhost:5173`, so the frontend dev server must remain on port `5173`.
+
+**What was intentionally not added:**
+* No React Router
+* No API client
+* No Axios/fetch services
+* No authentication UI
+* No dashboard
+* No rooms, guests, stays, bookings, finance, or history pages
+* No Electron main/preload setup
+* No backend startup from Electron
+* No Tailwind or design system setup yet
+
+**Bugs/issues found and resolved:**
+* The folder review initially included `node_modules`, creating noisy output.
+* Correct review command should focus on `src/` or exclude `node_modules`.
+* Unused Vite starter files were identified and removed.
+* No React code errors were found in reviewed files.
+
+**Sub-decisions included in this AD:**
+- Use Vite + React as the frontend foundation.
+- Use JavaScript instead of TypeScript for the rebuild.
+- Keep React as the future Electron renderer process.
+- Configure Vite to run on port `5173`.
+- Use `strictPort: true` so Vite does not silently switch ports.
+- Use a minimal `src/` structure with only `main.jsx`, `App.jsx`, and `styles/global.css`.
+- Use one global CSS file during the foundation milestone.
+- Remove unused Vite starter files and assets.
+- Do not create empty future folders until they are needed.
+- Do not add React Router in Milestone 1.
+- Do not add API services in Milestone 1.
+- Do not add authentication in Milestone 1.
+- Do not add Electron in Milestone 1.
+- Do not build hotel feature modules in Milestone 1.
+- Do not move backend business logic into React.
+
+**Remaining tasks:**
+* Verify `npm run dev` opens the app at `http://localhost:5173`.
+* Confirm browser console has no red errors.
+* Confirm Network tab shows no backend API calls during Milestone 1.
+* Begin Electron setup only in Milestone 2.
+
+**Next recommended step:**
+Start Frontend Milestone 2: Electron Desktop Shell Setup. Keep Electron limited to desktop shell responsibilities: app lifecycle, BrowserWindow creation, secure preload planning, and renderer loading. Do not add hotel features, routing, backend integration, or authentication yet.
+
+---
+
+## Frontend AD 2: Electron Desktop Shell Setup
+**Status:** Accepted
+**Date Recorded:** 2026-06-29
+**Milestone:** Frontend Milestone 2 — Electron Desktop Shell Setup
+
+### Context
+HelloStay is an offline desktop Hotel Management System. The frontend was already initialized as a minimal Vite + React application in Milestone 1. The next step was to introduce Electron as the desktop shell while keeping the architecture clean and avoiding premature feature development.
+
+Electron is responsible for desktop application behavior. React remains responsible for the user interface. FastAPI remains the source of truth for business logic, validation, database operations, authentication, and API contracts.
+
+### Decision
+Introduce a minimal Electron shell around the existing Vite React frontend.
+
+The Electron setup will include:
+
+* `frontend/electron/main.js` as the Electron main process entry file.
+
+* `frontend/electron/preload.js` as the preload script placeholder.
+
+* A secure Electron `BrowserWindow`.
+
+* Development loading from the Vite dev server at:
+  http://localhost:5173
+
+* A future production loading branch using the React build output.
+
+* npm scripts for running Vite and Electron together during development.
+
+Electron will not start the FastAPI backend yet. Electron will not contain hotel business logic. Electron will not access SQLite directly. React will not get direct Node.js access.
+
+### Architectural Boundaries
+The application is separated into clear responsibilities:
+Electron main process
+  Owns desktop lifecycle, BrowserWindow creation, app startup, app quit behavior.
+
+Electron preload script
+  Reserved for future safe renderer-main communication.
+
+React renderer process
+  Owns screens, components, forms, UI state, user interaction, and visual rendering.
+
+FastAPI backend
+  Owns business logic, validation, authentication, database operations, and API contracts.
+
+SQLite database
+  Owns persistent local data storage.
+
+### BrowserWindow Security Configuration
+
+The Electron `BrowserWindow` must use secure defaults:
+```js
+webPreferences: {
+  preload: path.join(__dirname, "preload.js"),
+  nodeIntegration: false,
+  contextIsolation: true,
+}
+```
+
+`nodeIntegration` is disabled so React cannot directly use Node.js APIs.
+
+`contextIsolation` is enabled so Electron/preload code and React renderer code remain separated.
+
+The preload script is connected but exposes no APIs yet.
+
+### Development Loading Decision
+
+During development, Electron loads the Vite React dev server:
+http://localhost:5173
+
+This allows React fast refresh and keeps frontend development simple.
+
+The Electron main process uses a development branch to load the Vite URL and a future production branch to load the built React output from `dist/index.html`.
+
+Production packaging is not part of this milestone.
+
+### npm Script Decision
+
+The frontend package uses development scripts to run React and Electron together:
+```json
+"dev": "vite",
+"electron": "wait-on http://localhost:5173; electron .",
+"desktop": "concurrently -k \"npm run dev\" \"npm run electron\""
+```
+
+`concurrently` is used to run the Vite dev server and Electron at the same time.
+
+`wait-on` is used so Electron starts only after the Vite dev server is available.
+
+A PowerShell-compatible command separator is used because the local Windows PowerShell environment did not support `&&`.
+
+### Main Process Platform Decision
+The Electron main process handles platform-specific close behavior.
+
+On Windows and Linux, the app quits when all windows are closed.
+
+On macOS, the app remains active until the user explicitly quits, matching normal macOS desktop behavior.
+
+The final implementation may use an explicit Node process import:
+```js
+import process from "node:process";
+```
+
+and check:
+```js
+process.platform !== "darwin"
+```
+
+This avoids editor/tooling confusion where the global `process` object may not be recognized.
+
+### Preload Decision
+Create `frontend/electron/preload.js`, but expose nothing during this milestone.
+
+The preload script exists only to prepare the secure architecture for future IPC and desktop APIs.
+
+No `contextBridge`, `ipcRenderer`, filesystem access, app version access, printing, backup, or native OS integration is added yet.
+
+### Why This Decision Was Made
+This decision keeps the project simple, secure, and understandable.
+
+Starting with a minimal Electron shell helps separate responsibilities clearly before adding more complexity. It prevents the common beginner mistake of mixing React UI code, Electron desktop code, backend logic, and database access in the same layer.
+
+This also supports HelloStay’s long-term goal as an offline desktop application while preserving FastAPI as the backend source of truth.
+
+### Benefits
+* Clear separation between desktop shell and React UI.
+* Secure Electron defaults from the beginning.
+* React remains simple and browser-like.
+* FastAPI remains responsible for business rules and data operations.
+* The app can run as a desktop window during development.
+* Future preload/IPC work has a safe place to be added later.
+* Packaging can be introduced later without rushing the architecture.
+
+### Trade-Offs
+* Development now requires running both Vite and Electron.
+* The app is not packaged yet.
+* Electron does not yet start or manage the FastAPI backend.
+* The preload file exists but does not provide functionality yet.
+* The startup scripts are still development-focused and may be improved later for stronger cross-platform behavior.
+
+These trade-offs are acceptable because Milestone 2 focuses only on the desktop shell foundation.
+
+### Affected Files
+frontend/package.json
+frontend/electron/main.js
+frontend/electron/preload.js
+
+### Not Included In This Decision
+
+This decision does not include:
+* React Router
+* Authentication
+* Login flow
+* Dashboard
+* Rooms
+* Guests
+* Stays
+* Bookings
+* Finance
+* History
+* Backend API integration
+* FastAPI process startup from Electron
+* SQLite access from Electron
+* IPC API design
+* File system access
+* Printing
+* App packaging
+* Installer setup
+
+### Final Outcome
+HelloStay can now be launched as a desktop application during development.
+
+The command:
+```bash
+npm run desktop
+```
+
+starts Vite, waits for the Vite dev server, starts Electron, creates a secure desktop window, and loads the React frontend inside it.
+
+### Consequence
+Future milestones can now build on a clear desktop architecture:
+
+Electron wraps the app.
+React renders the UI.
+Preload safely bridges future desktop APIs.
+FastAPI owns business logic.
+SQLite stores data.
+
+This decision establishes the foundation for future Electron capabilities without weakening security or mixing responsibilities.
+
+
+---
+
+## Application Modules
 This section describes every module (page) in HelloStay, its purpose, key features, and target user role.
 
 ### Dashboard
@@ -701,75 +1192,478 @@ View/edit logged-in user's personal profile. Gradient header card, edit name/ema
 
 ---
 
-## Milestone History
+## Backend Milestone History
 
 ### Frontend Rebuild Note
 The previous frontend/Electron implementation milestones have been intentionally removed from this history because the frontend will be rebuilt from scratch. The related frontend decisions are now tracked under Future Requirements instead of Architecture Decisions.
 
-### Milestone 0 — Project Planning & Documentation
+### Backend Milestone 0 — Project Planning & Documentation
 **Status:** Completed
 Project vision, technology stack, architecture approach, and documentation structure defined.
 
-### Milestone 1 — Development Environment Setup
+### Backend Milestone 1 — Development Environment Setup
 **Status:** Completed
 Git repository, virtual environment, dependency installation, requirements.txt.
 
-### Milestone 2 — Backend Architecture Setup
+### Backend Milestone 2 — Backend Architecture Setup
 **Status:** Completed
 Layered backend structure (api/, core/, database/, models/, schemas/).
 
-### Milestone 3 — Database Foundation
+### Backend Milestone 3 — Database Foundation
 **Status:** Completed
 SQLite integration, engine, SessionLocal, Base model, first SystemInfo model.
 
-### Milestone 4 — CRUD API Development
+### Backend Milestone 4 — CRUD API Development
 **Status:** Completed
 Complete CRUD for SystemInfo using FastAPI and SQLAlchemy.
 
-### Milestone 5 — API Testing & Validation
+### Backend Milestone 5 — API Testing & Validation
 **Status:** Completed
 Swagger UI testing of all CRUD operations.
 
-### Milestone 6 — Room API Foundation
+### Backend Milestone 6 — Room API Foundation
 **Status:** Completed
 RoomCreate/RoomResponse/RoomUpdate schemas, get_db dependency, APIRouter, response_model.
 
-### Milestone 7 — First Room API Registration
+### Backend Milestone 7 — First Room API Registration
 **Status:** Completed
 Room router registered in main.py, Swagger integration.
 
-### Milestone 8 — Room Retrieval APIs
+### Backend Milestone 8 — Room Retrieval APIs
 **Status:** Completed
 GET /rooms (list all), GET /rooms/{room_id} (single with 404 handling).
 
-### Milestone 9 — Room Retrieval API
+### Backend Milestone 9 — Room Retrieval API
 **Status:** Completed
 List response model, ORM serialization for collections.
 
-### Milestone 10 — Single Room Retrieval
+### Backend Milestone 10 — Single Room Retrieval
 **Status:** Completed
 GET /rooms/{room_id} with HTTPException 404.
 
-### Milestone 11 — Room CRUD Module
+### Backend Milestone 11 — Room CRUD Module
 **Status:** COMPLETED
 Full CRUD: POST, GET (list + single), PUT (partial update), DELETE with proper error handling.
 
-### Milestone 12 — Guest CRUD API
+### Backend Milestone 12 — Guest CRUD API
 **Status:** Completed
 Full guest CRUD with Alembic migration.
 
-### Milestone 13 — Stay Management System
+### Backend Milestone 13 — Stay Management System
 **Status:** Completed
 Stay model with foreign keys, price snapshot, nullable checkout, full CRUD.
 
-### Milestone 14 — Documentation Restructuring
+### Backend Milestone 14 — Documentation Restructuring
 **Status:** Completed
 LEARNING_NOTES.md split into BACKEND_CONCEPTS.md, FRONTEND_CONCEPTS.md, ELECTRON_CONCEPTS.md, FULLSTACK_FLOW.md.
 
-### Milestone 15 — Guest Stay Module
+### Backend Milestone 15 — Guest Stay Module
 **Status:** Completed
 GuestStay junction table for many-to-many Guest-Stay relationship with is_primary_guest flag.
 
-### Milestone 16 — Backend Authentication Setup
+### Backend Milestone 16 — Backend Authentication Setup
 **Status:** Completed
 passlib[bcrypt], python-jose for JWT, core/security.py, schemas/token.py.
+
+---
+
+## Frontend Milestone History
+
+### Frontend Milestone 0 — Frontend Orientation, Backend Contract Review, and Architecture Boundary Confirmation
+**Status:** Completed
+**Date Recorded:** 2026-06-29
+
+Frontend orientation was completed before writing new React/Electron frontend code.
+
+**What was completed:**
+* Reviewed the current HelloStay backend files before starting the frontend rebuild.
+* Confirmed that the frontend must be built from actual backend API contracts, not assumptions.
+* Confirmed that FastAPI remains the source of truth for business logic, validation, authentication, database operations, and hotel workflow rules.
+* Confirmed that React is responsible for renderer UI only: screens, forms, components, routing, loading states, error states, and API calls.
+* Confirmed that Electron is responsible for desktop shell behavior only: app window, lifecycle, startup flow, native desktop integration, and packaging.
+* Confirmed that preload/IPC should be used only for safe desktop communication when React needs controlled access to Electron functionality.
+* Reviewed the currently registered backend routers.
+* Confirmed that the backend currently supports Health Check, System Info, Rooms, Guests, Stays, and Guest-Stays.
+* Confirmed that the backend currently exposes CRUD-style APIs for Rooms, Guests, Stays, and Guest-Stays.
+* Confirmed that the backend has JWT/security helper utilities and token schemas, but no registered authentication router was visible in the uploaded `main.py`.
+* Confirmed that real frontend authentication should not be implemented until backend auth routes exist.
+* Confirmed that the current backend uses `Stay`, not `Booking`, so the frontend should use `Stay` internally until a true booking/reservation API exists.
+* Confirmed that the first frontend-backend integration should be the backend health check using `GET /`.
+* Confirmed that the frontend should use a central API client instead of scattered `fetch()` calls.
+* Confirmed that future frontend folders should be feature-based, not random or prematurely over-structured.
+* Recorded the following architecture decisions from this milestone:
+
+  * Backend contract first.
+  * FastAPI remains the source of truth.
+  * React is the renderer UI layer.
+  * Electron is the desktop shell only.
+  * Preload/IPC is only for safe desktop access.
+  * A central API client is required.
+  * A feature-based folder structure should be used.
+  * Real auth must wait until backend auth API exists.
+  * Use backend term `Stay` internally.
+  * First API integration must be the backend health check.
+  * Build Rooms before Guests, Guests before Stays.
+  * Dashboard should not be built first.
+  * Finance must eventually come from backend-calculated APIs.
+
+**Final approved source structure:**
+No frontend source structure was created or modified during this milestone.
+
+Milestone 0 was a planning and orientation milestone only.
+
+Approved future direction:
+frontend/
+src/
+features/
+startup/
+rooms/
+guests/
+stays/
+guestStays/
+shared/
+components/
+services/
+hooks/
+utils/
+
+**Files reviewed and approved:**
+* Backend `main.py`
+* Backend room API file
+* Backend guest API file
+* Backend stay API file
+* Backend guest-stay API file
+* Backend system-info API file
+* Backend security utility file
+* Backend token schema file
+* Backend database connection/session/base files
+* Backend Room model
+* Backend Guest model
+* Backend Stay model
+* Backend GuestStay model
+* Backend SystemInfo model
+* Backend Room schema
+* Backend Guest schema
+* Backend Stay schema
+* Backend GuestStay schema
+* Existing `PROJECT_NOTES.md`
+
+**Why this milestone matters:**
+This milestone prevents the frontend rebuild from starting with guesses, fake APIs, or premature UI decisions.
+
+It establishes the correct engineering direction before implementation:
+* The backend API contract drives frontend development.
+* React must not contain backend business rules.
+* Electron must not become a second backend.
+* The preload layer must remain secure and limited.
+* Frontend modules must be built in dependency order.
+* Authentication must not be faked before backend support exists.
+* The first integration must be small, real, and testable.
+
+This milestone protects the project from rebuilding the deleted frontend blindly and keeps the new implementation understandable for learning.
+
+**Backend/API contracts involved:**
+
+Current backend APIs confirmed:
+* `GET /`
+* `GET /system-info`
+
+Rooms:
+* `POST /rooms`
+* `GET /rooms`
+* `GET /rooms/{room_id}`
+* `PUT /rooms/{room_id}`
+* `DELETE /rooms/{room_id}`
+
+Guests:
+* `POST /guests`
+* `GET /guests`
+* `GET /guests/{guest_id}`
+* `PUT /guests/{guest_id}`
+* `DELETE /guests/{guest_id}`
+
+Stays:
+* `POST /stay`
+* `GET /stay`
+* `GET /stay/{stay_id}`
+* `PUT /stay/{stay_id}`
+* `DELETE /stay/{stay_id}`
+
+Guest-Stays:
+* `POST /guest-stays`
+* `GET /guest-stays`
+* `GET /guest-stays/{guest_stay_id}`
+* `PUT /guest-stays/{guest_stay_id}`
+* `DELETE /guest-stays/{guest_stay_id}`
+
+Backend/API gaps identified:
+* No registered auth router was visible in the uploaded backend entry file.
+* No confirmed register endpoint.
+* No confirmed login endpoint.
+* No confirmed current-user/session endpoint.
+* No dashboard summary endpoint.
+* No finance summary endpoint.
+* No true `/bookings` API.
+* No available-room search endpoint.
+* No dedicated check-in/check-out workflow endpoints.
+
+**What was intentionally deferred:**
+* Writing React code
+* Writing Electron code
+* Creating frontend folders
+* Creating reusable components
+* Creating API service files
+* Creating routing
+* Creating authentication UI
+* Creating dashboard UI
+* Creating rooms UI
+* Creating guests UI
+* Creating stays/bookings UI
+* Creating finance/history UI
+* Creating shared state/context
+* Creating custom hooks
+* Creating preload/IPC APIs
+* Starting FastAPI from Electron
+* Packaging the desktop app
+
+**Cleanup performed:**
+No code cleanup was performed because this milestone did not modify source files.
+
+Planning cleanup was performed by separating confirmed backend-supported features from future or missing features.
+
+Confirmed as currently supported:
+
+* Health check
+* System info
+* Rooms
+* Guests
+* Stays
+* Guest-Stays
+
+Marked as pending or future backend support:
+* Authentication
+* Dashboard summary
+* Finance summary
+* True bookings/reservations
+* Available-room search
+* Dedicated check-in/check-out workflow
+
+**Debugging/learning conclusion:**
+Before building a frontend feature, always inspect the backend route, schema, model, and response shape.
+
+Do not guess endpoint names or field names.
+
+For HelloStay, frontend debugging should start with the smallest possible full-stack check:
+React Start Page
+  ↓
+systemApi
+  ↓
+apiClient
+  ↓
+GET /
+  ↓
+FastAPI health check response
+
+This confirms that React, FastAPI, CORS, and the API client are working before any hotel module is added.
+
+**Next milestone:**
+Frontend Milestone 1 — React Project Setup.
+
+---
+
+### Frontend Milestone 1 — React Project Setup
+**Status:** Completed
+**Date Recorded:** 2026-06-29
+
+React frontend setup was completed using Vite with JavaScript.
+
+**What was completed:**
+* Created a new React frontend using Vite.
+* Used JavaScript instead of TypeScript.
+* Created a minimal root React app.
+* Added `src/main.jsx` as the React entry point.
+* Added `src/App.jsx` as the root component.
+* Added `src/styles/global.css` for basic global styling.
+* Configured Vite to run on port `5173`.
+* Enabled `strictPort: true` so Vite does not silently switch ports.
+* Removed unused Vite starter files and assets.
+* Kept the frontend free of feature logic.
+
+**Final approved source structure:**
+frontend/
+  src/
+    main.jsx
+    App.jsx
+    styles/
+      global.css
+
+**Files reviewed and approved:**
+
+* `frontend/src/App.jsx`
+* `frontend/src/main.jsx`
+* `frontend/src/styles/global.css`
+* `frontend/vite.config.js`
+
+**Why this milestone matters:**
+This milestone establishes a clean React renderer foundation before Electron, routing, authentication, API services, or hotel modules are introduced. It keeps the frontend rebuild understandable and prevents premature architecture decisions.
+
+**Backend/API contracts involved:**
+No backend API integration was implemented. However, the frontend port was aligned with the backend CORS configuration, which currently allows `http://localhost:5173`.
+
+**What was intentionally deferred:**
+* Electron desktop shell
+* React Router
+* API services
+* Authentication
+* Dashboard
+* Rooms module
+* Guests module
+* Stays/bookings module
+* Finance/history
+* Feature components
+* Shared context/state management
+* Custom hooks
+* Utility modules
+
+**Cleanup performed:**
+* Removed unused default Vite CSS files.
+* Removed unused starter image assets.
+* Avoided creating empty future folders such as `components`, `pages`, `routes`, `services`, `hooks`, `context`, and `utils`.
+
+**Debugging/learning conclusion:**
+When checking project structure, avoid listing `node_modules` because it contains dependency files and creates noisy output. Prefer:
+
+```powershell
+Get-ChildItem .\src -Recurse -File | Select-Object FullName
+```
+
+**Next milestone:**
+Frontend Milestone 2 — Electron Desktop Shell Setup.
+
+---
+
+## Frontend Milestone 2 — Electron Desktop Shell Setup
+**Status:** Completed
+**Milestone Number:** 2
+**Layer:** Desktop / Frontend Shell
+**Technology Used:** Electron, Vite, React, JavaScript
+
+### Objective
+Set up the basic Electron desktop shell around the existing Vite React frontend without adding hotel features, routing, authentication, backend integration, packaging, or business logic.
+
+The goal of this milestone was to make HelloStay open as a desktop application while keeping React as the renderer process and Electron as the desktop shell.
+
+### Completed Work
+* Installed Electron as the desktop runtime.
+
+* Installed `concurrently` to run Vite and Electron together during development.
+
+* Installed `wait-on` to wait for the Vite dev server before launching Electron.
+
+* Created the Electron main process file:
+  frontend/electron/main.js
+
+* Created the Electron preload file:
+  frontend/electron/preload.js
+
+* Configured Electron to create a secure `BrowserWindow`.
+
+* Configured Electron to load the Vite React app from:
+  http://localhost:5173
+
+* Kept `nodeIntegration` disabled.
+
+* Kept `contextIsolation` enabled.
+
+* Added Electron development scripts in `package.json`.
+
+* Verified that the React app opens inside a native Electron desktop window.
+
+### Files Added
+frontend/electron/main.js
+frontend/electron/preload.js
+
+### Files Updated
+frontend/package.json
+
+
+### Final Electron Main Process Responsibility
+The Electron main process is responsible only for desktop application lifecycle concerns:
+
+* Starting the Electron app.
+* Creating the main desktop window.
+* Loading the React Vite development server during development.
+* Preparing for future production loading from the React build output.
+* Handling macOS activate behavior.
+* Quitting the app on non-macOS platforms when all windows are closed.
+
+The Electron main process does not contain hotel business logic, database logic, authentication logic, API logic, room logic, booking logic, guest logic, or financial logic.
+
+### Final Preload Responsibility
+The preload file exists as a future secure bridge between Electron and React.
+
+For this milestone, the preload file intentionally exposes nothing.
+
+No IPC, desktop APIs, filesystem access, or backend logic were added.
+
+### Development Script Setup
+The project now supports running the desktop app during development using:
+
+```bash
+npm run desktop
+```
+
+The development script starts:
+Vite React dev server
+Electron desktop shell
+
+Electron waits for Vite to become available before opening the desktop window.
+
+### Important Security Decisions Preserved
+* React renderer does not get direct Node.js access.
+* Electron APIs are not exposed directly to React.
+* `nodeIntegration` remains disabled.
+* `contextIsolation` remains enabled.
+* Preload remains empty until a real desktop capability is needed.
+* Backend business logic remains in FastAPI.
+* Database operations remain outside React and Electron.
+
+### What Was Intentionally Not Added
+The following were intentionally excluded from this milestone:
+
+* React Router
+* Authentication
+* Dashboard
+* Rooms module
+* Guests module
+* Stays module
+* Bookings module
+* Finance module
+* History module
+* API service layer
+* FastAPI backend startup from Electron
+* SQLite access from Electron
+* IPC communication
+* App packaging
+* Installer setup
+* Production build configuration beyond a basic future loading branch
+
+### Verification Result
+The command:
+
+```bash
+npm run desktop
+```
+
+successfully opened the HelloStay React frontend inside an Electron desktop window.
+
+### Summary
+Milestone 2 successfully introduced Electron as the desktop shell for HelloStay while preserving a clean architecture:
+
+Electron main process → desktop lifecycle
+React renderer        → user interface
+Preload script        → future safe bridge
+FastAPI backend       → business logic and API contracts
+SQLite database       → persistence
+
+This milestone completed the basic desktop foundation without mixing frontend UI, desktop lifecycle, backend logic, or database responsibilities.
