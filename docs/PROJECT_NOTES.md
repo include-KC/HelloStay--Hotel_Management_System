@@ -1267,6 +1267,889 @@ passlib[bcrypt], python-jose for JWT, core/security.py, schemas/token.py.
 
 ---
 
+# Frontend Milestone Plan
+
+## HelloStay Frontend V1 Milestone Plan
+
+### Objective
+Divide the remaining **HelloStay frontend + Electron desktop app work** into clear milestones so each milestone can be completed in a separate ChatGPT session under the HelloStay project.
+
+The goal is to keep every session focused, reduce confusion, preserve accuracy, and help with learning:
+- React
+- JavaScript
+- Electron
+- Frontend architecture
+
+---
+
+## Milestone 0: Project Orientation and Rules Review
+
+### Purpose
+Before writing code, review the existing backend, API contracts, architecture decisions, and V1 scope.
+
+### Scope
+This milestone is only for understanding the project.
+
+### Topics
+- HelloStay V1 feature scope
+- Existing FastAPI backend structure
+- Authentication flow
+- API endpoints
+- Architecture Decisions
+- Offline desktop requirement
+- Electron + React responsibility separation
+
+### Output
+A clear frontend implementation strategy.
+
+### Done When
+
+You understand:
+- What belongs in React
+- What belongs in Electron
+- What belongs in FastAPI
+- What V1 includes
+- What V1 excludes
+
+### Suggested Session Title
+**Milestone 0 — HelloStay Frontend Orientation**
+
+---
+
+## Milestone 1: Frontend Project Setup
+
+### Purpose
+Create the frontend project from scratch.
+
+### Scope
+Set up the React frontend foundation without building features yet.
+
+### Topics
+- Vite + React setup
+- JavaScript project structure
+- Basic folder organization
+- Development scripts
+- ESLint basics
+- Environment variables
+- API base URL setup
+
+### Folder/File Focus
+```text
+frontend/
+  src/
+    main.jsx
+    App.jsx
+    routes/
+    pages/
+    components/
+    services/
+    hooks/
+    context/
+    utils/
+    styles/
+```
+
+### Output
+A clean React app that runs successfully.
+
+### Done When
+- React app starts without errors
+- Folder structure is ready
+- No hotel features are implemented yet
+
+### Suggested Session Title
+**Milestone 1 — React Project Setup**
+
+---
+
+## Milestone 2: Electron Desktop Shell Setup
+
+### Purpose
+Add Electron as the desktop shell around React.
+
+### Scope
+Set up Electron main process, preload file, and secure renderer loading.
+
+### Topics
+- Electron main process
+- Renderer process
+- Preload script
+- BrowserWindow
+- Context isolation
+- Node integration security
+- Loading React inside Electron
+- Development vs production startup
+
+### Folder/File Focus
+```text
+electron/
+  main.js
+  preload.js
+
+frontend/
+  src/
+```
+
+### Output
+HelloStay opens as a desktop window.
+
+### Done When
+- Electron window opens
+- React UI loads inside Electron
+- Security basics are respected
+- Backend logic is not moved into Electron
+
+### Suggested Session Title
+**Milestone 2 — Electron Desktop Shell**
+
+---
+
+## Milestone 3: App Startup Flow
+
+### Purpose
+Build the first user-facing flow.
+
+### Scope
+Create the app start screen and redirect flow into login.
+
+### Topics
+- App startup screen
+- React Router
+- Navigation
+- Initial loading screen
+- Desktop app startup behavior
+- Offline-first mindset
+
+### Pages
+- StartPage
+- LoginPage placeholder
+
+### Output
+The app opens to a start page, then moves to login.
+
+### Done When
+- Start page exists
+- Login route exists
+- Navigation works
+- No authentication logic yet
+
+### Suggested Session Title
+**Milestone 3 — Startup Flow and Routing**
+
+---
+
+## Milestone 4: Layout System and Design Foundation
+
+### Purpose
+Create the visual foundation before feature screens.
+
+### Scope
+Build reusable layout, spacing, colors, typography, and shared UI components.
+
+### Topics
+- CSS strategy
+- Global styles
+- App layout
+- Reusable buttons
+- Inputs
+- Cards
+- Loading state component
+- Error message component
+- Responsive desktop UI basics
+
+### Folder/File Focus
+```text
+components/ui/
+  Button.jsx
+  Input.jsx
+  Card.jsx
+  Loading.jsx
+  ErrorMessage.jsx
+
+styles/
+  global.css
+```
+
+### Output
+A clean design foundation for the whole app.
+
+### Done When
+- UI components are reusable
+- Pages do not contain messy duplicated styles
+- The app has a consistent visual style
+
+### Suggested Session Title
+**Milestone 4 — UI Foundation and Layout System**
+
+---
+
+## Milestone 5: API Client Setup
+
+### Purpose
+Create the frontend layer that talks to the FastAPI backend.
+
+### Scope
+No screens yet. Only API communication setup.
+
+### Topics
+- Fetch API or Axios
+- API base URL
+- Request helpers
+- Error handling
+- JSON parsing
+- Authentication token attachment
+- Backend unavailable handling
+
+### Folder/File Focus
+```text
+services/
+  apiClient.js
+  authService.js
+```
+
+### Output
+A reusable API client.
+
+### Done When
+- Frontend can call backend safely
+- Errors are handled consistently
+- API code is not scattered inside components
+
+### Suggested Session Title
+**Milestone 5 — API Client and Backend Communication**
+
+---
+
+## Milestone 6: Authentication UI
+
+### Purpose
+Build login and create-account screens.
+
+### Scope
+Create the UI first, then connect it to backend authentication.
+
+### Topics
+- Controlled forms
+- React state
+- Form submission
+- Validation
+- Login request
+- Register request
+- JWT storage strategy
+- Auth errors
+- Loading states
+
+### Pages
+- LoginPage
+- RegisterPage
+
+### Output
+User can create an account and log in.
+
+### Done When
+- Login works with backend
+- Register works with backend
+- Invalid credentials show error
+- Loading state appears during requests
+- Token is stored safely for V1
+
+### Suggested Session Title
+**Milestone 6 — Authentication UI and Logic**
+
+---
+
+## Milestone 7: Auth State and Protected Routes
+
+### Purpose
+Teach the app who is logged in and protect private pages.
+
+### Scope
+Create global authentication state.
+
+### Topics
+- React Context API
+- AuthProvider
+- Protected routes
+- Logout
+- Persisting login across refresh
+- Redirecting unauthenticated users
+
+### Folder/File Focus
+```text
+context/
+  AuthContext.jsx
+
+routes/
+  ProtectedRoute.jsx
+```
+
+### Output
+Only logged-in users can access the dashboard.
+
+### Done When
+- Dashboard is protected
+- Logged-out users go to login
+- Logged-in users remain logged in
+- Logout works
+
+### Suggested Session Title
+**Milestone 7 — Auth Context and Protected Routes**
+
+---
+
+## Milestone 8: Main Dashboard Shell
+
+### Purpose
+Build the main application structure after login.
+
+### Scope
+Create the dashboard layout but not all feature logic yet.
+
+### Topics
+- Sidebar navigation
+- Header
+- Main content area
+- Nested routes
+- Dashboard cards
+- Page layout consistency
+
+### Pages
+- DashboardLayout
+- DashboardHome
+- RoomsPage placeholder
+- BookingsPage placeholder
+- GuestsPage placeholder
+- FinancePage placeholder
+- HistoryPage placeholder
+- SettingsPage optional
+
+### Output
+A professional app shell for HelloStay.
+
+### Done When
+- Sidebar navigation works
+- Header shows app/user info
+- Feature pages are reachable
+- Layout is reusable
+
+### Suggested Session Title
+**Milestone 8 — Dashboard Layout and Navigation**
+
+---
+
+## Milestone 9: Rooms Management
+
+### Purpose
+Build the first real hotel module.
+
+### Scope
+Manage hotel rooms using backend APIs.
+
+### Topics
+- Fetching room list
+- Room table/grid
+- Create room form
+- Edit room form
+- Delete/deactivate room
+- Room status
+- Loading/error/empty states
+- Component decomposition
+
+### Pages/Components
+- RoomsPage
+- RoomList
+- RoomCard or RoomTable
+- RoomForm
+- RoomStatusBadge
+
+### Output
+User can manage rooms.
+
+### Done When
+- Rooms can be listed
+- Rooms can be created
+- Rooms can be edited
+- Rooms can be deleted/deactivated depending on backend rules
+- Errors are shown properly
+
+### Suggested Session Title
+**Milestone 9 — Rooms Management Module**
+
+---
+
+## Milestone 10: Guests Management
+
+### Purpose
+Build guest record management.
+
+### Scope
+Create, view, update, and search guests.
+
+### Topics
+- Guest list
+- Guest details
+- Guest form
+- Search/filter
+- ID/contact fields
+- Form validation
+- Reusable form patterns
+
+### Pages/Components
+- GuestsPage
+- GuestList
+- GuestForm
+- GuestDetails
+- GuestSearch
+
+### Output
+User can manage guest records.
+
+### Done When
+- Guests can be listed
+- Guests can be created
+- Guests can be edited
+- Guest search works
+- Guest details are clear
+
+### Suggested Session Title
+**Milestone 10 — Guests Management Module**
+
+---
+
+## Milestone 11: Bookings Management
+
+### Purpose
+Build the central hotel workflow: bookings.
+
+### Scope
+Create and manage room bookings.
+
+### Topics
+- Booking list
+- Create booking
+- Select guest
+- Select available room
+- Check-in/check-out dates
+- Booking status
+- Backend validation
+- Date handling
+- Conflict handling
+
+### Pages/Components
+- BookingsPage
+- BookingList
+- BookingForm
+- BookingDetails
+- BookingStatusBadge
+- RoomAvailabilitySelector
+- GuestSelector
+
+### Output
+User can create and manage bookings.
+
+### Done When
+- Bookings can be listed
+- New booking can be created
+- Guest and room are selected properly
+- Date validation works
+- Backend conflict errors are displayed clearly
+
+### Suggested Session Title
+**Milestone 11 — Bookings Management Module**
+
+---
+
+## Milestone 12: Booking Lifecycle Actions
+
+### Purpose
+Add real hotel workflow actions to bookings.
+
+### Scope
+Implement status-based actions.
+
+### Topics
+- Check-in
+- Check-out
+- Cancel booking
+- Booking status transitions
+- Confirm dialogs
+- Business-rule-driven UI
+- Preventing invalid actions
+
+### Components
+- BookingActions
+- ConfirmDialog
+- StatusActionButton
+
+### Output
+Bookings can move through their lifecycle.
+
+### Done When
+- User can check in a booking
+- User can check out a booking
+- User can cancel when allowed
+- Invalid actions are hidden or disabled
+- Backend remains source of truth
+
+### Suggested Session Title
+**Milestone 12 — Booking Lifecycle Actions**
+
+---
+
+## Milestone 13: Finance and Income Overview
+
+### Purpose
+Show income and financial summaries for V1.
+
+### Scope
+Display total income and finance-related booking/payment data based on existing backend endpoints.
+
+### Topics
+- Finance dashboard
+- Total income
+- Date filters
+- Booking revenue
+- Paid/unpaid status if backend supports it
+- Summary cards
+- Basic charts only if needed
+
+### Pages/Components
+- FinancePage
+- IncomeSummaryCards
+- FinanceFilters
+- RevenueTable
+
+### Output
+User can see financial overview.
+
+### Done When
+- Total income is visible
+- Finance data comes from backend
+- Date filtering works if backend supports it
+- Empty/error states are handled
+
+### Suggested Session Title
+**Milestone 13 — Finance and Income Module**
+
+---
+
+## Milestone 14: History Module
+
+### Purpose
+Show historical hotel activity.
+
+### Scope
+Display previous bookings, completed stays, cancelled bookings, and relevant records.
+
+### Topics
+- Booking history
+- Guest stay history
+- Filters
+- Date ranges
+- Status filters
+- Read-only historical data
+- Difference between active data and history
+
+### Pages/Components
+- HistoryPage
+- HistoryList
+- HistoryFilters
+- HistoryDetails
+
+### Output
+User can review historical records.
+
+### Done When
+- History page works
+- Completed/cancelled/past data is visible
+- Filters work
+- No accidental editing of historical records
+
+### Suggested Session Title
+**Milestone 14 — History Module**
+
+---
+
+## Milestone 15: Dashboard Metrics
+
+### Purpose
+Make the dashboard useful after core modules exist.
+
+### Scope
+Show operational summary on the dashboard home.
+
+### Topics
+- Available rooms
+- Occupied rooms
+- Active bookings
+- Today’s check-ins
+- Today’s check-outs
+- Total guests
+- Income summary
+- Parallel API calls
+- Loading multiple data sources
+
+### Components
+- DashboardHome
+- MetricCard
+- TodayActivity
+- DashboardSummary
+
+### Output
+Dashboard gives a quick overview of hotel status.
+
+### Done When
+- Metrics are displayed
+- Data is current
+- Loading states are clean
+- Errors do not break the whole dashboard
+
+### Suggested Session Title
+**Milestone 15 — Dashboard Metrics and Overview**
+
+---
+
+## Milestone 16: Error Handling, Empty States, and UX Polish
+
+### Purpose
+Make the app feel reliable and professional.
+
+### Scope
+Improve user experience across all modules.
+
+### Topics
+- Global error patterns
+- Empty states
+- Loading skeletons
+- Form error messages
+- Toast notifications
+- Confirmation modals
+- Disabled buttons
+- Accessibility basics
+- Keyboard usability
+
+### Output
+The app becomes much more usable.
+
+### Done When
+- Every page handles loading
+- Every page handles errors
+- Empty lists look intentional
+- Forms guide the user clearly
+- Destructive actions require confirmation
+
+### Suggested Session Title
+**Milestone 16 — UX Polish and Error Handling**
+
+---
+
+## Milestone 17: Offline Desktop Behavior
+
+### Purpose
+Improve the Electron/offline production behavior.
+
+### Scope
+Handle local backend startup and desktop app reliability.
+
+### Topics
+- FastAPI backend startup from Electron
+- Checking backend availability
+- Startup loading state
+- Backend connection failure screen
+- App quit behavior
+- Localhost API configuration
+- Desktop-specific error handling
+
+### Electron Responsibility Split
+
+#### Electron Main
+- Starts/checks backend
+- Manages window lifecycle
+
+#### Preload
+- Exposes safe desktop APIs
+
+#### React Renderer
+- Shows startup/loading/error UI
+
+### Output
+The desktop app behaves properly when launched offline.
+
+### Done When
+- App can detect backend availability
+- User sees a clear message if backend is unavailable
+- React does not directly access unsafe Node APIs
+- Electron remains only a shell and startup manager
+
+### Suggested Session Title
+**Milestone 17 — Offline Electron Startup Behavior**
+
+---
+
+## Milestone 18: Security Review
+
+### Purpose
+Review the app for common frontend and Electron security mistakes.
+
+### Scope
+No new features. Review and harden the app.
+
+### Topics
+- JWT storage risks
+- Protected routes limitations
+- Backend authorization
+- Electron context isolation
+- Disable nodeIntegration
+- Secure preload APIs
+- Input validation
+- XSS prevention
+- API error leakage
+- Local desktop risks
+
+### Output
+Security checklist and improvements.
+
+### Done When
+- Electron security basics are correct
+- Auth flow is reasonably safe for V1
+- No backend business rules are trusted only in frontend
+- Sensitive data is not casually exposed
+
+### Suggested Session Title
+**Milestone 18 — Frontend and Electron Security Review**
+
+---
+
+## Milestone 19: Testing and Debugging Workflow
+
+### Purpose
+Learn how to test and debug the application like an engineer.
+
+### Scope
+Add practical testing and debugging workflows.
+
+### Topics
+- Manual test checklist
+- React DevTools
+- Browser DevTools
+- Network tab
+- Electron DevTools
+- Backend logs
+- API error debugging
+- Component testing basics
+- Integration testing strategy
+
+### Output
+A repeatable testing checklist.
+
+### Done When
+- Each module has manual test cases
+- Common bugs can be diagnosed
+- You know where to look when something fails
+
+### Suggested Session Title
+**Milestone 19 — Testing and Debugging Workflow**
+
+---
+
+## Milestone 20: Packaging Preparation
+
+### Purpose
+Prepare HelloStay for desktop distribution.
+
+### Scope
+Set up production build and packaging flow.
+
+### Topics
+- React production build
+- Electron production loading
+- Environment configuration
+- electron-builder or similar tool
+- App icon
+- Installer basics
+- File paths
+- SQLite database location
+- Backend executable strategy
+
+### Output
+A production packaging plan.
+
+### Done When
+- React builds successfully
+- Electron can load production build
+- Packaging strategy is clear
+- Database/backend file path issues are understood
+
+### Suggested Session Title
+**Milestone 20 — Electron Packaging Preparation**
+
+---
+
+## Milestone 21: Final V1 Review and Stabilization
+
+### Purpose
+Review the whole V1 application before considering it complete.
+
+### Scope
+Final cleanup, refactoring, bug fixing, and quality review.
+
+### Topics
+- Code cleanup
+- Folder consistency
+- Naming consistency
+- Removing dead code
+- UI consistency
+- Backend contract review
+- Business rule review
+- V1 scope review
+- Known limitations
+
+### Output
+HelloStay V1 frontend is stable and understandable.
+
+### Done When
+- Rooms work
+- Guests work
+- Bookings work
+- Finance works
+- History works
+- Auth works
+- Electron desktop shell works
+- V1 excludes employees as planned
+
+### Suggested Session Title
+**Milestone 21 — Final V1 Review and Stabilization**
+
+---
+
+## Recommended Milestone Order
+Use this exact order:
+
+1. Project Orientation
+2. React Project Setup
+3. Electron Desktop Shell
+4. Startup Flow and Routing
+5. UI Foundation
+6. API Client
+7. Authentication UI
+8. Auth State and Protected Routes
+9. Dashboard Layout
+10. Rooms Management
+11. Guests Management
+12. Bookings Management
+13. Booking Lifecycle Actions
+14. Finance and Income
+15. History
+16. Dashboard Metrics
+17. UX Polish
+18. Offline Electron Startup
+19. Security Review
+20. Testing and Debugging
+21. Packaging Preparation
+22. Final V1 Review
+
+---
+
 ## Frontend Milestone History
 
 ### Frontend Milestone 0 — Frontend Orientation, Backend Contract Review, and Architecture Boundary Confirmation
