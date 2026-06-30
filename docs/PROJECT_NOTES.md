@@ -1145,6 +1145,202 @@ SQLite stores data.
 
 This decision establishes the foundation for future Electron capabilities without weakening security or mixing responsibilities.
 
+---
+
+# Frontend AD 3: Startup Flow and Routing Belong to the React Renderer
+**Status:** Accepted
+**Date Recorded:** 2026-06-30
+**Milestone:** Frontend Milestone 3 — Startup Flow and Routing
+**Project:** HelloStay — Offline Hotel Management System
+
+## 1. Decision
+HelloStay will handle startup flow and application routing inside the React renderer process using React Router.
+
+The Electron main process will not manage React routes. It will only create the desktop window, manage the application lifecycle, and load the React app.
+
+Route definitions will be stored separately in:
+src/routes/AppRoutes.jsx
+
+Page-level components will be stored in:
+src/pages/
+
+The app will start at:
+/
+
+The first milestone route structure will be:
+/          → StartPage
+/login     → LoginPage
+*          → NotFoundPage
+
+## 2. Context
+HelloStay is an offline desktop application built with Electron, React, and FastAPI.
+
+Electron provides the desktop shell. React provides the user interface inside Electron. FastAPI remains the source of truth for backend business logic, validation, database operations, authentication, and API contracts.
+
+Before adding hotel features, authentication, dashboard layout, or API integration, the frontend needs a clean way to move between screens.
+
+Routing is the mechanism that allows a single React application to show different pages based on the current URL.
+
+## 3. Why This Decision Was Made
+This decision was made to keep the frontend architecture clean and scalable.
+
+A production application should not keep all screens inside `App.jsx`. As the project grows, putting all page logic directly inside `App.jsx` would make the file difficult to understand and maintain.
+
+By separating routes into `AppRoutes.jsx`, the application has a clear place for route definitions.
+
+By separating pages into the `pages/` folder, each screen becomes easier to locate, modify, test, and extend.
+
+This also protects the separation of responsibilities between Electron and React.
+
+Electron should not know about routes like:
+/login
+/rooms
+/guests
+/dashboard
+
+Those are UI-level routes and belong to React.
+
+## 4. Architecture Rule
+
+The accepted architecture rule is:
+React renderer owns application routing.
+Electron main process owns desktop lifecycle.
+FastAPI owns backend business logic and API contracts.
+
+This means:
+* React decides which page to show.
+* Electron decides how the desktop window opens.
+* FastAPI decides how business data is created, validated, stored, and returned.
+
+## 5. Chosen Approach
+The chosen routing approach for Milestone 3 is `BrowserRouter`.
+
+`BrowserRouter` was selected because:
+* It is beginner-friendly.
+* It works well with the Vite development server.
+* It gives clean URLs.
+* It is commonly used in React applications.
+* It supports normal paths like `/login`.
+
+Example:
+/login
+
+instead of:
+/#/login
+
+## 6. Alternatives Considered
+
+### Alternative 1: Keep conditional rendering inside App.jsx
+
+Example:
+If current screen is "start", show StartPage.
+If current screen is "login", show LoginPage.
+
+This was rejected because it does not scale well. It also teaches a weaker architecture pattern for a production application.
+
+### Alternative 2: Use HashRouter
+
+Example route:
+/#/login
+
+This can be useful in some packaged Electron applications because it avoids server fallback issues.
+
+However, it was not chosen for this milestone because the app is currently running through Vite during development, and clean browser-style URLs are better for learning React Router basics.
+
+HashRouter may be reconsidered later during Electron packaging if required.
+
+### Alternative 3: Use advanced React Router data routers
+This was rejected for now because Milestone 3 has no route loaders, form actions, backend calls, or route-level data fetching.
+
+The milestone only needs simple page navigation.
+
+## 7. Consequences
+
+### Positive Consequences
+* The app now has a clean routing foundation.
+* `App.jsx` remains small.
+* Route definitions are easy to find.
+* Page components are organized clearly.
+* React renderer responsibilities are clear.
+* Electron remains separated from UI routing.
+* The app is ready for future login, dashboard, and feature routes.
+
+### Trade-Offs
+Using `BrowserRouter` may require additional care later when the Electron app is packaged and loaded from production build files.
+
+This is acceptable because Milestone 3 is focused on development-time routing and beginner-friendly learning.
+
+The routing strategy can be revisited later during the packaging milestone if needed.
+
+## 8. Affected Files
+
+The following files were added:
+frontend/src/routes/AppRoutes.jsx
+frontend/src/pages/StartPage.jsx
+frontend/src/pages/LoginPage.jsx
+frontend/src/pages/NotFoundPage.jsx
+
+The following files were updated:
+frontend/src/main.jsx
+frontend/src/App.jsx
+frontend/src/styles/global.css
+
+## 9. What This Decision Does Not Include
+
+This decision does not include:
+* Real authentication.
+* Login API integration.
+* JWT storage.
+* Auth context.
+* Protected routes.
+* Dashboard routes.
+* Dashboard layout.
+* Hotel feature modules.
+* Backend startup from Electron.
+* Electron packaging.
+
+These will be handled in later milestones.
+
+## 10. Future Implications
+
+This decision prepares the project for later milestones such as:
+/login
+/dashboard
+/rooms
+/guests
+/stays
+/bookings
+/finance
+/history
+/settings
+
+Later, authentication can introduce protected routes.
+
+Example future structure:
+Public routes:
+  /
+  /login
+
+Protected routes:
+  /dashboard
+  /rooms
+  /guests
+  /stays
+  /finance
+
+However, protected routes should only be added after real authentication and auth state are designed.
+
+## 11. Final Decision Summary
+HelloStay will use React Router inside the React renderer process for application navigation.
+
+Electron will not manage application routes.
+
+FastAPI will not be involved in frontend routing.
+
+The route definitions will live in `src/routes/AppRoutes.jsx`, and screen-level components will live in `src/pages/`.
+
+This keeps the architecture simple, maintainable, beginner-friendly, and production-oriented.
+
 
 ---
 
@@ -1279,8 +1475,6 @@ The goal is to keep every session focused, reduce confusion, preserve accuracy, 
 - JavaScript
 - Electron
 - Frontend architecture
-
----
 
 ## Milestone 0: Project Orientation and Rules Review
 
@@ -2150,7 +2344,7 @@ Use this exact order:
 
 ---
 
-## Frontend Milestone History
+## Completed Frontend Milestone 
 
 ### Frontend Milestone 0 — Frontend Orientation, Backend Contract Review, and Architecture Boundary Confirmation
 **Status:** Completed
@@ -2550,3 +2744,202 @@ FastAPI backend       → business logic and API contracts
 SQLite database       → persistence
 
 This milestone completed the basic desktop foundation without mixing frontend UI, desktop lifecycle, backend logic, or database responsibilities.
+
+---
+
+# Frontend Milestone 3: Startup Flow and Routing
+**Status:** Completed
+**Date Completed:** 2026-06-30
+**Project:** HelloStay — Offline Hotel Management System
+**Frontend Stack:** React, JavaScript, Vite
+**Desktop Shell:** Electron
+
+## 1. Milestone Objective
+The objective of Milestone 3 was to introduce a clean startup flow and basic routing structure inside the React renderer process.
+
+This milestone focused only on navigation between minimal placeholder pages. No hotel features, backend integration, authentication, dashboard layout, protected routes, Electron backend startup, or packaging logic were added.
+
+## 2. Scope of This Milestone
+
+Milestone 3 included:
+* Installing React Router DOM.
+* Creating a clean routing structure.
+* Creating a minimal `StartPage`.
+* Creating a minimal `LoginPage` placeholder.
+* Creating a `NotFoundPage` fallback route.
+* Setting up routing through `BrowserRouter`.
+* Moving route definitions into a dedicated `AppRoutes.jsx` file.
+* Making the app open on the startup page.
+* Adding a button on the startup page that navigates to the login page.
+
+## 3. Out of Scope
+
+The following were intentionally not added:
+* Real authentication.
+* Login form.
+* JWT handling.
+* Auth state.
+* Protected routes.
+* Dashboard routes.
+* Dashboard layout.
+* Rooms module.
+* Guests module.
+* Stays or bookings module.
+* Finance module.
+* History module.
+* Settings module.
+* Backend API calls.
+* FastAPI startup from Electron.
+* Electron packaging.
+
+This was intentional because the milestone was only about routing foundation.
+
+## 4. Final Route Structure
+
+The app now supports the following routes:
+/          → StartPage
+/login     → LoginPage
+*          → NotFoundPage
+
+The `*` route acts as a fallback for unknown paths.
+
+Example:
+/random-page → NotFoundPage
+
+
+## 5. Final Folder Structure
+
+The frontend now follows this structure:
+frontend/
+  src/
+    main.jsx
+    App.jsx
+
+    routes/
+      AppRoutes.jsx
+
+    pages/
+      StartPage.jsx
+      LoginPage.jsx
+      NotFoundPage.jsx
+
+    styles/
+      global.css
+
+## 6. Files Added
+
+The following files were added:
+src/routes/AppRoutes.jsx
+src/pages/StartPage.jsx
+src/pages/LoginPage.jsx
+src/pages/NotFoundPage.jsx
+
+## 7. Files Updated
+
+The following files were updated:
+src/main.jsx
+src/App.jsx
+src/styles/global.css
+
+
+## 8. Implementation Summary
+`main.jsx` now wraps the React application with `BrowserRouter`.
+
+main.jsx
+  ↓
+BrowserRouter
+  ↓
+App.jsx
+  ↓
+AppRoutes.jsx
+  ↓
+Page components
+
+
+`App.jsx` was kept small and only renders `AppRoutes`.
+
+`AppRoutes.jsx` owns all route definitions.
+
+The startup page contains a button that uses `useNavigate` to move the user to `/login`.
+
+The login page is only a placeholder.
+
+The not-found page uses `Link` to return to the startup page.
+
+## 9. Responsibilities After This Milestone
+
+### React Renderer Process
+
+React owns:
+* Page rendering.
+* Route definitions.
+* Client-side navigation.
+* Startup page.
+* Login placeholder page.
+* Fallback route.
+
+### Electron Main Process
+
+Electron owns:
+* Desktop window creation.
+* App lifecycle.
+* Loading the React app.
+* Desktop shell behavior.
+
+Electron does not know about React routes such as `/login`.
+
+### FastAPI Backend
+
+FastAPI remains responsible for:
+* Business logic.
+* Validation.
+* Database operations.
+* API contracts.
+* Authentication logic later.
+
+No backend integration was added in this milestone.
+
+## 10. Key Concepts Learned
+
+This milestone introduced the following concepts:
+* Routing in a React single-page application.
+* Difference between client-side navigation and full page reload.
+* Why Electron desktop apps can still use React Router.
+* Why routes belong in the React renderer process.
+* What `BrowserRouter` does.
+* What `Routes` does.
+* What `Route` does.
+* What `Link` does.
+* What `useNavigate` does.
+* Why authentication and protected routes should wait for later milestones.
+
+## 11. Verification Steps Completed
+
+The following URLs were verified:
+http://localhost:5173/
+http://localhost:5173/login
+http://localhost:5173/random-page
+
+
+Expected results:
+/              shows StartPage
+/login         shows LoginPage
+/random-page   shows NotFoundPage
+
+
+The app was also verified through Electron using:
+```bash
+npm run desktop
+```
+
+## 12. Milestone Result
+Milestone 3 was completed successfully.
+
+HelloStay now has a clean routing foundation inside the React renderer process while preserving the separation between React, Electron, and FastAPI.
+
+## 13. Suggested Next Milestone
+
+The recommended next milestone is:
+Frontend Milestone 4: Authentication UI Foundation
+
+Milestone 4 should still avoid real backend authentication at first. It should focus on creating a clean login page UI structure, basic form state, input handling, and frontend-only validation concepts before connecting to the FastAPI authentication API.
