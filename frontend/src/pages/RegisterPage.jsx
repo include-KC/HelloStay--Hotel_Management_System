@@ -6,17 +6,19 @@ import Card from "../components/ui/Card.jsx";
 import ErrorMessage from "../components/ui/ErrorMessage.jsx";
 import Input from "../components/ui/Input.jsx";
 import Loading from "../components/ui/Loading.jsx";
-import { login } from "../services/authService.js";
+import { registerAccount } from "../services/authService.js";
 
-function LoginPage() {
+function RegisterPage() {
   const [formValues, setFormValues] = useState({
     username: "",
     password: "",
+    confirmPassword: "",
   });
 
   const [fieldErrors, setFieldErrors] = useState({
     username: "",
     password: "",
+    confirmPassword: "",
   });
 
   const [formError, setFormError] = useState("");
@@ -46,6 +48,7 @@ function LoginPage() {
     const errors = {
       username: "",
       password: "",
+      confirmPassword: "",
     };
 
     if (!formValues.username.trim()) {
@@ -56,9 +59,29 @@ function LoginPage() {
       errors.password = "Password is required.";
     }
 
+    if (formValues.password && formValues.password.length < 6) {
+      errors.password = "Password should be at least 6 characters.";
+    }
+
+    if (!formValues.confirmPassword) {
+      errors.confirmPassword = "Please confirm your password.";
+    }
+
+    if (
+      formValues.password &&
+      formValues.confirmPassword &&
+      formValues.password !== formValues.confirmPassword
+    ) {
+      errors.confirmPassword = "Passwords do not match.";
+    }
+
     setFieldErrors(errors);
 
-    return !errors.username && !errors.password;
+    return (
+      !errors.username &&
+      !errors.password &&
+      !errors.confirmPassword
+    );
   }
 
   async function handleSubmit(event) {
@@ -74,19 +97,22 @@ function LoginPage() {
       setIsSubmitting(true);
       setFormError("");
 
-      await login({
+      await registerAccount({
         username: formValues.username.trim(),
         password: formValues.password,
+        confirmPassword: formValues.confirmPassword,
       });
 
       /*
-        Future Milestone 7:
-        - Save auth state safely
-        - Store token according to chosen strategy
-        - Redirect to dashboard
+        Future milestone:
+        - Decide whether registration automatically logs in the user
+        - Decide whether only the first owner account can be created
+        - Decide whether hotel setup is required after registration
       */
     } catch (error) {
-      setFormError(error.message || "Unable to login. Please try again.");
+      setFormError(
+        error.message || "Unable to create account. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -98,9 +124,9 @@ function LoginPage() {
         <Card>
           <div className="auth-header">
             <p className="eyebrow-text">HelloStay</p>
-            <h1 className="page-title">Login</h1>
+            <h1 className="page-title">Create Account</h1>
             <p className="page-description">
-              Sign in to continue to your hotel management workspace.
+              Create the first account for this local HelloStay installation.
             </p>
           </div>
 
@@ -108,11 +134,11 @@ function LoginPage() {
             {formError ? <ErrorMessage message={formError} /> : null}
 
             <Input
-              id="username"
+              id="register-username"
               name="username"
               label="Username"
               type="text"
-              placeholder="Enter your username"
+              placeholder="Choose a username"
               autoComplete="username"
               value={formValues.username}
               onChange={handleInputChange}
@@ -121,28 +147,41 @@ function LoginPage() {
             />
 
             <Input
-              id="password"
+              id="register-password"
               name="password"
               label="Password"
               type="password"
-              placeholder="Enter your password"
-              autoComplete="current-password"
+              placeholder="Choose a password"
+              autoComplete="new-password"
               value={formValues.password}
               onChange={handleInputChange}
               error={fieldErrors.password}
               disabled={isSubmitting}
+              helperText="Use at least 6 characters for now. Backend rules will become the final source of truth later."
+            />
+
+            <Input
+              id="confirm-password"
+              name="confirmPassword"
+              label="Confirm Password"
+              type="password"
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+              value={formValues.confirmPassword}
+              onChange={handleInputChange}
+              error={fieldErrors.confirmPassword}
+              disabled={isSubmitting}
             />
 
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Checking..." : "Login"}
+              {isSubmitting ? "Creating..." : "Create Account"}
             </Button>
 
-            {isSubmitting ? <Loading message="Checking login details..." /> : null}
+            {isSubmitting ? <Loading message="Preparing account..." /> : null}
           </form>
 
           <p className="auth-footer-text">
-            New to HelloStay?{" "}
-            <Link to="/register">Create an account</Link>
+            Already have an account? <Link to="/login">Login</Link>
           </p>
         </Card>
       </div>
@@ -150,4 +189,4 @@ function LoginPage() {
   );
 }
 
-export default LoginPage;
+export default RegisterPage;

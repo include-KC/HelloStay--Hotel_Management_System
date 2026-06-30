@@ -1934,6 +1934,198 @@ Milestone 5 established the official frontend API communication foundation for H
 
 Future feature modules must use service files and the centralized API client instead of direct page-level API calls.
 
+---
+
+# Frontend AD 6: Authentication UI Foundation Before Real Auth Integration
+
+**Status:** Accepted
+**Date Recorded:** 2026-06-30
+**Milestone:** Frontend Milestone 6 — Authentication UI Foundation
+
+## Decision
+
+The HelloStay frontend will build the authentication UI foundation before implementing real authentication behavior.
+
+Milestone 6 introduces real login and registration form interfaces using React controlled components, form validation, loading states, error states, and a dedicated `authService.js` service boundary. However, the frontend will not perform real login, real registration, dashboard redirect, token persistence, protected routing, or global authentication state until the backend exposes and confirms actual authentication endpoints.
+
+## Context
+
+HelloStay V1 requires a clean startup and authentication flow:
+
+1. User opens the app.
+2. User sees the start page.
+3. User navigates to login.
+4. User can log in with username and password.
+5. User can create a new account.
+6. After real authentication is implemented, the user should enter the main dashboard.
+
+At this milestone, the backend contains JWT/password helper functionality and token schemas, but the available FastAPI router registration does not show confirmed auth endpoints such as login, register, me, or logout. Therefore, the frontend must not invent endpoint paths or fake successful authentication.
+
+## Why This Decision Was Made
+
+Authentication is a security-sensitive workflow. The frontend must not decide whether a username and password are correct. Credential verification belongs to the backend because the backend owns password hashing, database lookup, validation, JWT creation, and API contracts.
+
+Building fake authentication in React would create the wrong architecture and may lead to unsafe habits such as:
+
+* Hardcoding fake users.
+* Redirecting to dashboard without real verification.
+* Treating React state as the source of truth for identity.
+* Storing fake tokens.
+* Adding protected routes before real auth state exists.
+* Inventing backend endpoint paths that may later conflict with the real API.
+
+This milestone keeps the UI work productive while preserving backend authority.
+
+## Final Decision
+
+For Milestone 6:
+
+* Build a real `LoginPage` UI form.
+* Build a real `RegisterPage` UI form.
+* Use controlled React inputs.
+* Use `useState` for form values, field errors, form error, and loading state.
+* Add basic frontend validation for required fields.
+* Add password confirmation validation on the registration page.
+* Use existing reusable UI components.
+* Create `authService.js` as the dedicated authentication service layer.
+* Keep `authService.js` prepared for future login/register calls.
+* Do not invent endpoint paths.
+* Do not hardcode fake users.
+* Do not redirect to dashboard after login.
+* Do not create `ProtectedRoute`.
+* Do not create global auth context yet.
+* Do not persist tokens yet.
+* Do not move authentication logic into Electron.
+
+## Affected Files
+
+```text
+frontend/src/services/authService.js
+frontend/src/pages/LoginPage.jsx
+frontend/src/pages/RegisterPage.jsx
+frontend/src/routes/AppRoutes.jsx
+frontend/src/styles/global.css
+frontend/src/components/ui/Input.jsx
+frontend/src/components/ui/Button.jsx
+```
+
+## Responsibility Separation
+
+### React Renderer
+
+React handles:
+
+* Login form UI.
+* Register form UI.
+* Controlled input state.
+* Frontend validation.
+* Submit handling.
+* Loading and error display.
+* Calling `authService.js`.
+
+### Service Layer
+
+`authService.js` handles:
+
+* Authentication-related frontend API boundary.
+* Login function placeholder.
+* Register function placeholder.
+* Clear errors when auth endpoints are not confirmed.
+* Future integration with `apiClient.js`.
+
+### FastAPI Backend
+
+FastAPI remains responsible for:
+
+* User lookup.
+* Password hashing.
+* Password verification.
+* JWT creation.
+* Request validation.
+* Response contract.
+* Auth route ownership.
+
+### Electron Main Process
+
+Electron does not handle:
+
+* Username/password form logic.
+* Authentication validation.
+* JWT creation.
+* Hotel business rules.
+* Dashboard authorization.
+
+Electron remains responsible only for desktop shell responsibilities such as app lifecycle, window creation, safe preload exposure, packaging, and future backend startup behavior.
+
+## Implementation Outcome
+
+Milestone 6 produced a clean authentication UI foundation without pretending that real auth exists.
+
+The login page now behaves like a real form but stops at the correct boundary when no confirmed backend login endpoint exists.
+
+The register page supports the V1 account creation direction but does not create fake accounts.
+
+The service layer now provides a dedicated place for future auth API integration.
+
+## Consequences
+
+### Positive Consequences
+
+* Authentication UI is now ready for future backend integration.
+* Login and registration forms are beginner-friendly and production-oriented.
+* Form behavior is predictable because controlled components are used.
+* Page components remain clean because API responsibility is moved to `authService.js`.
+* The project avoids fake authentication.
+* Future Milestone 7 can focus on auth contract, token strategy, auth context, and protected routes.
+
+### Trade-Offs
+
+* Login does not yet succeed.
+* Register does not yet create an account.
+* There is no dashboard redirect yet.
+* The user sees an expected “auth endpoint not confirmed” style error after valid form submission.
+* More backend verification/design is needed before real authentication can be completed.
+
+These trade-offs are accepted because they preserve architectural correctness.
+
+## Explicitly Deferred
+
+The following are intentionally postponed:
+
+* Real login API call.
+* Real register API call.
+* Auth endpoint path selection.
+* Token storage.
+* AuthContext.
+* ProtectedRoute.
+* Dashboard redirect after login.
+* Current user restore flow.
+* Logout behavior.
+* Role-based authorization.
+* Electron-based secure token storage strategy.
+
+## Future Milestone Dependency
+
+Milestone 7 should build on this decision by verifying or designing the backend authentication contract.
+
+Milestone 7 should answer:
+
+* What is the register endpoint?
+* What is the login endpoint?
+* What request body does login expect?
+* What response body does login return?
+* Does the backend return `access_token` and `token_type`?
+* Is there a `/me` endpoint?
+* How should the frontend restore the current user?
+* Where should the token be stored?
+* How should logout work?
+* When should protected routes be introduced?
+
+## Final Rule
+
+React may collect credentials and send them through the service layer, but React must never be the source of truth for whether credentials are correct.
+
+FastAPI remains the authentication authority.
 
 ---
 
@@ -4541,3 +4733,330 @@ do not build protected dashboard yet unless authentication is working
 ```
 
 Authentication should be handled as a separate milestone because it introduces forms, validation, token handling, user state, and route protection.
+
+---
+
+# Frontend Milestone 6 Notes: Authentication UI Foundation
+
+**Status:** Completed
+**Date Completed:** 2026-06-30
+**Milestone:** Frontend Milestone 6 — Authentication UI Foundation
+
+## Goal
+
+The goal of Milestone 6 was to create the authentication UI foundation for HelloStay without implementing fake authentication or assuming backend endpoint contracts that are not yet confirmed.
+
+This milestone focused on frontend form structure, React state, validation, loading states, error handling, routing, and service-layer preparation.
+
+## Completed Work
+
+Milestone 6 completed the following:
+
+* Converted `LoginPage.jsx` from a placeholder screen into a real login form UI.
+* Created `RegisterPage.jsx` for the V1 account creation direction.
+* Added a `/register` route in `AppRoutes.jsx`.
+* Used existing shared UI components such as:
+
+  * `Button`
+  * `Input`
+  * `Card`
+  * `Loading`
+  * `ErrorMessage`
+* Used controlled components for form fields.
+* Used React `useState` for form values.
+* Added field-level validation.
+* Added form-level error state.
+* Added loading/submitting state.
+* Disabled form controls while submitting.
+* Added `authService.js` as the dedicated authentication service layer.
+* Prepared login/register service functions for future backend integration.
+* Avoided direct API calls inside page components.
+* Avoided fake authentication.
+* Avoided hardcoded users.
+* Avoided dashboard redirect.
+* Avoided token persistence.
+* Avoided protected routes.
+* Kept Electron separate from authentication form logic.
+
+## Files Added
+
+```text
+frontend/src/services/authService.js
+frontend/src/pages/RegisterPage.jsx
+```
+
+## Files Updated
+
+```text
+frontend/src/pages/LoginPage.jsx
+frontend/src/routes/AppRoutes.jsx
+frontend/src/styles/global.css
+```
+
+Depending on the existing reusable UI component implementation, these may also have been checked or adjusted:
+
+```text
+frontend/src/components/ui/Input.jsx
+frontend/src/components/ui/Button.jsx
+```
+
+## Authentication Flow Reviewed
+
+The expected future authentication flow for HelloStay V1 is:
+
+```text
+StartPage
+   |
+   v
+LoginPage
+   |
+   v
+authService.login()
+   |
+   v
+apiClient
+   |
+   v
+FastAPI auth endpoint
+   |
+   v
+Backend verifies credentials
+   |
+   v
+Backend returns JWT token
+   |
+   v
+Frontend updates auth state
+   |
+   v
+Protected dashboard access
+```
+
+Milestone 6 implemented only the frontend foundation up to the service boundary.
+
+## Important Backend Finding
+
+The backend currently contains JWT/password helper functionality and token schemas, but the available FastAPI app setup does not show a registered authentication router.
+
+This means the frontend should not yet assume endpoint paths such as:
+
+```text
+/auth/login
+/auth/register
+/auth/me
+/logout
+```
+
+These must be confirmed or created in the backend before real frontend authentication is implemented.
+
+## Key Concepts Learned
+
+### Authentication
+
+Authentication answers:
+
+```text
+Who is this user?
+```
+
+In HelloStay, this means verifying a username and password before allowing access to hotel management features.
+
+### Authorization
+
+Authorization answers:
+
+```text
+What is this authenticated user allowed to do?
+```
+
+Authorization is not part of Milestone 6. It will matter later when roles and permissions are introduced.
+
+### Controlled Components
+
+The form inputs are controlled by React state.
+
+This means the input value is stored in React, and the UI updates whenever the state changes.
+
+Example concept:
+
+```text
+Input value changes
+   |
+   v
+onChange runs
+   |
+   v
+React state updates
+   |
+   v
+Component re-renders
+   |
+   v
+Input displays new value
+```
+
+### useState
+
+`useState` was used to remember:
+
+* Form field values.
+* Field validation errors.
+* General form error.
+* Loading/submitting state.
+
+### preventDefault
+
+`event.preventDefault()` was used to stop the browser from refreshing the page during form submission.
+
+This is necessary because HelloStay is a React single-page application inside an Electron desktop shell.
+
+### Loading State
+
+Loading state was added so the UI can show when the app is attempting an authentication action.
+
+Even though real auth is not connected yet, this prepares the UI for real API calls.
+
+### Error State
+
+Error state was added so users can see useful feedback when validation fails or when auth endpoints are not confirmed.
+
+### Service Layer
+
+`authService.js` was created so authentication-related API behavior does not live directly inside page components.
+
+This keeps the architecture cleaner and prepares the project for future backend integration.
+
+## What Was Intentionally Not Added
+
+The following were intentionally not added in Milestone 6:
+
+* Real login API integration.
+* Real register API integration.
+* Fake users.
+* Fake successful login.
+* Dashboard redirect.
+* AuthContext.
+* ProtectedRoute.
+* Token storage.
+* Logout.
+* Current user restore.
+* Role-based authorization.
+* Dashboard layout.
+* Rooms, guests, stays, bookings, finance, or history screens.
+* Electron backend startup.
+* Electron packaging.
+
+## Why These Were Not Added
+
+These features depend on a confirmed authentication contract from the backend.
+
+Before adding them, the project needs to know:
+
+* Which endpoint handles login.
+* Which endpoint handles registration.
+* What request body each endpoint expects.
+* What response body each endpoint returns.
+* Whether JWT is returned.
+* How the current user is fetched.
+* How logout should behave.
+* How token storage should work in an offline Electron app.
+
+Adding protected routes or token persistence before answering these questions would create unstable architecture.
+
+## Verification Checklist
+
+Milestone 6 is considered complete if the following are true:
+
+```text
+/login opens correctly.
+/register opens correctly.
+Login fields are typeable.
+Register fields are typeable.
+Empty login form shows validation errors.
+Empty register form shows validation errors.
+Password mismatch shows an error on register.
+Submit button disables while submitting.
+Loading UI appears during submit.
+Valid login submit does not fake success.
+Valid register submit does not fake account creation.
+No dashboard redirect happens.
+No token is stored.
+No ProtectedRoute exists.
+No AuthContext exists yet.
+No auth endpoint path is invented.
+```
+
+## Current Application State After Milestone 6
+
+The frontend now has:
+
+```text
+StartPage
+LoginPage
+RegisterPage
+NotFoundPage
+Reusable UI components
+apiClient.js
+authService.js
+Basic routing
+Authentication UI foundation
+```
+
+The frontend still does not have:
+
+```text
+Real authentication
+Global auth state
+Protected routes
+Dashboard
+Hotel modules
+Electron backend startup
+Packaging
+```
+
+## Architecture Boundary Preserved
+
+Milestone 6 preserved the correct responsibility split:
+
+```text
+React:
+Forms, UI state, validation display, user interaction.
+
+authService.js:
+Authentication service boundary.
+
+apiClient.js:
+Generic backend communication behavior.
+
+FastAPI:
+Credential verification, password hashing, JWT creation, database access, API contracts.
+
+Electron:
+Desktop shell only, not authentication logic.
+```
+
+## Milestone 6 Result
+
+Milestone 6 successfully prepared HelloStay for real authentication without violating the source-of-truth rule.
+
+The frontend now looks and behaves like it is ready for authentication, but it correctly waits for backend contract confirmation before real login/register behavior is added.
+
+## Recommended Next Milestone
+
+The next milestone should be:
+
+```text
+Frontend Milestone 7 — Authentication Contract and Auth State Foundation
+```
+
+Milestone 7 should focus on:
+
+* Verifying or defining the backend auth API contract.
+* Deciding the login request shape.
+* Deciding the login response shape.
+* Planning token handling.
+* Planning current user restore.
+* Planning AuthContext.
+* Planning ProtectedRoute.
+* Preparing redirect-after-login behavior.
+* Still avoiding dashboard feature development until the auth foundation is stable.
