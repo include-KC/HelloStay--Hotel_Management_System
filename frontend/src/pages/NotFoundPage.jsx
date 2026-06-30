@@ -1,21 +1,27 @@
 import { Link } from "react-router-dom";
 
+import Button from "../components/ui/Button.jsx";
+import Card from "../components/ui/Card.jsx";
+import ErrorMessage from "../components/ui/ErrorMessage.jsx";
+
 function NotFoundPage() {
   return (
     <main className="page-center">
-      <section className="welcome-card">
-        <p className="eyebrow">404</p>
+      <div className="page-stack">
+        <Card>
+          <h1 className="page-title">Page Not Found</h1>
 
-        <h1>Page Not Found</h1>
+          <div style={{ marginTop: "16px" }}>
+            <ErrorMessage message="The page you are looking for does not exist." />
+          </div>
 
-        <p className="page-description">
-          The page you are looking for does not exist.
-        </p>
-
-        <Link className="text-link" to="/">
-          Go back to Start Page
-        </Link>
-      </section>
+          <div style={{ marginTop: "24px" }}>
+            <Link to="/">
+              <Button>Go to Start Page</Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
     </main>
   );
 }

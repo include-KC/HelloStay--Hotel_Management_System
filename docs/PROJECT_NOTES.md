@@ -1388,6 +1388,313 @@ View/edit logged-in user's personal profile. Gradient header card, edit name/ema
 
 ---
 
+# Frontend AD 4: UI Foundation and Reusable Component System
+
+**Status:** Accepted
+**Date Recorded:** 2026-06-30
+**Milestone:** Frontend Milestone 4 — UI Foundation and Layout System
+
+## Context
+
+HelloStay is an offline desktop Hotel Management System built with a FastAPI backend, React frontend, and Electron desktop shell.
+
+Milestone 1 established the minimal React foundation using Vite and JavaScript.
+Milestone 2 introduced Electron as the desktop shell while keeping React as the renderer process.
+Milestone 3 introduced React Router and basic placeholder pages.
+
+At this stage, the application has routing and simple pages, but it does not yet have a reusable visual foundation. Before building authentication, dashboard screens, rooms, guests, stays, bookings, finance, history, or settings, the frontend needs a small UI foundation that promotes consistency, readability, and maintainability.
+
+## Decision
+
+Create a simple UI foundation using plain CSS and reusable React components.
+
+The frontend will use:
+
+* CSS variables for design tokens.
+* A clean global CSS structure.
+* Small reusable UI components.
+* Simple page-level styling.
+* Beginner-friendly component patterns using props, children, and className.
+
+The following reusable UI components are introduced:
+
+* `Button`
+* `Input`
+* `Card`
+* `Loading`
+* `ErrorMessage`
+
+These components are placed under:
+
+```txt
+frontend/src/components/ui/
+```
+
+Existing placeholder pages may use these components lightly:
+
+```txt
+frontend/src/pages/StartPage.jsx
+frontend/src/pages/LoginPage.jsx
+frontend/src/pages/NotFoundPage.jsx
+```
+
+No full dashboard shell, sidebar, topbar, protected routes, authentication, backend integration, or hotel features are introduced in this milestone.
+
+## Architecture Decision
+
+The frontend will begin with a small custom design system instead of using Tailwind CSS, icon libraries, animation libraries, or third-party UI component libraries.
+
+Styling remains inside the React renderer layer. Electron will not contain UI component logic.
+
+The responsibility split remains:
+
+```txt
+FastAPI backend
+  Business logic, validation, authentication rules, database operations, API contracts
+
+Electron main process
+  Desktop window, app lifecycle, native shell behavior
+
+Electron preload layer
+  Safe renderer-main communication when needed
+
+React renderer process
+  Pages, components, forms, routing, UI state, styling
+```
+
+## Why This Decision Was Made
+
+A reusable UI foundation prevents duplicated styles and inconsistent interface patterns as the application grows.
+
+HelloStay will eventually contain many screens such as login, dashboard, room management, guest management, stay management, finance, history, and settings. These screens will repeatedly need buttons, inputs, cards, loading states, and error messages.
+
+Creating these reusable pieces early helps the project stay organized without prematurely building full business features.
+
+Plain CSS is intentionally chosen for this milestone because it helps build strong fundamentals before introducing additional styling tools. Since the project is being built for learning and production-quality engineering, the priority is to understand how UI systems work from first principles.
+
+## What This Decision Allows
+
+This decision allows future pages to use consistent components such as:
+
+```jsx
+<Button>Save</Button>
+<Input label="Username" />
+<Card>...</Card>
+<Loading message="Loading rooms..." />
+<ErrorMessage message="Something went wrong." />
+```
+
+It also creates a stable place for design tokens such as:
+
+```css
+--color-primary
+--color-bg
+--color-surface
+--color-border
+--radius-md
+--space-md
+```
+
+This keeps styling centralized and reduces repeated hard-coded values.
+
+## What This Decision Prevents
+
+This decision prevents:
+
+* Duplicating button styles across pages.
+* Duplicating input markup across forms.
+* Mixing page-level components with reusable UI components.
+* Adding dashboard layout too early.
+* Adding authentication before the visual foundation exists.
+* Moving UI logic into Electron.
+* Introducing styling libraries before understanding CSS fundamentals.
+* Creating hotel-specific components before generic UI foundations are stable.
+
+## Affected Files
+
+New files:
+
+```txt
+frontend/src/components/ui/Button.jsx
+frontend/src/components/ui/Input.jsx
+frontend/src/components/ui/Card.jsx
+frontend/src/components/ui/Loading.jsx
+frontend/src/components/ui/ErrorMessage.jsx
+```
+
+Modified files:
+
+```txt
+frontend/src/styles/global.css
+frontend/src/pages/StartPage.jsx
+frontend/src/pages/LoginPage.jsx
+frontend/src/pages/NotFoundPage.jsx
+```
+
+Unchanged responsibilities:
+
+```txt
+frontend/electron/
+backend/
+frontend/src/routes/AppRoutes.jsx
+```
+
+## Implementation Direction
+
+The UI foundation should remain small and readable.
+
+The global stylesheet should contain:
+
+```txt
+1. CSS variables
+2. base reset
+3. body styling
+4. page helper classes
+5. reusable UI component classes
+```
+
+The UI components should be simple functional React components.
+
+The components should accept props only where useful. Examples:
+
+```txt
+Button:
+  children
+  variant
+  type
+  disabled
+  className
+
+Input:
+  label
+  error
+  helperText
+  id
+  className
+
+Card:
+  children
+  className
+
+Loading:
+  message
+
+ErrorMessage:
+  message
+```
+
+## Design System Direction
+
+The design system is intentionally minimal.
+
+It includes:
+
+* Primary color
+* Background color
+* Surface color
+* Text color
+* Muted text color
+* Border color
+* Error color
+* Border radius values
+* Spacing values
+* Box shadows
+* Base font family
+
+This is enough for the current milestone.
+
+The design system should grow only when future screens reveal real repeated needs.
+
+## Electron Boundary
+
+No Electron files should be changed for this milestone.
+
+Electron’s role remains limited to the desktop shell. React owns the visual interface.
+
+The Electron main process must not create React components, HTML forms, login UI, buttons, page layout, or CSS styling.
+
+If future desktop-native features are required, they should go through a secure preload and IPC boundary. That is not needed in this milestone.
+
+## Backend Boundary
+
+No backend endpoints are consumed in this milestone.
+
+Although the FastAPI backend already contains endpoints for rooms, guests, stays, guest-stays, and system info, Milestone 4 does not connect to them.
+
+The backend remains the future source of truth for:
+
+* Business rules
+* Validation
+* Authentication
+* Database access
+* API contracts
+
+## Consequences
+
+Positive consequences:
+
+* The UI becomes more consistent.
+* Future pages become easier to build.
+* Basic visual tokens are centralized.
+* Components are easier to reuse.
+* The project remains beginner-friendly.
+* The React renderer stays cleanly separated from Electron.
+* The app avoids unnecessary dependencies.
+
+Trade-offs:
+
+* Plain CSS requires discipline as the project grows.
+* The design system is basic and not visually complete yet.
+* Some temporary layout spacing may still exist in placeholder pages.
+* More advanced UI patterns are intentionally delayed.
+
+## Rejected Alternatives
+
+### Tailwind CSS
+
+Rejected for this milestone.
+
+Tailwind can be useful later, but introducing it now would add another tool before the core React and CSS fundamentals are clear.
+
+### UI Component Library
+
+Rejected for this milestone.
+
+Libraries such as Material UI, Ant Design, or Chakra UI provide many ready-made components, but they reduce the opportunity to learn reusable component design from first principles.
+
+### Full Dashboard Layout
+
+Rejected for this milestone.
+
+A dashboard layout requires authentication flow, protected routes, navigation structure, and real app sections. That belongs in a later milestone.
+
+### Feature-Specific Components
+
+Rejected for this milestone.
+
+Components such as `RoomCard`, `GuestTable`, `BookingForm`, and `FinanceWidget` are not created yet because hotel features are not part of Milestone 4.
+
+## Final Decision
+
+HelloStay will use a small custom UI foundation built with plain CSS and reusable React components.
+
+This foundation belongs entirely to the React renderer process and will support future frontend milestones without introducing unnecessary complexity or dependencies.
+
+The accepted reusable UI components for this milestone are:
+
+```txt
+Button
+Input
+Card
+Loading
+ErrorMessage
+```
+
+This decision keeps the project simple, understandable, production-oriented, and aligned with the learning goal of rebuilding the frontend from first principles.
+
+
+---
+
 ## Backend Milestone History
 
 ### Frontend Rebuild Note
@@ -2943,3 +3250,676 @@ The recommended next milestone is:
 Frontend Milestone 4: Authentication UI Foundation
 
 Milestone 4 should still avoid real backend authentication at first. It should focus on creating a clean login page UI structure, basic form state, input handling, and frontend-only validation concepts before connecting to the FastAPI authentication API.
+
+---
+
+# Frontend Milestone 4 Notes: UI Foundation and Layout System
+
+## Milestone Name
+
+Frontend Milestone 4 — UI Foundation and Layout System
+
+## Milestone Status
+
+Completed / Ready to Implement
+
+## Purpose of This Milestone
+
+The purpose of Milestone 4 is to create the basic visual foundation for the HelloStay React frontend.
+
+This milestone does not build hotel features. It prepares the frontend so future screens can be built consistently using reusable UI components and shared styling rules.
+
+The focus is on:
+
+* CSS variables
+* Global styling organization
+* Reusable UI components
+* Basic placeholder page improvement
+* Renderer-only UI responsibilities
+
+## What Was Already Completed Before This Milestone
+
+### Milestone 1
+
+* React frontend was created using Vite.
+* JavaScript was selected instead of TypeScript.
+* The app runs on `http://localhost:5173`.
+* A clean minimal frontend structure was created.
+* No feature logic was added.
+
+### Milestone 2
+
+* Electron was installed.
+* A basic Electron desktop shell was created.
+* Electron opens the Vite React app in a desktop window.
+* Electron main process, preload script, and renderer process responsibilities were separated.
+* `nodeIntegration` remains disabled.
+* `contextIsolation` remains enabled.
+* No backend startup, packaging, authentication, routing, or hotel features were added.
+
+### Milestone 3
+
+* React Router was introduced.
+* A basic routing structure was created.
+* `AppRoutes.jsx` was created.
+* `StartPage`, `LoginPage`, and `NotFoundPage` were created.
+* The app can navigate from the start page to the login page.
+* No real authentication, protected routes, dashboard, backend calls, or hotel features were added.
+
+## Milestone 4 Scope
+
+Milestone 4 adds a reusable UI foundation only.
+
+Included:
+
+* Improved `global.css`
+* CSS variables for design tokens
+* Basic page helper classes
+* Reusable UI component classes
+* `Button` component
+* `Input` component
+* `Card` component
+* `Loading` component
+* `ErrorMessage` component
+* Light usage of these components in existing placeholder pages
+
+Excluded:
+
+* Real authentication
+* Backend API calls
+* Protected routes
+* Dashboard layout
+* Sidebar
+* Topbar
+* Rooms module
+* Guests module
+* Stays module
+* Bookings module
+* Finance module
+* History module
+* Settings module
+* Electron backend startup
+* App packaging
+* Tailwind CSS
+* UI libraries
+* Icon libraries
+* Animation libraries
+
+## Final Folder Direction
+
+```txt
+frontend/
+  src/
+    components/
+      ui/
+        Button.jsx
+        Input.jsx
+        Card.jsx
+        Loading.jsx
+        ErrorMessage.jsx
+
+    pages/
+      StartPage.jsx
+      LoginPage.jsx
+      NotFoundPage.jsx
+
+    routes/
+      AppRoutes.jsx
+
+    styles/
+      global.css
+```
+
+## Key Concept: Design System
+
+A design system is a reusable set of visual rules and UI building blocks.
+
+In this milestone, the design system is intentionally small.
+
+It includes:
+
+* Colors
+* Spacing
+* Border radius
+* Shadows
+* Font family
+* Button styles
+* Input styles
+* Card styles
+* Error styles
+* Loading styles
+
+The goal is not to create a complete enterprise design system yet. The goal is to avoid duplicated visual decisions and create a consistent foundation.
+
+## Key Concept: CSS Variables
+
+CSS variables are reusable values defined in CSS.
+
+Example:
+
+```css
+:root {
+  --color-primary: #2563eb;
+}
+```
+
+Then they can be reused like this:
+
+```css
+.ui-button--primary {
+  background: var(--color-primary);
+}
+```
+
+This helps avoid repeated hard-coded values.
+
+Instead of writing the same color many times, we define it once and reuse it.
+
+## Key Concept: Reusable UI Components
+
+Reusable UI components are small React components that can be used across many screens.
+
+Examples:
+
+```txt
+Button
+Input
+Card
+Loading
+ErrorMessage
+```
+
+Instead of every page writing its own button style, every page can use:
+
+```jsx
+<Button>Save</Button>
+```
+
+This improves consistency and makes future changes easier.
+
+## Key Concept: Page Components vs UI Components
+
+A page component represents a full screen.
+
+Examples:
+
+```txt
+StartPage
+LoginPage
+NotFoundPage
+```
+
+A UI component is a small reusable piece used inside pages.
+
+Examples:
+
+```txt
+Button
+Input
+Card
+Loading
+ErrorMessage
+```
+
+Simple rule:
+
+```txt
+Page component = screen
+UI component = reusable building block
+```
+
+## Key Concept: Props
+
+Props are values passed into a React component.
+
+Example:
+
+```jsx
+<Button variant="secondary">Cancel</Button>
+```
+
+Here:
+
+```txt
+variant is a prop
+secondary is the prop value
+Cancel is passed as children
+```
+
+Props allow one component to behave slightly differently in different places.
+
+## Key Concept: Children Prop
+
+The `children` prop means the content placed between opening and closing component tags.
+
+Example:
+
+```jsx
+<Card>
+  <h1>HelloStay</h1>
+  <p>Offline hotel management system</p>
+</Card>
+```
+
+The `Card` component receives everything inside it as `children`.
+
+This makes wrapper components flexible.
+
+## Key Concept: className
+
+In normal HTML, we use:
+
+```html
+<div class="card"></div>
+```
+
+In React JSX, we use:
+
+```jsx
+<div className="card"></div>
+```
+
+React uses `className` because `class` is a reserved word in JavaScript.
+
+## Files Created
+
+### `frontend/src/components/ui/Button.jsx`
+
+Purpose:
+
+Creates a reusable button component.
+
+Supports:
+
+* `children`
+* `variant`
+* `type`
+* `disabled`
+* `className`
+* extra props such as `onClick`
+
+Common usage:
+
+```jsx
+<Button>Continue</Button>
+<Button variant="secondary">Cancel</Button>
+<Button variant="ghost">Back</Button>
+```
+
+### `frontend/src/components/ui/Input.jsx`
+
+Purpose:
+
+Creates a reusable input component.
+
+Supports:
+
+* `label`
+* `error`
+* `helperText`
+* `id`
+* `className`
+* normal input props such as `type`, `placeholder`, and `value`
+
+Common usage:
+
+```jsx
+<Input
+  id="username"
+  label="Username"
+  type="text"
+  placeholder="Enter username"
+/>
+```
+
+### `frontend/src/components/ui/Card.jsx`
+
+Purpose:
+
+Creates a reusable surface/container component.
+
+Common usage:
+
+```jsx
+<Card>
+  <h1>HelloStay</h1>
+  <p>Welcome to the app.</p>
+</Card>
+```
+
+### `frontend/src/components/ui/Loading.jsx`
+
+Purpose:
+
+Creates a reusable loading message component.
+
+Common usage:
+
+```jsx
+<Loading message="Loading rooms..." />
+```
+
+### `frontend/src/components/ui/ErrorMessage.jsx`
+
+Purpose:
+
+Creates a reusable error message component.
+
+Common usage:
+
+```jsx
+<ErrorMessage message="Something went wrong." />
+```
+
+## Files Modified
+
+### `frontend/src/styles/global.css`
+
+Purpose:
+
+Stores the global visual foundation.
+
+Includes:
+
+* CSS variables
+* global reset
+* body styles
+* page helper classes
+* reusable UI classes
+
+Important sections:
+
+```txt
+:root design tokens
+base reset
+page layout helpers
+UI component classes
+```
+
+### `frontend/src/pages/StartPage.jsx`
+
+Purpose:
+
+Uses `Card` and `Button` to make the start page visually consistent.
+
+Still only navigates to the login page.
+
+No backend logic added.
+
+### `frontend/src/pages/LoginPage.jsx`
+
+Purpose:
+
+Uses `Card`, `Input`, and `Button` to show a placeholder login screen.
+
+Important note:
+
+The login form is not functional yet.
+
+No authentication is added in Milestone 4.
+
+### `frontend/src/pages/NotFoundPage.jsx`
+
+Purpose:
+
+Uses `Card`, `Button`, and `ErrorMessage` to display a consistent 404 page.
+
+## Important Architecture Boundary
+
+Milestone 4 belongs only to the React renderer process.
+
+React renderer handles:
+
+```txt
+pages
+components
+forms
+styling
+routing UI
+placeholder layout
+```
+
+Electron main process handles:
+
+```txt
+desktop window
+app lifecycle
+native shell behavior
+```
+
+Electron preload handles:
+
+```txt
+safe communication between renderer and main process when needed
+```
+
+FastAPI backend handles:
+
+```txt
+business logic
+validation
+database operations
+API contracts
+authentication rules
+```
+
+No Electron files should be changed in this milestone.
+
+No FastAPI files should be changed in this milestone.
+
+## Why Dashboard Layout Was Not Built
+
+Dashboard layout is intentionally delayed.
+
+A real dashboard shell usually needs:
+
+* authenticated user state
+* protected routes
+* sidebar navigation
+* topbar
+* logout behavior
+* active route highlighting
+* feature sections
+
+Since real authentication and protected routes are not built yet, building the dashboard shell now would create premature structure.
+
+Milestone 4 only builds generic UI pieces that can support the dashboard later.
+
+## Why Tailwind or UI Libraries Were Not Added
+
+Tailwind, Material UI, Chakra UI, Ant Design, and similar tools are not used in this milestone.
+
+Reason:
+
+The project goal is to learn frontend architecture from first principles.
+
+Plain CSS helps teach:
+
+* CSS variables
+* reusable class names
+* layout basics
+* component styling
+* separation of concerns
+* design token thinking
+
+External libraries can be useful later, but they are unnecessary for this foundation milestone.
+
+## Verification Steps
+
+After implementing Milestone 4:
+
+Run the React development server:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```txt
+http://localhost:5173
+```
+
+Verify:
+
+* Start page loads.
+* Start page uses the new card/button styling.
+* Clicking the login navigation opens the login page.
+* Login page shows placeholder inputs.
+* Login button remains disabled.
+* Back navigation works.
+* Unknown routes show the not found page.
+* No console import errors appear.
+* No CSS import errors appear.
+
+If using Electron development command, verify:
+
+```bash
+npm run desktop
+```
+
+Expected result:
+
+* Electron opens the React app.
+* The same styled pages appear inside the desktop window.
+* No Electron main/preload changes are required.
+
+## Common Errors and Fixes
+
+### Error: Failed to resolve import
+
+Cause:
+
+The file path is wrong or the file does not exist.
+
+Example:
+
+```txt
+Failed to resolve import "../components/ui/Button.jsx"
+```
+
+Fix:
+
+From a page file inside:
+
+```txt
+src/pages/
+```
+
+the correct import path is:
+
+```jsx
+import Button from "../components/ui/Button.jsx";
+```
+
+### Error: Styles are not applied
+
+Cause:
+
+`global.css` may not be imported in `main.jsx`.
+
+Fix:
+
+Make sure this exists in:
+
+```txt
+frontend/src/main.jsx
+```
+
+```jsx
+import "./styles/global.css";
+```
+
+### Error: Login button does nothing
+
+Cause:
+
+The login button is intentionally disabled.
+
+Milestone 4 does not implement authentication.
+
+### Error: Page navigation does not work
+
+Cause:
+
+The `Link` route path may not match `AppRoutes.jsx`.
+
+Fix:
+
+Check that `/login` exists in `AppRoutes.jsx`.
+
+## Beginner Lessons Learned
+
+Milestone 4 teaches:
+
+* How a small design system begins.
+* How CSS variables reduce duplication.
+* How reusable components make pages cleaner.
+* How props customize components.
+* How `children` makes wrapper components flexible.
+* How `className` connects JSX to CSS.
+* Why UI belongs in React, not Electron main.
+* Why building features too early creates confusion.
+* Why production apps grow through small stable foundations.
+
+## Production Lessons Learned
+
+A production frontend should not grow randomly.
+
+Before creating many feature screens, it needs:
+
+* consistent styling rules
+* reusable primitives
+* clear folder structure
+* predictable component APIs
+* clean architecture boundaries
+
+Milestone 4 establishes those basics.
+
+## Final Milestone 4 Result
+
+At the end of this milestone, HelloStay has:
+
+```txt
+A cleaner global CSS foundation
+A small design token system
+Reusable UI components
+Improved placeholder pages
+Clear renderer-only UI responsibility
+No premature hotel features
+No premature dashboard shell
+No backend integration
+No Electron responsibility leakage
+```
+
+## Suggested Next Milestone
+
+The next milestone should likely focus on one of these:
+
+```txt
+Milestone 5 — Authentication UI Foundation
+```
+
+or
+
+```txt
+Milestone 5 — Login Page Form State and Validation Without Backend
+```
+
+Recommended next step:
+
+Build the login page properly as a frontend-only form first.
+
+That would teach:
+
+* controlled inputs
+* React state
+* form submission
+* validation
+* error display
+* disabled submit behavior
+* loading state simulation
+* preparing for future backend authentication
+
+```
+```

@@ -1,28 +1,27 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+
+import Button from "../components/ui/Button.jsx";
+import Card from "../components/ui/Card.jsx";
 
 function StartPage() {
-  const navigate = useNavigate();
-
-  function handleContinue() {
-    navigate("/login");
-  }
-
   return (
     <main className="page-center">
-      <section className="welcome-card">
-        <p className="eyebrow">HelloStay Desktop</p>
+      <div className="page-stack">
+        <Card>
+          <h1 className="page-title">Welcome to HelloStay</h1>
 
-        <h1>Welcome to HelloStay</h1>
+          <p className="page-description">
+            HelloStay is an offline hotel management system for managing small
+            and medium hotels, guest houses, lodges, and resorts.
+          </p>
 
-        <p className="page-description">
-          A simple offline hotel management system for small and medium hotels,
-          guest houses, lodges, and resorts.
-        </p>
-
-        <button className="primary-button" type="button" onClick={handleContinue}>
-          Continue to Login
-        </button>
-      </section>
+          <div style={{ marginTop: "24px" }}>
+            <Link to="/login">
+              <Button>Go to Login</Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
     </main>
   );
 }
