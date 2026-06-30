@@ -22,7 +22,7 @@ function LoginPage() {
               label="Username"
               type="text"
               placeholder="Enter your username"
-              helperText="Placeholder only. No backend connection yet."
+              helperText="Placeholder only. Authentication is not active yet."
             />
 
             <Input

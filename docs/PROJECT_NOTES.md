@@ -1692,6 +1692,248 @@ ErrorMessage
 
 This decision keeps the project simple, understandable, production-oriented, and aligned with the learning goal of rebuilding the frontend from first principles.
 
+---
+
+# Frontend AD 5: Centralized API Client and Backend Communication Boundary
+
+**Status:** Accepted
+**Date Recorded:** 2026-06-30
+**Milestone:** Frontend Milestone 5 — API Client and Backend Communication
+
+## Decision
+
+HelloStay frontend will use a centralized API communication layer instead of placing API calls directly inside React page components.
+
+A dedicated `services` folder was introduced in the React renderer process:
+
+```txt
+frontend/src/services/
+  apiClient.js
+  systemService.js
+```
+
+`apiClient.js` is responsible for shared HTTP request behavior, including:
+
+```txt
+API base URL handling
+request method handling
+request headers
+safe JSON parsing
+basic error handling
+network failure handling
+future token attachment location
+```
+
+`systemService.js` was introduced as a minimal safe service for backend communication testing only. It calls safe backend endpoints such as `/` and `/system-info`, not hotel feature workflows.
+
+## Why This Decision Was Made
+
+The frontend must not scatter raw `fetch()` calls across pages and components.
+
+Scattered API calls create problems such as:
+
+```txt
+duplicated backend URLs
+inconsistent error handling
+repeated JSON parsing logic
+unclear loading/error behavior
+difficulty adding authentication tokens later
+harder maintenance as rooms, guests, stays, finance, and history grow
+```
+
+A centralized API client creates one predictable boundary between React and FastAPI.
+
+The React renderer owns frontend API communication, while FastAPI remains the source of truth for business logic, validation, database operations, and API contracts.
+
+Electron remains responsible for desktop shell concerns only. Electron main process must not contain hotel API service logic.
+
+## Accepted Communication Flow
+
+```txt
+React page/component
+  ↓
+domain service file
+  ↓
+apiClient.js
+  ↓
+FastAPI backend
+  ↓
+SQLite/database layer
+```
+
+For Milestone 5, the tested flow was:
+
+```txt
+LoginPage temporary test UI
+  ↓
+systemService.js
+  ↓
+apiClient.js
+  ↓
+FastAPI / and /system-info endpoints
+```
+
+## API Base URL Decision
+
+The development API base URL is defined through a Vite environment variable:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+This keeps backend location configuration outside page components.
+
+A fallback default may exist in `apiClient.js` for development safety:
+
+```js
+const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+```
+
+Vite environment variables exposed to the browser must begin with `VITE_`.
+
+## Fetch vs Axios Decision
+
+The frontend will use the browser-native `fetch()` API for this milestone.
+
+Reason:
+
+```txt
+no extra dependency
+better beginner learning value
+clearer understanding of HTTP, JSON, headers, responses, and errors
+sufficient for current needs
+```
+
+Axios may be reconsidered later if the project needs interceptors, advanced request cancellation, or more complex HTTP behavior.
+
+## Error Handling Decision
+
+The API client will distinguish between:
+
+```txt
+network errors
+backend errors
+```
+
+Network errors happen when the frontend cannot reach the backend at all.
+
+Examples:
+
+```txt
+backend server is not running
+wrong port
+wrong API base URL
+connection refused
+```
+
+Backend errors happen when FastAPI responds with an error status code.
+
+Examples:
+
+```txt
+404 Not Found
+422 Validation Error
+500 Internal Server Error
+```
+
+The API client will throw a consistent custom error object so future screens can show reliable user-facing messages.
+
+## JSON Parsing Decision
+
+The API client will not assume every backend response always contains JSON.
+
+It will safely handle:
+
+```txt
+JSON responses
+empty 204 responses
+plain text responses
+invalid or empty response bodies
+```
+
+This prevents frontend crashes caused by unsafe `response.json()` usage.
+
+## Authentication Preparation Decision
+
+The API client contains a future token attachment location, but real authentication token logic is intentionally not implemented in this milestone.
+
+This preserves milestone boundaries.
+
+Future authentication can attach tokens from one centralized location instead of modifying every service or page.
+
+## Temporary UI Decision
+
+A temporary backend connection test was added to the login page only for Milestone 5 verification.
+
+The temporary test confirmed that React can successfully call:
+
+```txt
+/
+ /system-info
+```
+
+through the service layer.
+
+After verification, the temporary UI should be removed from the user-facing login page.
+
+The files `apiClient.js`, `systemService.js`, and `.env.development` should remain.
+
+## Affected Files
+
+```txt
+frontend/.env.development
+frontend/src/services/apiClient.js
+frontend/src/services/systemService.js
+frontend/src/pages/LoginPage.jsx
+```
+
+`LoginPage.jsx` was affected only temporarily for testing.
+
+## Boundaries Confirmed
+
+The following boundaries are accepted:
+
+```txt
+React renderer:
+  UI, user interaction, API service calls
+
+services/apiClient.js:
+  shared frontend HTTP behavior
+
+services/systemService.js:
+  safe backend system/health communication
+
+Electron main process:
+  desktop shell, BrowserWindow, app lifecycle
+
+FastAPI backend:
+  business logic, validation, database operations, API contracts
+```
+
+## Explicit Non-Decisions
+
+The following were intentionally not implemented in Milestone 5:
+
+```txt
+real authentication
+token storage
+protected routes
+dashboard layout
+room service
+guest service
+stay service
+booking workflow
+finance/history services
+Electron backend startup
+application packaging
+```
+
+## Result
+
+Milestone 5 established the official frontend API communication foundation for HelloStay.
+
+Future feature modules must use service files and the centralized API client instead of direct page-level API calls.
+
 
 ---
 
@@ -3923,3 +4165,379 @@ That would teach:
 
 ```
 ```
+
+---
+
+# Milestone 5 Notes: API Client and Backend Communication
+
+**Milestone:** Frontend Milestone 5
+**Status:** Completed
+**Date Completed:** 2026-06-30
+
+## Goal
+
+The goal of Milestone 5 was to introduce a clean, reusable frontend API communication layer between the React renderer and the FastAPI backend.
+
+This milestone focused only on infrastructure.
+
+It did not build hotel features, authentication, protected routes, dashboard layout, or Electron backend startup behavior.
+
+## What Was Completed
+
+A new services folder was introduced:
+
+```txt
+frontend/src/services/
+```
+
+The following files were created:
+
+```txt
+frontend/src/services/apiClient.js
+frontend/src/services/systemService.js
+```
+
+A frontend environment file was introduced:
+
+```txt
+frontend/.env.development
+```
+
+with the development backend URL:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+The backend connection was tested successfully from the React app.
+
+Both backend responses were received successfully:
+
+```txt
+Health data from /
+System info from /system-info
+```
+
+The backend root health endpoint confirms that the backend server is running, and the backend already allows the React development origin through CORS.
+
+The `/system-info` endpoint was also used safely because it only returns basic application information from the `system_info` table.
+
+## Files Added
+
+### `frontend/src/services/apiClient.js`
+
+Purpose:
+
+```txt
+Central reusable HTTP client for the React frontend.
+```
+
+Responsibilities:
+
+```txt
+read API base URL
+build request URLs
+send HTTP requests using fetch
+set common headers
+convert request bodies to JSON
+parse response bodies safely
+handle empty responses
+handle network errors
+handle backend error responses
+prepare for future auth token attachment
+```
+
+### `frontend/src/services/systemService.js`
+
+Purpose:
+
+```txt
+Small safe service for backend communication testing.
+```
+
+Functions added:
+
+```txt
+getBackendHealth()
+getSystemInfo()
+```
+
+This service was intentionally limited to system-level endpoints.
+
+No feature services were created yet.
+
+## Temporary File Change
+
+### `frontend/src/pages/LoginPage.jsx`
+
+A temporary backend connection test was added to the login page.
+
+The test used:
+
+```txt
+useState
+async/await
+try/catch/finally
+Loading component
+ErrorMessage component
+systemService.js
+apiClient.js
+```
+
+The temporary UI confirmed the backend connection worked.
+
+After successful verification, the temporary test UI should be removed from the login page because it is not production user-facing UI.
+
+## Important Concepts Learned
+
+### API Client
+
+An API client is a reusable frontend utility that manages communication with the backend.
+
+Instead of writing raw `fetch()` calls inside every component, components call service functions.
+
+Correct pattern:
+
+```txt
+Component
+  ↓
+Service
+  ↓
+API client
+  ↓
+Backend
+```
+
+Incorrect pattern:
+
+```txt
+Component directly calls fetch everywhere
+```
+
+### Services
+
+Service files describe backend capabilities in frontend-friendly function names.
+
+Example:
+
+```js
+getBackendHealth()
+```
+
+is clearer than writing:
+
+```js
+apiClient.get("/")
+```
+
+directly inside many components.
+
+### HTTP Methods
+
+The basic HTTP methods were introduced:
+
+```txt
+GET     read data
+POST    create data
+PUT     update data
+DELETE  remove data
+```
+
+Milestone 5 only tested safe `GET` requests.
+
+### Request and Response
+
+A request is what the frontend sends to the backend.
+
+A response is what the backend sends back.
+
+The frontend must handle:
+
+```txt
+response status
+response headers
+response body
+JSON data
+error messages
+```
+
+### Status Codes
+
+Important status codes discussed:
+
+```txt
+200 success
+201 created
+204 success with no body
+400 bad request
+401 unauthenticated
+403 forbidden
+404 not found
+422 FastAPI validation error
+500 backend error
+```
+
+### JSON
+
+JSON is the data format used between React and FastAPI.
+
+The API client safely parses JSON instead of assuming every response body is valid JSON.
+
+### Promises
+
+A Promise represents a value that may be available later.
+
+`fetch()` returns a Promise because network requests are asynchronous.
+
+### async/await
+
+`async/await` allows asynchronous code to be written in a readable way.
+
+It was used when calling backend service functions.
+
+### try/catch/finally
+
+`try/catch/finally` was used to manage:
+
+```txt
+successful API response
+failed API response
+loading state cleanup
+```
+
+### Network Error vs Backend Error
+
+Network error:
+
+```txt
+React cannot reach FastAPI.
+```
+
+Backend error:
+
+```txt
+React reached FastAPI, but FastAPI returned an error status.
+```
+
+The API client now has a foundation for handling both.
+
+## Electron Boundary
+
+No API service logic was placed in Electron.
+
+Accepted boundary:
+
+```txt
+Electron main process:
+  desktop window, lifecycle, shell behavior
+
+React renderer:
+  UI and frontend API communication
+
+FastAPI:
+  business logic, validation, database, API contracts
+```
+
+This keeps Electron from becoming a hidden backend or business-logic layer.
+
+## Backend Boundary
+
+FastAPI remains the source of truth.
+
+React does not validate hotel business rules independently.
+
+React will later consume backend contracts for:
+
+```txt
+authentication
+rooms
+guests
+stays
+guest-stays
+bookings
+finance
+history
+```
+
+The backend already contains routers for rooms, guests, stays, guest-stays, and system info, but Milestone 5 intentionally used only safe system-level communication.
+
+## What Was Intentionally Not Done
+
+The following were not implemented:
+
+```txt
+real login
+register account
+auth token storage
+protected routes
+dashboard
+sidebar layout
+room management UI
+guest management UI
+stay management UI
+booking workflows
+finance screen
+history screen
+settings screen
+Electron backend startup
+packaging
+```
+
+This protected the milestone boundary.
+
+## Verification Steps Completed
+
+The following checks passed:
+
+```txt
+React app runs successfully
+FastAPI backend runs successfully
+React can call backend /
+React can call backend /system-info
+API response appears in temporary UI
+network communication works through service layer
+apiClient.js handles the request
+systemService.js exposes safe test functions
+```
+
+## Cleanup Step
+
+After successful verification, remove the temporary backend test UI from `LoginPage.jsx`.
+
+Keep:
+
+```txt
+frontend/.env.development
+frontend/src/services/apiClient.js
+frontend/src/services/systemService.js
+```
+
+Remove only the temporary test UI code from the page.
+
+## Final Milestone Result
+
+Milestone 5 successfully established the frontend API communication foundation.
+
+HelloStay now has a clean service layer that future milestones can build on.
+
+Future frontend features should not directly call `fetch()` inside page components. They should use domain service files that depend on `apiClient.js`.
+
+## Suggested Next Milestone
+
+The next milestone should be:
+
+```txt
+Frontend Milestone 6 — Authentication UI Structure
+```
+
+Recommended scope:
+
+```txt
+create login form state
+create create-account form UI
+prepare authService.js
+understand backend auth contract
+do not build protected dashboard yet unless authentication is working
+```
+
+Authentication should be handled as a separate milestone because it introduces forms, validation, token handling, user state, and route protection.
