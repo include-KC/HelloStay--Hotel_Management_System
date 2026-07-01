@@ -68,3 +68,13 @@ export async function registerAccount(accountData) {
 export function getAuthApiStatus() {
   return { ...AUTH_API_STATUS };
 }
+
+export async function loginRequest(credentials) {
+  console.log("Login credentials prepared for backend auth:", {
+    username: credentials.username,
+  });
+
+  throw new Error(
+    "Backend authentication endpoint is not implemented yet. Frontend auth state is ready, but real login is blocked until FastAPI exposes a login endpoint."
+  );
+}

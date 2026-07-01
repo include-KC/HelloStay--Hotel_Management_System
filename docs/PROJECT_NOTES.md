@@ -39,7 +39,7 @@ During checkout, the application should: Generate bill automatically, Calculate 
 ### Frontend & Desktop Requirements Converted From Previous Architecture Decisions
 These requirements are no longer treated as completed frontend architecture decisions because the frontend is being rebuilt from scratch. They are preserved here as future requirements to revisit during the new React/Electron implementation.
 
-### Future Requirement FE-59: UI/UX Design System
+#### Future Requirement FE-59: UI/UX Design System
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 59 (Accepted)
 
@@ -48,63 +48,63 @@ These requirements are no longer treated as completed frontend architecture deci
 **Layout:** Desktop-first, collapsible sidebar, breadcrumb navigation, toast notifications, keyboard shortcuts, search everywhere, empty states.
 
 
-### Future Requirement FE-60: Module Specifications & Features
+#### Future Requirement FE-60: Module Specifications & Features
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 60 (Accepted)
 
 Complete feature requirements and role-based permissions for all 18 modules documented. Owner gets full access. Roles: Receptionist, Room Manager, Housekeeping, Accountant, Security, Custom. Employees never see management modules.
 
 
-### Future Requirement FE-61: Dynamic UI Configuration & Setup Flow
+#### Future Requirement FE-61: Dynamic UI Configuration & Setup Flow
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 61 (Accepted)
 
 Sidebar dynamically adapts to hotel's registered facilities (e.g., no Restaurant tab if not configured). Strict setup flow: Installer → RegisterOwner → RegisterHotel → Dashboard. localStorage heavily used for multi-step setup.
 
 
-### Future Requirement FE-62: Multi-Currency Support & Flexible Room Types
+#### Future Requirement FE-62: Multi-Currency Support & Flexible Room Types
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 62 (Accepted)
 
 Country/Currency selection during setup. Dynamic currency display from localStorage. Searchable room type selector with 20 presets + custom input. Inline status change in Rooms table.
 
 
-### Future Requirement FE-63: Role-Based Access Control (RBAC) & Module Visibility
+#### Future Requirement FE-63: Role-Based Access Control (RBAC) & Module Visibility
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 63 (Accepted)
 
 Three login roles: Owner (full), Manager (Dashboard, Rooms, Inventory, Expenses), Employee (Dashboard, Rooms, Inventory). Role stored in localStorage. Sidebar filters nav items by role.
 
 
-### Future Requirement FE-64: Full Module Implementation Strategy
+#### Future Requirement FE-64: Full Module Implementation Strategy
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 64 (Accepted)
 
 All 10 remaining modules implemented with consistent architecture: useState + lazy initialization from localStorage, Filter/Sort → Display → Mutate → Write-back pattern, data table/card grid with sort/search/filter/pagination, Add/Edit/View modals, inline actions, stats cards.
 
 
-### Future Requirement FE-65: Bookings Module Data Model
+#### Future Requirement FE-65: Bookings Module Data Model
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 65 (Accepted)
 
 Booking stores guest info, room assignment, dates, status (Reserved/Checked In/Checked Out/Cancelled), auto-calculated total, payment tracking. Room availability validated against date conflicts.
 
 
-### Future Requirement FE-66: Guest Profile Architecture
+#### Future Requirement FE-66: Guest Profile Architecture
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 66 (Accepted)
 
 Guests as independent profiles matched to bookings at runtime by name. Card-based layout with avatar initials, stay history from bookings.
 
 
-### Future Requirement FE-67: HR & Payroll System Design
+#### Future Requirement FE-67: HR & Payroll System Design
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 67 (Accepted)
 
 Tab-based interface: Attendance (daily marking), Payroll (monthly calculation), Payslips. Salary = perDay × presentDays + halfDays × perDay × 0.5.
 
 
-### Future Requirement FE-68: Expense Tracking Architecture
+#### Future Requirement FE-68: Expense Tracking Architecture
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 68 (Accepted)
@@ -112,7 +112,7 @@ Tab-based interface: Attendance (daily marking), Payroll (monthly calculation), 
 Flat expense records with 12 predefined categories, color-coded dots, category breakdown bar chart, date range filtering, payment method tracking.
 
 
-### Future Requirement FE-69: Inventory Management Design
+#### Future Requirement FE-69: Inventory Management Design
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 69 (Accepted)
@@ -120,7 +120,7 @@ Flat expense records with 12 predefined categories, color-coded dots, category b
 Quantity-based tracking with stock alerts (In Stock/Low Stock/Out of Stock). Quick +/- stock adjustment, per-unit cost, total value, storage location.
 
 
-### Future Requirement FE-70: Restaurant Module Design
+#### Future Requirement FE-70: Restaurant Module Design
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 70 (Accepted)
@@ -128,7 +128,7 @@ Quantity-based tracking with stock alerts (In Stock/Low Stock/Out of Stock). Qui
 Three tabs: Orders (status workflow), Menu (items with categories), Tables (visual status grid). Order status progression: Preparing → Ready → Served → Paid.
 
 
-### Future Requirement FE-71: Reports Module with recharts
+#### Future Requirement FE-71: Reports Module with recharts
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 71 (Accepted)
@@ -136,7 +136,7 @@ Three tabs: Orders (status workflow), Menu (items with categories), Tables (visu
 Four report types: Overview (bar + pie + KPIs), Occupancy (distribution), Revenue (line + pie), Expenses (horizontal bar). All responsive with Tooltips.
 
 
-### Future Requirement FE-72: Data Export/Import System
+#### Future Requirement FE-72: Data Export/Import System
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 72 (Accepted)
@@ -144,7 +144,7 @@ Four report types: Overview (bar + pie + KPIs), Occupancy (distribution), Revenu
 Settings module provides JSON export/import of all localStorage data with timestamp. Blob download and FileReader upload patterns.
 
 
-### Future Requirement FE-73: Module localStorage Key Registry
+#### Future Requirement FE-73: Module localStorage Key Registry
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 73 (Accepted)
@@ -152,7 +152,7 @@ Settings module provides JSON export/import of all localStorage data with timest
 Every module has a dedicated localStorage key: `helloStay_hotelData`, `helloStay_rooms`, `helloStay_bookings`, `helloStay_guests`, `helloStay_employees`, `helloStay_attendance`, `helloStay_payslips`, `helloStay_expenses`, `helloStay_inventory`, `helloStay_facilityBookings`, `helloStay_facilityCharges`, `helloStay_restaurantMenu`, `helloStay_restaurantOrders`.
 
 
-### Future Requirement FE-74: Booking ↔ Room Status Synchronization
+#### Future Requirement FE-74: Booking ↔ Room Status Synchronization
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-24
 **Source:** Former AD 74 (Accepted)
@@ -160,7 +160,7 @@ Every module has a dedicated localStorage key: `helloStay_hotelData`, `helloStay
 Room status is derived from booking status. New Booking → Reserved, Checked In → Occupied, Checked Out → Cleaning, Cancelled/Deleted → Available (if no other active bookings). `syncRoomStatus()` helper atomically updates room state and localStorage.
 
 
-### Future Requirement FE-75: Role-Based Manual Room Status Overrides
+#### Future Requirement FE-75: Role-Based Manual Room Status Overrides
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-24
 **Source:** Former AD 75 (Accepted)
@@ -168,7 +168,7 @@ Room status is derived from booking status. New Booking → Reserved, Checked In
 Only Owner/Manager can manually change room status to: Available, Maintenance, Cleaning. Occupied/Reserved are booking-driven only. Employee sees read-only badge.
 
 
-### Future Requirement FE-76: App Default Route — Login-First Behavior
+#### Future Requirement FE-76: App Default Route — Login-First Behavior
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-24
 **Source:** Former AD 76 (Accepted)
@@ -176,7 +176,7 @@ Only Owner/Manager can manually change room status to: Available, Maintenance, C
 Root (`/`) and fallback (`*`) redirect to `/login`. Login is the mandatory entry point with explicit role selection.
 
 
-### Future Requirement FE-77: Room Edit Modal Reuse Pattern
+#### Future Requirement FE-77: Room Edit Modal Reuse Pattern
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-24
 **Source:** Former AD 77 (Accepted)
@@ -184,7 +184,7 @@ Root (`/`) and fallback (`*`) redirect to `/login`. Login is the mandatory entry
 `AddRoomModal` accepts optional `editingRoom` prop. When provided → Edit mode with pre-filled form. `key` prop forces clean remount between add/edit modes.
 
 
-### Future Requirement FE-78: Dashboard Room Occupancy Chart Redesign — Cross-Highlight Interaction
+#### Future Requirement FE-78: Dashboard Room Occupancy Chart Redesign — Cross-Highlight Interaction
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-24
 **Source:** Former AD 78 (Accepted)
@@ -192,7 +192,7 @@ Root (`/`) and fallback (`*`) redirect to `/login`. Login is the mandatory entry
 Donut chart + status breakdown panel with cross-highlight. Single `hoveredStatus` state links chart segments to panel rows via `fillOpacity`/CSS opacity. No floating tooltips. Empty state fallback. CSS transitions replace Framer Motion for hover effects. Reduced from ~280 to 198 lines.
 
 
-### Future Requirement FE-79: Inline Delete Confirmation Pattern
+#### Future Requirement FE-79: Inline Delete Confirmation Pattern
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 79 (Accepted)
@@ -200,7 +200,7 @@ Donut chart + status breakdown panel with cross-highlight. Single `hoveredStatus
 Delete actions use inline Yes/No confirmation buttons replacing separate modals. Single `deletingId` state tracks which row is in confirm mode. Reducing modal fatigue for rapid operations.
 
 
-### Future Requirement FE-80: Smart Pagination Algorithm
+#### Future Requirement FE-80: Smart Pagination Algorithm
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 80 (Accepted)
@@ -208,7 +208,7 @@ Delete actions use inline Yes/No confirmation buttons replacing separate modals.
 Pagination shows max 5 page buttons with sliding window. When total pages > 5, window shifts based on current page position (start, middle, end). Previous/Next buttons with disabled states at boundaries.
 
 
-### Future Requirement FE-81: useCallback + Functional State Updates Pattern
+#### Future Requirement FE-81: useCallback + Functional State Updates Pattern
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 81 (Accepted)
@@ -216,7 +216,7 @@ Pagination shows max 5 page buttons with sliding window. When total pages > 5, w
 Save functions use `useCallback` for referential stability. State updates use functional form (`prev => ...`) for correctness when multiple state updates are batched. This prevents stale closures in async operations.
 
 
-### Future Requirement FE-82: Currency Symbol Lookup Table
+#### Future Requirement FE-82: Currency Symbol Lookup Table
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 82 (Accepted)
@@ -224,7 +224,7 @@ Save functions use `useCallback` for referential stability. State updates use fu
 Currency symbols stored in a static lookup object (`CURRENCY_SYMBOLS`) in `utils/currencies.js` for O(1) access. Supports 26+ currencies. Fallback to `₹` when currency not found or localStorage empty.
 
 
-### Future Requirement FE-83: Static Data Constants Outside Components
+#### Future Requirement FE-83: Static Data Constants Outside Components
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 83 (Accepted)
@@ -232,7 +232,7 @@ Currency symbols stored in a static lookup object (`CURRENCY_SYMBOLS`) in `utils
 Static data (status options, color maps, payment types, chart colors) defined as module-level constants outside components. Avoids redefinition on every render, keeps JSX clean, and centralizes configuration.
 
 
-### Future Requirement FE-84: Try/Catch JSON Parsing Safety Pattern
+#### Future Requirement FE-84: Try/Catch JSON Parsing Safety Pattern
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 84 (Accepted)
@@ -240,7 +240,7 @@ Static data (status options, color maps, payment types, chart colors) defined as
 All `localStorage.getItem()` + `JSON.parse()` calls are wrapped in try/catch with fallback to default values. Prevents app crashes from corrupt localStorage data.
 
 
-### Future Requirement FE-85: Gradient Header Pattern in Modals
+#### Future Requirement FE-85: Gradient Header Pattern in Modals
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 85 (Accepted)
@@ -248,7 +248,7 @@ All `localStorage.getItem()` + `JSON.parse()` calls are wrapped in try/catch wit
 All modals use a gradient header section (`bg-gradient-to-r from-blue-600 to-indigo-700`) for visual hierarchy. Consistent across BookingModal, BillingModal, GuestView, and EmployeeDetail modals.
 
 
-### Future Requirement FE-86: Authentication Flow, Profile Selection & Startup Sequence
+#### Future Requirement FE-86: Authentication Flow, Profile Selection & Startup Sequence
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 86 (Accepted)
@@ -260,7 +260,7 @@ The application needs a seamless and professional entry point that gracefully ha
 - **Session Persistence**: Session state is managed via `helloStay_session` and `helloStay_keepLoggedIn`. If successful, the user is routed to the Dashboard (or Hotel Setup if incomplete).
 
 
-### Future Requirement FE-87: V2 Features / Deferred Modules
+#### Future Requirement FE-87: V2 Features / Deferred Modules
 
 **Status:** Future Requirement / To be implemented during frontend rebuild
 **Source:** Former AD 87 (Accepted)
@@ -276,7 +276,7 @@ When planning Version 2.0, the following modules should be restored:
 7. **Reports**: Advanced analytics dashboards for revenue visualization and occupancy forecasting.
 
 
-### Future Requirement FE-88: Profiles, Permissions & Hotel Information Restructure
+#### Future Requirement FE-88: Profiles, Permissions & Hotel Information Restructure
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 88 (Accepted)
@@ -288,7 +288,7 @@ Significant architectural improvements were made to identity, permissions, and i
 - **Security & Owner Authentication:** Introduced `OwnerAuthModal`. Privileged actions—such as Editing/Deleting the Hotel, or Editing/Deleting *another* Owner profile—now prompt for the target Owner's password. Editing/Deleting an Employee profile does not require the password prompt when initiated by an Owner, smoothing UX while maintaining strict security for administrative accounts.
 
 
-### Future Requirement FE-89: Simplified Checkout Configuration
+#### Future Requirement FE-89: Simplified Checkout Configuration
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 89 (Accepted)
@@ -298,7 +298,7 @@ Based on user feedback, the fixed checkout time settings (e.g., global 11:00 AM 
 - **Current Approach:** The application retains the 12hr / 24hr "Checkout Duration" setting, which dictates stay length logic. Check-in and check-out logic during Bookings continues to rely on explicitly user-selected dates and times rather than a globally enforced hour.
 
 
-### Future Requirement FE-90: Centralized Data Store as Single Source of Truth
+#### Future Requirement FE-90: Centralized Data Store as Single Source of Truth
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 90 (Accepted)
@@ -306,7 +306,7 @@ Based on user feedback, the fixed checkout time settings (e.g., global 11:00 AM 
 All cross-module data mutations now route through `frontend/src/utils/dataStore.js`. Modules no longer write directly to `localStorage` for shared entities. Exports include `SYNC_EVENT`, `triggerSync()`, `getRooms/saveRooms`, `getGuests/saveGuests`, `getBookings/saveBookings`, `createBookingWithGuest`, `updateBookingStatus`, `deleteBooking`, `deleteRoom`. Components use `get*()` for lazy state initialization and listen to `SYNC_EVENT` to re-fetch data when another module mutates it.
 
 
-### Future Requirement FE-91: Strict GuestId Referential Integrity
+#### Future Requirement FE-91: Strict GuestId Referential Integrity
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 91 (Accepted)
@@ -314,7 +314,7 @@ All cross-module data mutations now route through `frontend/src/utils/dataStore.
 Bookings store `guestId` for primary guest and `guests[].guestId` for additional guests. The Guests module matches bookings via `booking.guestId === guest.id`. A legacy fallback matches by exact `guestName + guestPhone` for pre-migration bookings. This replaces unreliable name-based matching that broke on name changes or duplicates.
 
 
-### Future Requirement FE-92: Type-Driven Occupancy Automation
+#### Future Requirement FE-92: Type-Driven Occupancy Automation
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 92 (Accepted)
@@ -322,7 +322,7 @@ Bookings store `guestId` for primary guest and `guests[].guestId` for additional
 Room maxOccupancy is auto-populated from room type when creating a new room: Single→1, Double/Twin→2, Suite/Family/Deluxe→4, Triple→3, Quad→4. Implemented via `autoSetOccupancyFromRoomType()` in dataStore, triggered only on create (not edit). Guest count in BookingModal is capped to the room's `maxOccupancy`.
 
 
-### Future Requirement FE-93: Guarded Room State Transitions
+#### Future Requirement FE-93: Guarded Room State Transitions
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 93 (Accepted)
@@ -330,7 +330,7 @@ Room maxOccupancy is auto-populated from room type when creating a new room: Sin
 Room status is primarily derived from booking lifecycle. Manual overrides are blocked when an active Reserved or Checked In booking exists for that room. The status state machine: `Reserved → Occupied → Cleaning → Available` (with `Cancelled` as terminal state). Only the Owner can Force a room to Available via a confirmation dialog (for emergency cases like guest left without checkout).
 
 
-### Future Requirement FE-94: Unified Activity Feed
+#### Future Requirement FE-94: Unified Activity Feed
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 94 (Accepted)
@@ -338,7 +338,7 @@ Room status is primarily derived from booking lifecycle. Manual overrides are bl
 `getGuestActivity(guestId)` in dataStore returns a sorted, combined array of booking lifecycle events and guest profile changes. Activity types: `booking_created`, `check_in`, `check_out`, `booking_cancelled`, `guest_updated`, `guest_created`. Each entry has `{ id, type, description, timestamp }`. Rendered as a timeline in the Guest View Modal's "All Activity" tab with type-specific icons and colors.
 
 
-### Future Requirement FE-95: One-Time Legacy Migration
+#### Future Requirement FE-95: One-Time Legacy Migration
 
 **Status:** Future Requirement / To be implemented during frontend rebuild | **Original Date:** 2026-06-25
 **Source:** Former AD 95 (Accepted)
@@ -374,6 +374,50 @@ A startup migration (`migrateLegacyBookings()`) runs once on app load, guarded b
 
 ### Database
 - **SQLite** - Serverless embedded database (hellostay.db)
+
+---
+
+## Application Modules
+This section describes every module (page) in HelloStay, its purpose, key features, and target user role.
+
+### Dashboard
+Central overview screen showing real-time hotel performance metrics. KPI cards, Room Occupancy donut chart (recharts), Activity Timeline, Welcome banner with hotel name. Target: Owner, Manager, Employee.
+
+### Rooms
+Manage all hotel rooms. Data table with sort/search/filter/pagination. Inline status change, Add/Edit Room modal with searchable room type selector, dynamic currency display. Target: Owner, Manager, Employee.
+
+### Bookings
+Handle room reservations. Full data table, New Booking modal with room selection, auto-calculate total, room availability validation, status workflow, payment tracking, billing modal with late checkout fee calculation. Target: Owner (planned).
+
+### Guests
+Maintain guest database. Card-based layout with avatar initials, stay history derived from bookings (guestId-based with legacy name+phone fallback), total spent calculation, search/filter/pagination. Tabbed View Modal: Profile (personal info), Stays (full stay history), Facilities (Coming Soon), Expenses (Coming Soon), All Activity (unified timeline of booking lifecycle + profile events). Target: Owner (planned).
+
+### Employees
+Manage hotel staff records. Data table with sort/search/role filter/status filter. Edit/View modals, quick Active/Inactive toggle. Target: Owner.
+
+### HR & Payroll
+Tab-based: Attendance | Payroll | Payslips. Daily attendance marking, monthly salary calculation based on attendance, payslip generation. Target: Owner (planned).
+
+### Expenses
+Track operational expenses. Data table with category filter/date range filter. Category breakdown bar chart, 12 predefined categories, payment method tracking. Target: Owner, Manager.
+
+### Inventory
+Manage supplies and stock. Data table with category/stock status filters. Quick stock adjustment (+/-), stock status alerts (In Stock/Low Stock/Out of Stock). Target: Owner, Manager, Employee.
+
+### Facilities (Manage Facilities)
+Manage hotel facilities (Spa, Pool, Gym, etc.). Facility cards with real-time stats. Booking system with payment status options (Club to Final Bill, Paid Before, Paid After, Complimentary). Charges configuration (All Guests, By Room Type, By Room Number, Free for All). Target: Owner, Manager.
+
+### Restaurant
+Manage in-house restaurant operations. Tabs: Orders (status workflow: Preparing→Ready→Served→Paid), Menu (item management), Tables (visual status grid). Condition: Only visible if "In-house Restaurant" facility selected. Target: Owner, Manager.
+
+### Reports
+Generate analytics with recharts. Tabs: Overview (Revenue bar + Occupancy pie + KPIs), Occupancy (room distribution), Revenue (monthly line + payment pie), Expenses (category horizontal bar). Target: Owner (planned).
+
+### Settings
+Configure application preferences. Tabs: Hotel Profile, System, Backup & Data. Export/Import all localStorage data as JSON. Target: Owner (planned).
+
+### Profile
+View/edit logged-in user's personal profile. Gradient header card, edit name/email/phone, change password form, role badge display. Target: Owner, Manager, Employee (planned).
 
 ---
 
@@ -956,17 +1000,17 @@ Start Frontend Milestone 2: Electron Desktop Shell Setup. Keep Electron limited 
 
 ---
 
-## Frontend AD 2: Electron Desktop Shell Setup
+### Frontend AD 2: Electron Desktop Shell Setup
 **Status:** Accepted
 **Date Recorded:** 2026-06-29
 **Milestone:** Frontend Milestone 2 — Electron Desktop Shell Setup
 
-### Context
+#### Context
 HelloStay is an offline desktop Hotel Management System. The frontend was already initialized as a minimal Vite + React application in Milestone 1. The next step was to introduce Electron as the desktop shell while keeping the architecture clean and avoiding premature feature development.
 
 Electron is responsible for desktop application behavior. React remains responsible for the user interface. FastAPI remains the source of truth for business logic, validation, database operations, authentication, and API contracts.
 
-### Decision
+#### Decision
 Introduce a minimal Electron shell around the existing Vite React frontend.
 
 The Electron setup will include:
@@ -986,7 +1030,7 @@ The Electron setup will include:
 
 Electron will not start the FastAPI backend yet. Electron will not contain hotel business logic. Electron will not access SQLite directly. React will not get direct Node.js access.
 
-### Architectural Boundaries
+#### Architectural Boundaries
 The application is separated into clear responsibilities:
 Electron main process
   Owns desktop lifecycle, BrowserWindow creation, app startup, app quit behavior.
@@ -1003,7 +1047,7 @@ FastAPI backend
 SQLite database
   Owns persistent local data storage.
 
-### BrowserWindow Security Configuration
+#### BrowserWindow Security Configuration
 
 The Electron `BrowserWindow` must use secure defaults:
 ```js
@@ -1020,7 +1064,7 @@ webPreferences: {
 
 The preload script is connected but exposes no APIs yet.
 
-### Development Loading Decision
+#### Development Loading Decision
 
 During development, Electron loads the Vite React dev server:
 http://localhost:5173
@@ -1031,7 +1075,7 @@ The Electron main process uses a development branch to load the Vite URL and a f
 
 Production packaging is not part of this milestone.
 
-### npm Script Decision
+#### npm Script Decision
 
 The frontend package uses development scripts to run React and Electron together:
 ```json
@@ -1046,7 +1090,7 @@ The frontend package uses development scripts to run React and Electron together
 
 A PowerShell-compatible command separator is used because the local Windows PowerShell environment did not support `&&`.
 
-### Main Process Platform Decision
+#### Main Process Platform Decision
 The Electron main process handles platform-specific close behavior.
 
 On Windows and Linux, the app quits when all windows are closed.
@@ -1065,21 +1109,21 @@ process.platform !== "darwin"
 
 This avoids editor/tooling confusion where the global `process` object may not be recognized.
 
-### Preload Decision
+#### Preload Decision
 Create `frontend/electron/preload.js`, but expose nothing during this milestone.
 
 The preload script exists only to prepare the secure architecture for future IPC and desktop APIs.
 
 No `contextBridge`, `ipcRenderer`, filesystem access, app version access, printing, backup, or native OS integration is added yet.
 
-### Why This Decision Was Made
+#### Why This Decision Was Made
 This decision keeps the project simple, secure, and understandable.
 
 Starting with a minimal Electron shell helps separate responsibilities clearly before adding more complexity. It prevents the common beginner mistake of mixing React UI code, Electron desktop code, backend logic, and database access in the same layer.
 
 This also supports HelloStay’s long-term goal as an offline desktop application while preserving FastAPI as the backend source of truth.
 
-### Benefits
+#### Benefits
 * Clear separation between desktop shell and React UI.
 * Secure Electron defaults from the beginning.
 * React remains simple and browser-like.
@@ -1088,7 +1132,7 @@ This also supports HelloStay’s long-term goal as an offline desktop applicatio
 * Future preload/IPC work has a safe place to be added later.
 * Packaging can be introduced later without rushing the architecture.
 
-### Trade-Offs
+##### Trade-Offs
 * Development now requires running both Vite and Electron.
 * The app is not packaged yet.
 * Electron does not yet start or manage the FastAPI backend.
@@ -1097,12 +1141,12 @@ This also supports HelloStay’s long-term goal as an offline desktop applicatio
 
 These trade-offs are acceptable because Milestone 2 focuses only on the desktop shell foundation.
 
-### Affected Files
+#### Affected Files
 frontend/package.json
 frontend/electron/main.js
 frontend/electron/preload.js
 
-### Not Included In This Decision
+#### Not Included In This Decision
 
 This decision does not include:
 * React Router
@@ -1124,7 +1168,7 @@ This decision does not include:
 * App packaging
 * Installer setup
 
-### Final Outcome
+#### Final Outcome
 HelloStay can now be launched as a desktop application during development.
 
 The command:
@@ -1134,7 +1178,7 @@ npm run desktop
 
 starts Vite, waits for the Vite dev server, starts Electron, creates a secure desktop window, and loads the React frontend inside it.
 
-### Consequence
+#### Consequence
 Future milestones can now build on a clear desktop architecture:
 
 Electron wraps the app.
@@ -1147,13 +1191,13 @@ This decision establishes the foundation for future Electron capabilities withou
 
 ---
 
-# Frontend AD 3: Startup Flow and Routing Belong to the React Renderer
+### Frontend AD 3: Startup Flow and Routing Belong to the React Renderer
 **Status:** Accepted
 **Date Recorded:** 2026-06-30
 **Milestone:** Frontend Milestone 3 — Startup Flow and Routing
 **Project:** HelloStay — Offline Hotel Management System
 
-## 1. Decision
+#### 1. Decision
 HelloStay will handle startup flow and application routing inside the React renderer process using React Router.
 
 The Electron main process will not manage React routes. It will only create the desktop window, manage the application lifecycle, and load the React app.
@@ -1172,7 +1216,7 @@ The first milestone route structure will be:
 /login     → LoginPage
 *          → NotFoundPage
 
-## 2. Context
+#### 2. Context
 HelloStay is an offline desktop application built with Electron, React, and FastAPI.
 
 Electron provides the desktop shell. React provides the user interface inside Electron. FastAPI remains the source of truth for backend business logic, validation, database operations, authentication, and API contracts.
@@ -1181,7 +1225,7 @@ Before adding hotel features, authentication, dashboard layout, or API integrati
 
 Routing is the mechanism that allows a single React application to show different pages based on the current URL.
 
-## 3. Why This Decision Was Made
+#### 3. Why This Decision Was Made
 This decision was made to keep the frontend architecture clean and scalable.
 
 A production application should not keep all screens inside `App.jsx`. As the project grows, putting all page logic directly inside `App.jsx` would make the file difficult to understand and maintain.
@@ -1200,7 +1244,7 @@ Electron should not know about routes like:
 
 Those are UI-level routes and belong to React.
 
-## 4. Architecture Rule
+#### 4. Architecture Rule
 
 The accepted architecture rule is:
 React renderer owns application routing.
@@ -1212,7 +1256,7 @@ This means:
 * Electron decides how the desktop window opens.
 * FastAPI decides how business data is created, validated, stored, and returned.
 
-## 5. Chosen Approach
+#### 5. Chosen Approach
 The chosen routing approach for Milestone 3 is `BrowserRouter`.
 
 `BrowserRouter` was selected because:
@@ -1228,9 +1272,9 @@ Example:
 instead of:
 /#/login
 
-## 6. Alternatives Considered
+#### 6. Alternatives Considered
 
-### Alternative 1: Keep conditional rendering inside App.jsx
+##### Alternative 1: Keep conditional rendering inside App.jsx
 
 Example:
 If current screen is "start", show StartPage.
@@ -1238,7 +1282,7 @@ If current screen is "login", show LoginPage.
 
 This was rejected because it does not scale well. It also teaches a weaker architecture pattern for a production application.
 
-### Alternative 2: Use HashRouter
+##### Alternative 2: Use HashRouter
 
 Example route:
 /#/login
@@ -1249,14 +1293,14 @@ However, it was not chosen for this milestone because the app is currently runni
 
 HashRouter may be reconsidered later during Electron packaging if required.
 
-### Alternative 3: Use advanced React Router data routers
+##### Alternative 3: Use advanced React Router data routers
 This was rejected for now because Milestone 3 has no route loaders, form actions, backend calls, or route-level data fetching.
 
 The milestone only needs simple page navigation.
 
-## 7. Consequences
+#### 7. Consequences
 
-### Positive Consequences
+##### Positive Consequences
 * The app now has a clean routing foundation.
 * `App.jsx` remains small.
 * Route definitions are easy to find.
@@ -1265,14 +1309,14 @@ The milestone only needs simple page navigation.
 * Electron remains separated from UI routing.
 * The app is ready for future login, dashboard, and feature routes.
 
-### Trade-Offs
+##### Trade-Offs
 Using `BrowserRouter` may require additional care later when the Electron app is packaged and loaded from production build files.
 
 This is acceptable because Milestone 3 is focused on development-time routing and beginner-friendly learning.
 
 The routing strategy can be revisited later during the packaging milestone if needed.
 
-## 8. Affected Files
+#### 8. Affected Files
 
 The following files were added:
 frontend/src/routes/AppRoutes.jsx
@@ -1285,7 +1329,7 @@ frontend/src/main.jsx
 frontend/src/App.jsx
 frontend/src/styles/global.css
 
-## 9. What This Decision Does Not Include
+#### 9. What This Decision Does Not Include
 
 This decision does not include:
 * Real authentication.
@@ -1301,7 +1345,7 @@ This decision does not include:
 
 These will be handled in later milestones.
 
-## 10. Future Implications
+#### 10. Future Implications
 
 This decision prepares the project for later milestones such as:
 /login
@@ -1330,7 +1374,7 @@ Protected routes:
 
 However, protected routes should only be added after real authentication and auth state are designed.
 
-## 11. Final Decision Summary
+#### 11. Final Decision Summary
 HelloStay will use React Router inside the React renderer process for application navigation.
 
 Electron will not manage application routes.
@@ -1344,57 +1388,13 @@ This keeps the architecture simple, maintainable, beginner-friendly, and product
 
 ---
 
-## Application Modules
-This section describes every module (page) in HelloStay, its purpose, key features, and target user role.
-
-### Dashboard
-Central overview screen showing real-time hotel performance metrics. KPI cards, Room Occupancy donut chart (recharts), Activity Timeline, Welcome banner with hotel name. Target: Owner, Manager, Employee.
-
-### Rooms
-Manage all hotel rooms. Data table with sort/search/filter/pagination. Inline status change, Add/Edit Room modal with searchable room type selector, dynamic currency display. Target: Owner, Manager, Employee.
-
-### Bookings
-Handle room reservations. Full data table, New Booking modal with room selection, auto-calculate total, room availability validation, status workflow, payment tracking, billing modal with late checkout fee calculation. Target: Owner (planned).
-
-### Guests
-Maintain guest database. Card-based layout with avatar initials, stay history derived from bookings (guestId-based with legacy name+phone fallback), total spent calculation, search/filter/pagination. Tabbed View Modal: Profile (personal info), Stays (full stay history), Facilities (Coming Soon), Expenses (Coming Soon), All Activity (unified timeline of booking lifecycle + profile events). Target: Owner (planned).
-
-### Employees
-Manage hotel staff records. Data table with sort/search/role filter/status filter. Edit/View modals, quick Active/Inactive toggle. Target: Owner.
-
-### HR & Payroll
-Tab-based: Attendance | Payroll | Payslips. Daily attendance marking, monthly salary calculation based on attendance, payslip generation. Target: Owner (planned).
-
-### Expenses
-Track operational expenses. Data table with category filter/date range filter. Category breakdown bar chart, 12 predefined categories, payment method tracking. Target: Owner, Manager.
-
-### Inventory
-Manage supplies and stock. Data table with category/stock status filters. Quick stock adjustment (+/-), stock status alerts (In Stock/Low Stock/Out of Stock). Target: Owner, Manager, Employee.
-
-### Facilities (Manage Facilities)
-Manage hotel facilities (Spa, Pool, Gym, etc.). Facility cards with real-time stats. Booking system with payment status options (Club to Final Bill, Paid Before, Paid After, Complimentary). Charges configuration (All Guests, By Room Type, By Room Number, Free for All). Target: Owner, Manager.
-
-### Restaurant
-Manage in-house restaurant operations. Tabs: Orders (status workflow: Preparing→Ready→Served→Paid), Menu (item management), Tables (visual status grid). Condition: Only visible if "In-house Restaurant" facility selected. Target: Owner, Manager.
-
-### Reports
-Generate analytics with recharts. Tabs: Overview (Revenue bar + Occupancy pie + KPIs), Occupancy (room distribution), Revenue (monthly line + payment pie), Expenses (category horizontal bar). Target: Owner (planned).
-
-### Settings
-Configure application preferences. Tabs: Hotel Profile, System, Backup & Data. Export/Import all localStorage data as JSON. Target: Owner (planned).
-
-### Profile
-View/edit logged-in user's personal profile. Gradient header card, edit name/email/phone, change password form, role badge display. Target: Owner, Manager, Employee (planned).
-
----
-
-# Frontend AD 4: UI Foundation and Reusable Component System
+### Frontend AD 4: UI Foundation and Reusable Component System
 
 **Status:** Accepted
 **Date Recorded:** 2026-06-30
 **Milestone:** Frontend Milestone 4 — UI Foundation and Layout System
 
-## Context
+#### Context
 
 HelloStay is an offline desktop Hotel Management System built with a FastAPI backend, React frontend, and Electron desktop shell.
 
@@ -1404,7 +1404,7 @@ Milestone 3 introduced React Router and basic placeholder pages.
 
 At this stage, the application has routing and simple pages, but it does not yet have a reusable visual foundation. Before building authentication, dashboard screens, rooms, guests, stays, bookings, finance, history, or settings, the frontend needs a small UI foundation that promotes consistency, readability, and maintainability.
 
-## Decision
+#### Decision
 
 Create a simple UI foundation using plain CSS and reusable React components.
 
@@ -1440,7 +1440,7 @@ frontend/src/pages/NotFoundPage.jsx
 
 No full dashboard shell, sidebar, topbar, protected routes, authentication, backend integration, or hotel features are introduced in this milestone.
 
-## Architecture Decision
+#### Architecture Decision
 
 The frontend will begin with a small custom design system instead of using Tailwind CSS, icon libraries, animation libraries, or third-party UI component libraries.
 
@@ -1462,7 +1462,7 @@ React renderer process
   Pages, components, forms, routing, UI state, styling
 ```
 
-## Why This Decision Was Made
+#### Why This Decision Was Made
 
 A reusable UI foundation prevents duplicated styles and inconsistent interface patterns as the application grows.
 
@@ -1472,7 +1472,7 @@ Creating these reusable pieces early helps the project stay organized without pr
 
 Plain CSS is intentionally chosen for this milestone because it helps build strong fundamentals before introducing additional styling tools. Since the project is being built for learning and production-quality engineering, the priority is to understand how UI systems work from first principles.
 
-## What This Decision Allows
+#### What This Decision Allows
 
 This decision allows future pages to use consistent components such as:
 
@@ -1497,7 +1497,7 @@ It also creates a stable place for design tokens such as:
 
 This keeps styling centralized and reduces repeated hard-coded values.
 
-## What This Decision Prevents
+#### What This Decision Prevents
 
 This decision prevents:
 
@@ -1510,7 +1510,7 @@ This decision prevents:
 * Introducing styling libraries before understanding CSS fundamentals.
 * Creating hotel-specific components before generic UI foundations are stable.
 
-## Affected Files
+#### Affected Files
 
 New files:
 
@@ -1539,7 +1539,7 @@ backend/
 frontend/src/routes/AppRoutes.jsx
 ```
 
-## Implementation Direction
+#### Implementation Direction
 
 The UI foundation should remain small and readable.
 
@@ -1583,7 +1583,7 @@ ErrorMessage:
   message
 ```
 
-## Design System Direction
+#### Design System Direction
 
 The design system is intentionally minimal.
 
@@ -1605,7 +1605,7 @@ This is enough for the current milestone.
 
 The design system should grow only when future screens reveal real repeated needs.
 
-## Electron Boundary
+#### Electron Boundary
 
 No Electron files should be changed for this milestone.
 
@@ -1615,7 +1615,7 @@ The Electron main process must not create React components, HTML forms, login UI
 
 If future desktop-native features are required, they should go through a secure preload and IPC boundary. That is not needed in this milestone.
 
-## Backend Boundary
+#### Backend Boundary
 
 No backend endpoints are consumed in this milestone.
 
@@ -1629,7 +1629,7 @@ The backend remains the future source of truth for:
 * Database access
 * API contracts
 
-## Consequences
+#### Consequences
 
 Positive consequences:
 
@@ -1648,33 +1648,33 @@ Trade-offs:
 * Some temporary layout spacing may still exist in placeholder pages.
 * More advanced UI patterns are intentionally delayed.
 
-## Rejected Alternatives
+#### Rejected Alternatives
 
-### Tailwind CSS
+##### Tailwind CSS
 
 Rejected for this milestone.
 
 Tailwind can be useful later, but introducing it now would add another tool before the core React and CSS fundamentals are clear.
 
-### UI Component Library
+##### UI Component Library
 
 Rejected for this milestone.
 
 Libraries such as Material UI, Ant Design, or Chakra UI provide many ready-made components, but they reduce the opportunity to learn reusable component design from first principles.
 
-### Full Dashboard Layout
+##### Full Dashboard Layout
 
 Rejected for this milestone.
 
 A dashboard layout requires authentication flow, protected routes, navigation structure, and real app sections. That belongs in a later milestone.
 
-### Feature-Specific Components
+##### Feature-Specific Components
 
 Rejected for this milestone.
 
 Components such as `RoomCard`, `GuestTable`, `BookingForm`, and `FinanceWidget` are not created yet because hotel features are not part of Milestone 4.
 
-## Final Decision
+#### Final Decision
 
 HelloStay will use a small custom UI foundation built with plain CSS and reusable React components.
 
@@ -1694,13 +1694,13 @@ This decision keeps the project simple, understandable, production-oriented, and
 
 ---
 
-# Frontend AD 5: Centralized API Client and Backend Communication Boundary
+### Frontend AD 5: Centralized API Client and Backend Communication Boundary
 
 **Status:** Accepted
 **Date Recorded:** 2026-06-30
 **Milestone:** Frontend Milestone 5 — API Client and Backend Communication
 
-## Decision
+#### Decision
 
 HelloStay frontend will use a centralized API communication layer instead of placing API calls directly inside React page components.
 
@@ -1726,7 +1726,7 @@ future token attachment location
 
 `systemService.js` was introduced as a minimal safe service for backend communication testing only. It calls safe backend endpoints such as `/` and `/system-info`, not hotel feature workflows.
 
-## Why This Decision Was Made
+#### Why This Decision Was Made
 
 The frontend must not scatter raw `fetch()` calls across pages and components.
 
@@ -1747,7 +1747,7 @@ The React renderer owns frontend API communication, while FastAPI remains the so
 
 Electron remains responsible for desktop shell concerns only. Electron main process must not contain hotel API service logic.
 
-## Accepted Communication Flow
+#### Accepted Communication Flow
 
 ```txt
 React page/component
@@ -1773,7 +1773,7 @@ apiClient.js
 FastAPI / and /system-info endpoints
 ```
 
-## API Base URL Decision
+#### API Base URL Decision
 
 The development API base URL is defined through a Vite environment variable:
 
@@ -1791,7 +1791,7 @@ const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
 
 Vite environment variables exposed to the browser must begin with `VITE_`.
 
-## Fetch vs Axios Decision
+#### Fetch vs Axios Decision
 
 The frontend will use the browser-native `fetch()` API for this milestone.
 
@@ -1806,7 +1806,7 @@ sufficient for current needs
 
 Axios may be reconsidered later if the project needs interceptors, advanced request cancellation, or more complex HTTP behavior.
 
-## Error Handling Decision
+#### Error Handling Decision
 
 The API client will distinguish between:
 
@@ -1838,7 +1838,7 @@ Examples:
 
 The API client will throw a consistent custom error object so future screens can show reliable user-facing messages.
 
-## JSON Parsing Decision
+#### JSON Parsing Decision
 
 The API client will not assume every backend response always contains JSON.
 
@@ -1853,7 +1853,7 @@ invalid or empty response bodies
 
 This prevents frontend crashes caused by unsafe `response.json()` usage.
 
-## Authentication Preparation Decision
+#### Authentication Preparation Decision
 
 The API client contains a future token attachment location, but real authentication token logic is intentionally not implemented in this milestone.
 
@@ -1861,7 +1861,7 @@ This preserves milestone boundaries.
 
 Future authentication can attach tokens from one centralized location instead of modifying every service or page.
 
-## Temporary UI Decision
+#### Temporary UI Decision
 
 A temporary backend connection test was added to the login page only for Milestone 5 verification.
 
@@ -1878,7 +1878,7 @@ After verification, the temporary UI should be removed from the user-facing logi
 
 The files `apiClient.js`, `systemService.js`, and `.env.development` should remain.
 
-## Affected Files
+#### Affected Files
 
 ```txt
 frontend/.env.development
@@ -1889,7 +1889,7 @@ frontend/src/pages/LoginPage.jsx
 
 `LoginPage.jsx` was affected only temporarily for testing.
 
-## Boundaries Confirmed
+#### Boundaries Confirmed
 
 The following boundaries are accepted:
 
@@ -1910,7 +1910,7 @@ FastAPI backend:
   business logic, validation, database operations, API contracts
 ```
 
-## Explicit Non-Decisions
+#### Explicit Non-Decisions
 
 The following were intentionally not implemented in Milestone 5:
 
@@ -1928,7 +1928,7 @@ Electron backend startup
 application packaging
 ```
 
-## Result
+#### Result
 
 Milestone 5 established the official frontend API communication foundation for HelloStay.
 
@@ -1936,19 +1936,19 @@ Future feature modules must use service files and the centralized API client ins
 
 ---
 
-# Frontend AD 6: Authentication UI Foundation Before Real Auth Integration
+### Frontend AD 6: Authentication UI Foundation Before Real Auth Integration
 
 **Status:** Accepted
 **Date Recorded:** 2026-06-30
 **Milestone:** Frontend Milestone 6 — Authentication UI Foundation
 
-## Decision
+#### Decision
 
 The HelloStay frontend will build the authentication UI foundation before implementing real authentication behavior.
 
 Milestone 6 introduces real login and registration form interfaces using React controlled components, form validation, loading states, error states, and a dedicated `authService.js` service boundary. However, the frontend will not perform real login, real registration, dashboard redirect, token persistence, protected routing, or global authentication state until the backend exposes and confirms actual authentication endpoints.
 
-## Context
+#### Context
 
 HelloStay V1 requires a clean startup and authentication flow:
 
@@ -1961,7 +1961,7 @@ HelloStay V1 requires a clean startup and authentication flow:
 
 At this milestone, the backend contains JWT/password helper functionality and token schemas, but the available FastAPI router registration does not show confirmed auth endpoints such as login, register, me, or logout. Therefore, the frontend must not invent endpoint paths or fake successful authentication.
 
-## Why This Decision Was Made
+#### Why This Decision Was Made
 
 Authentication is a security-sensitive workflow. The frontend must not decide whether a username and password are correct. Credential verification belongs to the backend because the backend owns password hashing, database lookup, validation, JWT creation, and API contracts.
 
@@ -1976,7 +1976,7 @@ Building fake authentication in React would create the wrong architecture and ma
 
 This milestone keeps the UI work productive while preserving backend authority.
 
-## Final Decision
+#### Final Decision
 
 For Milestone 6:
 
@@ -1997,7 +1997,7 @@ For Milestone 6:
 * Do not persist tokens yet.
 * Do not move authentication logic into Electron.
 
-## Affected Files
+#### Affected Files
 
 ```text
 frontend/src/services/authService.js
@@ -2009,9 +2009,9 @@ frontend/src/components/ui/Input.jsx
 frontend/src/components/ui/Button.jsx
 ```
 
-## Responsibility Separation
+#### Responsibility Separation
 
-### React Renderer
+#### React Renderer
 
 React handles:
 
@@ -2023,7 +2023,7 @@ React handles:
 * Loading and error display.
 * Calling `authService.js`.
 
-### Service Layer
+#### Service Layer
 
 `authService.js` handles:
 
@@ -2033,7 +2033,7 @@ React handles:
 * Clear errors when auth endpoints are not confirmed.
 * Future integration with `apiClient.js`.
 
-### FastAPI Backend
+#### FastAPI Backend
 
 FastAPI remains responsible for:
 
@@ -2045,7 +2045,7 @@ FastAPI remains responsible for:
 * Response contract.
 * Auth route ownership.
 
-### Electron Main Process
+#### Electron Main Process
 
 Electron does not handle:
 
@@ -2057,7 +2057,7 @@ Electron does not handle:
 
 Electron remains responsible only for desktop shell responsibilities such as app lifecycle, window creation, safe preload exposure, packaging, and future backend startup behavior.
 
-## Implementation Outcome
+#### Implementation Outcome
 
 Milestone 6 produced a clean authentication UI foundation without pretending that real auth exists.
 
@@ -2067,9 +2067,9 @@ The register page supports the V1 account creation direction but does not create
 
 The service layer now provides a dedicated place for future auth API integration.
 
-## Consequences
+#### Consequences
 
-### Positive Consequences
+##### Positive Consequences
 
 * Authentication UI is now ready for future backend integration.
 * Login and registration forms are beginner-friendly and production-oriented.
@@ -2078,7 +2078,7 @@ The service layer now provides a dedicated place for future auth API integration
 * The project avoids fake authentication.
 * Future Milestone 7 can focus on auth contract, token strategy, auth context, and protected routes.
 
-### Trade-Offs
+##### Trade-Offs
 
 * Login does not yet succeed.
 * Register does not yet create an account.
@@ -2088,7 +2088,7 @@ The service layer now provides a dedicated place for future auth API integration
 
 These trade-offs are accepted because they preserve architectural correctness.
 
-## Explicitly Deferred
+#### Explicitly Deferred
 
 The following are intentionally postponed:
 
@@ -2104,7 +2104,7 @@ The following are intentionally postponed:
 * Role-based authorization.
 * Electron-based secure token storage strategy.
 
-## Future Milestone Dependency
+#### Future Milestone Dependency
 
 Milestone 7 should build on this decision by verifying or designing the backend authentication contract.
 
@@ -2121,11 +2121,153 @@ Milestone 7 should answer:
 * How should logout work?
 * When should protected routes be introduced?
 
-## Final Rule
+#### Final Rule
 
 React may collect credentials and send them through the service layer, but React must never be the source of truth for whether credentials are correct.
 
 FastAPI remains the authentication authority.
+
+---
+
+### Frontend AD 7: Auth State and Protected Route Foundation
+
+**Status:** Accepted
+**Date Recorded:** 2026-07-01
+**Milestone:** Frontend Milestone 7 — Auth State and Protected Routes
+
+#### Context
+
+HelloStay requires a clear authentication foundation before building the real dashboard and hotel modules. The application needs a way to know whether a user is authenticated, protect private routes, redirect unauthenticated users to the login page, and support logout behavior.
+
+At this stage, the frontend authentication UI exists, but real backend authentication is not fully confirmed from the currently available backend files. The backend contains JWT/password utility foundations and token schemas, but no registered authentication router or confirmed login endpoint is currently visible in `main.py`.
+
+#### Decision
+
+Use React Context to manage global frontend authentication state and create a dedicated `ProtectedRoute` component to guard private frontend routes.
+
+Authentication state will be handled in the React renderer process, not in Electron main process. The frontend will store only temporary session/token data needed for the logged-in session. Hotel business data such as rooms, guests, stays, bookings, finance, and history must not be stored in browser storage.
+
+A temporary protected route, `/dashboard`, will be added only to verify route protection. This is not the real dashboard shell.
+
+#### Accepted Implementation Direction
+
+The following files are introduced or updated:
+
+```txt
+frontend/src/context/AuthContext.jsx
+frontend/src/routes/ProtectedRoute.jsx
+frontend/src/routes/AppRoutes.jsx
+frontend/src/pages/LoginPage.jsx
+frontend/src/pages/DashboardPlaceholderPage.jsx
+frontend/src/services/authService.js
+frontend/src/main.jsx
+```
+
+#### Key Decisions
+
+1. **React Context is used for auth state**
+
+   Auth state must be shared across multiple parts of the app, including login page, protected routes, future dashboard, and future logout controls. Keeping auth state only inside `LoginPage.jsx` would make the state local and unavailable to the rest of the application.
+
+2. **`AuthProvider` wraps the application**
+
+   `AuthProvider` is placed high enough in the component tree so route components and pages can access authentication state using a custom `useAuth()` hook.
+
+3. **`ProtectedRoute` handles private route guarding**
+
+   Private routes are wrapped with `ProtectedRoute`. If the user is not authenticated, the component redirects to `/login`. If the user is authenticated, it renders the protected page.
+
+4. **Frontend guards are not treated as backend security**
+
+   `ProtectedRoute` improves frontend navigation and user experience, but it does not secure backend data. FastAPI must still validate tokens and protect private APIs.
+
+5. **Session/token data may be stored temporarily**
+
+   For V1, frontend session/token data may be stored using `sessionStorage` as a simple beginner-friendly strategy. This allows refresh survival during the current session while avoiding long-term persistence.
+
+6. **Hotel business data must not be stored in frontend storage**
+
+   Rooms, guests, stays, bookings, finance, income, and history remain backend/database responsibilities. FastAPI and SQLite remain the source of truth.
+
+7. **No fake production authentication**
+
+   Because a confirmed backend login endpoint is not currently available, the frontend must not invent endpoint names, request bodies, response bodies, fake users, or fake production tokens.
+
+8. **Electron does not manage auth form state**
+
+   Electron main process remains responsible for desktop shell concerns only: app lifecycle, windows, startup behavior, and later packaging. React renderer handles auth UI and frontend auth state. FastAPI handles credential validation and token creation.
+
+#### Why This Decision Was Made
+
+This decision keeps the frontend architecture clean and prepares the app for real authentication without coupling the UI to unconfirmed backend contracts.
+
+It also teaches a professional separation of responsibility:
+
+```txt
+React renderer:
+- login form
+- auth UI state
+- global frontend auth state
+- protected route behavior
+
+FastAPI backend:
+- credential validation
+- password verification
+- JWT creation
+- private API protection
+
+Electron main process:
+- desktop window
+- app lifecycle
+- startup behavior
+- packaging later
+```
+
+#### Consequences
+
+Positive consequences:
+
+```txt
+Auth state is centralized.
+Protected routing is reusable.
+LoginPage stays focused on form behavior.
+Future dashboard can depend on a clean auth foundation.
+The frontend does not fake backend behavior.
+Electron responsibilities remain cleanly separated.
+```
+
+Trade-offs:
+
+```txt
+Real login success flow cannot be fully tested until the backend exposes a confirmed auth endpoint.
+Authenticated access to private routes remains blocked without a real token.
+Role-based permissions are intentionally postponed.
+```
+
+#### Deferred Work
+
+The following items are intentionally postponed:
+
+```txt
+Real backend login integration
+Register endpoint integration
+Token verification on app startup
+Refresh token handling
+Role-based permissions
+Real dashboard shell
+Sidebar navigation
+Rooms module
+Guests module
+Stays/bookings module
+Finance/history module
+Electron backend startup
+Electron secure token storage
+Packaging
+```
+
+#### Final Decision Summary
+
+HelloStay will use React Context for global frontend authentication state and a reusable `ProtectedRoute` component for route guarding. This milestone establishes the frontend structure for authentication while avoiding fake production login until the FastAPI auth endpoint contract is confirmed.
 
 ---
 
@@ -2204,11 +2346,11 @@ passlib[bcrypt], python-jose for JWT, core/security.py, schemas/token.py.
 
 ---
 
-# Frontend Milestone Plan
+## Frontend Milestone Plan
 
-## HelloStay Frontend V1 Milestone Plan
+### HelloStay Frontend V1 Milestone Plan
 
-### Objective
+#### Objective
 Divide the remaining **HelloStay frontend + Electron desktop app work** into clear milestones so each milestone can be completed in a separate ChatGPT session under the HelloStay project.
 
 The goal is to keep every session focused, reduce confusion, preserve accuracy, and help with learning:
@@ -2217,15 +2359,15 @@ The goal is to keep every session focused, reduce confusion, preserve accuracy, 
 - Electron
 - Frontend architecture
 
-## Milestone 0: Project Orientation and Rules Review
+### Milestone 0: Project Orientation and Rules Review
 
-### Purpose
+#### Purpose
 Before writing code, review the existing backend, API contracts, architecture decisions, and V1 scope.
 
-### Scope
+#### Scope
 This milestone is only for understanding the project.
 
-### Topics
+#### Topics
 - HelloStay V1 feature scope
 - Existing FastAPI backend structure
 - Authentication flow
@@ -2234,10 +2376,10 @@ This milestone is only for understanding the project.
 - Offline desktop requirement
 - Electron + React responsibility separation
 
-### Output
+#### Output
 A clear frontend implementation strategy.
 
-### Done When
+#### Done When
 
 You understand:
 - What belongs in React
@@ -2246,20 +2388,20 @@ You understand:
 - What V1 includes
 - What V1 excludes
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 0 — HelloStay Frontend Orientation**
 
 ---
 
-## Milestone 1: Frontend Project Setup
+### Milestone 1: Frontend Project Setup
 
-### Purpose
+#### Purpose
 Create the frontend project from scratch.
 
-### Scope
+#### Scope
 Set up the React frontend foundation without building features yet.
 
-### Topics
+#### Topics
 - Vite + React setup
 - JavaScript project structure
 - Basic folder organization
@@ -2268,7 +2410,7 @@ Set up the React frontend foundation without building features yet.
 - Environment variables
 - API base URL setup
 
-### Folder/File Focus
+#### Folder/File Focus
 ```text
 frontend/
   src/
@@ -2284,28 +2426,28 @@ frontend/
     styles/
 ```
 
-### Output
+#### Output
 A clean React app that runs successfully.
 
-### Done When
+#### Done When
 - React app starts without errors
 - Folder structure is ready
 - No hotel features are implemented yet
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 1 — React Project Setup**
 
 ---
 
-## Milestone 2: Electron Desktop Shell Setup
+### Milestone 2: Electron Desktop Shell Setup
 
-### Purpose
+#### Purpose
 Add Electron as the desktop shell around React.
 
-### Scope
+#### Scope
 Set up Electron main process, preload file, and secure renderer loading.
 
-### Topics
+#### Topics
 - Electron main process
 - Renderer process
 - Preload script
@@ -2315,7 +2457,7 @@ Set up Electron main process, preload file, and secure renderer loading.
 - Loading React inside Electron
 - Development vs production startup
 
-### Folder/File Focus
+#### Folder/File Focus
 ```text
 electron/
   main.js
@@ -2325,29 +2467,29 @@ frontend/
   src/
 ```
 
-### Output
+#### Output
 HelloStay opens as a desktop window.
 
-### Done When
+#### Done When
 - Electron window opens
 - React UI loads inside Electron
 - Security basics are respected
 - Backend logic is not moved into Electron
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 2 — Electron Desktop Shell**
 
 ---
 
-## Milestone 3: App Startup Flow
+### Milestone 3: App Startup Flow
 
-### Purpose
+#### Purpose
 Build the first user-facing flow.
 
-### Scope
+#### Scope
 Create the app start screen and redirect flow into login.
 
-### Topics
+#### Topics
 - App startup screen
 - React Router
 - Navigation
@@ -2355,33 +2497,33 @@ Create the app start screen and redirect flow into login.
 - Desktop app startup behavior
 - Offline-first mindset
 
-### Pages
+#### Pages
 - StartPage
 - LoginPage placeholder
 
-### Output
+#### Output
 The app opens to a start page, then moves to login.
 
-### Done When
+#### Done When
 - Start page exists
 - Login route exists
 - Navigation works
 - No authentication logic yet
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 3 — Startup Flow and Routing**
 
 ---
 
-## Milestone 4: Layout System and Design Foundation
+### Milestone 4: Layout System and Design Foundation
 
-### Purpose
+#### Purpose
 Create the visual foundation before feature screens.
 
-### Scope
+#### Scope
 Build reusable layout, spacing, colors, typography, and shared UI components.
 
-### Topics
+#### Topics
 - CSS strategy
 - Global styles
 - App layout
@@ -2392,7 +2534,7 @@ Build reusable layout, spacing, colors, typography, and shared UI components.
 - Error message component
 - Responsive desktop UI basics
 
-### Folder/File Focus
+#### Folder/File Focus
 ```text
 components/ui/
   Button.jsx
@@ -2405,28 +2547,28 @@ styles/
   global.css
 ```
 
-### Output
+#### Output
 A clean design foundation for the whole app.
 
-### Done When
+#### Done When
 - UI components are reusable
 - Pages do not contain messy duplicated styles
 - The app has a consistent visual style
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 4 — UI Foundation and Layout System**
 
 ---
 
-## Milestone 5: API Client Setup
+### Milestone 5: API Client Setup
 
-### Purpose
+#### Purpose
 Create the frontend layer that talks to the FastAPI backend.
 
-### Scope
+#### Scope
 No screens yet. Only API communication setup.
 
-### Topics
+#### Topics
 - Fetch API or Axios
 - API base URL
 - Request helpers
@@ -2435,35 +2577,35 @@ No screens yet. Only API communication setup.
 - Authentication token attachment
 - Backend unavailable handling
 
-### Folder/File Focus
+#### Folder/File Focus
 ```text
 services/
   apiClient.js
   authService.js
 ```
 
-### Output
+#### Output
 A reusable API client.
 
-### Done When
+#### Done When
 - Frontend can call backend safely
 - Errors are handled consistently
 - API code is not scattered inside components
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 5 — API Client and Backend Communication**
 
 ---
 
-## Milestone 6: Authentication UI
+### Milestone 6: Authentication UI
 
-### Purpose
+#### Purpose
 Build login and create-account screens.
 
-### Scope
+#### Scope
 Create the UI first, then connect it to backend authentication.
 
-### Topics
+#### Topics
 - Controlled forms
 - React state
 - Form submission
@@ -2474,34 +2616,34 @@ Create the UI first, then connect it to backend authentication.
 - Auth errors
 - Loading states
 
-### Pages
+#### Pages
 - LoginPage
 - RegisterPage
 
-### Output
+#### Output
 User can create an account and log in.
 
-### Done When
+#### Done When
 - Login works with backend
 - Register works with backend
 - Invalid credentials show error
 - Loading state appears during requests
 - Token is stored safely for V1
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 6 — Authentication UI and Logic**
 
 ---
 
-## Milestone 7: Auth State and Protected Routes
+### Milestone 7: Auth State and Protected Routes
 
-### Purpose
+#### Purpose
 Teach the app who is logged in and protect private pages.
 
-### Scope
+#### Scope
 Create global authentication state.
 
-### Topics
+#### Topics
 - React Context API
 - AuthProvider
 - Protected routes
@@ -2509,7 +2651,7 @@ Create global authentication state.
 - Persisting login across refresh
 - Redirecting unauthenticated users
 
-### Folder/File Focus
+#### Folder/File Focus
 ```text
 context/
   AuthContext.jsx
@@ -2518,29 +2660,29 @@ routes/
   ProtectedRoute.jsx
 ```
 
-### Output
+#### Output
 Only logged-in users can access the dashboard.
 
-### Done When
+#### Done When
 - Dashboard is protected
 - Logged-out users go to login
 - Logged-in users remain logged in
 - Logout works
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 7 — Auth Context and Protected Routes**
 
 ---
 
-## Milestone 8: Main Dashboard Shell
+### Milestone 8: Main Dashboard Shell
 
-### Purpose
+#### Purpose
 Build the main application structure after login.
 
-### Scope
+#### Scope
 Create the dashboard layout but not all feature logic yet.
 
-### Topics
+#### Topics
 - Sidebar navigation
 - Header
 - Main content area
@@ -2548,7 +2690,7 @@ Create the dashboard layout but not all feature logic yet.
 - Dashboard cards
 - Page layout consistency
 
-### Pages
+#### Pages
 - DashboardLayout
 - DashboardHome
 - RoomsPage placeholder
@@ -2558,29 +2700,29 @@ Create the dashboard layout but not all feature logic yet.
 - HistoryPage placeholder
 - SettingsPage optional
 
-### Output
+#### Output
 A professional app shell for HelloStay.
 
-### Done When
+#### Done When
 - Sidebar navigation works
 - Header shows app/user info
 - Feature pages are reachable
 - Layout is reusable
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 8 — Dashboard Layout and Navigation**
 
 ---
 
-## Milestone 9: Rooms Management
+### Milestone 9: Rooms Management
 
-### Purpose
+#### Purpose
 Build the first real hotel module.
 
-### Scope
+#### Scope
 Manage hotel rooms using backend APIs.
 
-### Topics
+#### Topics
 - Fetching room list
 - Room table/grid
 - Create room form
@@ -2590,37 +2732,37 @@ Manage hotel rooms using backend APIs.
 - Loading/error/empty states
 - Component decomposition
 
-### Pages/Components
+#### Pages/Components
 - RoomsPage
 - RoomList
 - RoomCard or RoomTable
 - RoomForm
 - RoomStatusBadge
 
-### Output
+#### Output
 User can manage rooms.
 
-### Done When
+#### Done When
 - Rooms can be listed
 - Rooms can be created
 - Rooms can be edited
 - Rooms can be deleted/deactivated depending on backend rules
 - Errors are shown properly
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 9 — Rooms Management Module**
 
 ---
 
-## Milestone 10: Guests Management
+### Milestone 10: Guests Management
 
-### Purpose
+#### Purpose
 Build guest record management.
 
-### Scope
+#### Scope
 Create, view, update, and search guests.
 
-### Topics
+#### Topics
 - Guest list
 - Guest details
 - Guest form
@@ -2629,37 +2771,37 @@ Create, view, update, and search guests.
 - Form validation
 - Reusable form patterns
 
-### Pages/Components
+#### Pages/Components
 - GuestsPage
 - GuestList
 - GuestForm
 - GuestDetails
 - GuestSearch
 
-### Output
+#### Output
 User can manage guest records.
 
-### Done When
+#### Done When
 - Guests can be listed
 - Guests can be created
 - Guests can be edited
 - Guest search works
 - Guest details are clear
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 10 — Guests Management Module**
 
 ---
 
-## Milestone 11: Bookings Management
+### Milestone 11: Bookings Management
 
-### Purpose
+#### Purpose
 Build the central hotel workflow: bookings.
 
-### Scope
+#### Scope
 Create and manage room bookings.
 
-### Topics
+#### Topics
 - Booking list
 - Create booking
 - Select guest
@@ -2670,7 +2812,7 @@ Create and manage room bookings.
 - Date handling
 - Conflict handling
 
-### Pages/Components
+#### Pages/Components
 - BookingsPage
 - BookingList
 - BookingForm
@@ -2679,30 +2821,30 @@ Create and manage room bookings.
 - RoomAvailabilitySelector
 - GuestSelector
 
-### Output
+#### Output
 User can create and manage bookings.
 
-### Done When
+#### Done When
 - Bookings can be listed
 - New booking can be created
 - Guest and room are selected properly
 - Date validation works
 - Backend conflict errors are displayed clearly
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 11 — Bookings Management Module**
 
 ---
 
-## Milestone 12: Booking Lifecycle Actions
+### Milestone 12: Booking Lifecycle Actions
 
-### Purpose
+#### Purpose
 Add real hotel workflow actions to bookings.
 
-### Scope
+#### Scope
 Implement status-based actions.
 
-### Topics
+#### Topics
 - Check-in
 - Check-out
 - Cancel booking
@@ -2711,35 +2853,35 @@ Implement status-based actions.
 - Business-rule-driven UI
 - Preventing invalid actions
 
-### Components
+#### Components
 - BookingActions
 - ConfirmDialog
 - StatusActionButton
 
-### Output
+#### Output
 Bookings can move through their lifecycle.
 
-### Done When
+#### Done When
 - User can check in a booking
 - User can check out a booking
 - User can cancel when allowed
 - Invalid actions are hidden or disabled
 - Backend remains source of truth
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 12 — Booking Lifecycle Actions**
 
 ---
 
-## Milestone 13: Finance and Income Overview
+### Milestone 13: Finance and Income Overview
 
-### Purpose
+#### Purpose
 Show income and financial summaries for V1.
 
-### Scope
+#### Scope
 Display total income and finance-related booking/payment data based on existing backend endpoints.
 
-### Topics
+#### Topics
 - Finance dashboard
 - Total income
 - Date filters
@@ -2748,35 +2890,35 @@ Display total income and finance-related booking/payment data based on existing 
 - Summary cards
 - Basic charts only if needed
 
-### Pages/Components
+#### Pages/Components
 - FinancePage
 - IncomeSummaryCards
 - FinanceFilters
 - RevenueTable
 
-### Output
+#### Output
 User can see financial overview.
 
-### Done When
+#### Done When
 - Total income is visible
 - Finance data comes from backend
 - Date filtering works if backend supports it
 - Empty/error states are handled
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 13 — Finance and Income Module**
 
 ---
 
-## Milestone 14: History Module
+### Milestone 14: History Module
 
-### Purpose
+#### Purpose
 Show historical hotel activity.
 
-### Scope
+#### Scope
 Display previous bookings, completed stays, cancelled bookings, and relevant records.
 
-### Topics
+#### Topics
 - Booking history
 - Guest stay history
 - Filters
@@ -2785,35 +2927,35 @@ Display previous bookings, completed stays, cancelled bookings, and relevant rec
 - Read-only historical data
 - Difference between active data and history
 
-### Pages/Components
+#### Pages/Components
 - HistoryPage
 - HistoryList
 - HistoryFilters
 - HistoryDetails
 
-### Output
+#### Output
 User can review historical records.
 
-### Done When
+#### Done When
 - History page works
 - Completed/cancelled/past data is visible
 - Filters work
 - No accidental editing of historical records
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 14 — History Module**
 
 ---
 
-## Milestone 15: Dashboard Metrics
+### Milestone 15: Dashboard Metrics
 
-### Purpose
+#### Purpose
 Make the dashboard useful after core modules exist.
 
-### Scope
+#### Scope
 Show operational summary on the dashboard home.
 
-### Topics
+#### Topics
 - Available rooms
 - Occupied rooms
 - Active bookings
@@ -2824,35 +2966,35 @@ Show operational summary on the dashboard home.
 - Parallel API calls
 - Loading multiple data sources
 
-### Components
+#### Components
 - DashboardHome
 - MetricCard
 - TodayActivity
 - DashboardSummary
 
-### Output
+#### Output
 Dashboard gives a quick overview of hotel status.
 
-### Done When
+#### Done When
 - Metrics are displayed
 - Data is current
 - Loading states are clean
 - Errors do not break the whole dashboard
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 15 — Dashboard Metrics and Overview**
 
 ---
 
-## Milestone 16: Error Handling, Empty States, and UX Polish
+### Milestone 16: Error Handling, Empty States, and UX Polish
 
-### Purpose
+#### Purpose
 Make the app feel reliable and professional.
 
-### Scope
+#### Scope
 Improve user experience across all modules.
 
-### Topics
+#### Topics
 - Global error patterns
 - Empty states
 - Loading skeletons
@@ -2863,30 +3005,30 @@ Improve user experience across all modules.
 - Accessibility basics
 - Keyboard usability
 
-### Output
+#### Output
 The app becomes much more usable.
 
-### Done When
+#### Done When
 - Every page handles loading
 - Every page handles errors
 - Empty lists look intentional
 - Forms guide the user clearly
 - Destructive actions require confirmation
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 16 — UX Polish and Error Handling**
 
 ---
 
-## Milestone 17: Offline Desktop Behavior
+### Milestone 17: Offline Desktop Behavior
 
-### Purpose
+#### Purpose
 Improve the Electron/offline production behavior.
 
-### Scope
+#### Scope
 Handle local backend startup and desktop app reliability.
 
-### Topics
+#### Topics
 - FastAPI backend startup from Electron
 - Checking backend availability
 - Startup loading state
@@ -2895,41 +3037,41 @@ Handle local backend startup and desktop app reliability.
 - Localhost API configuration
 - Desktop-specific error handling
 
-### Electron Responsibility Split
+#### Electron Responsibility Split
 
-#### Electron Main
+##### Electron Main
 - Starts/checks backend
 - Manages window lifecycle
 
-#### Preload
+##### Preload
 - Exposes safe desktop APIs
 
-#### React Renderer
+##### React Renderer
 - Shows startup/loading/error UI
 
-### Output
+#### Output
 The desktop app behaves properly when launched offline.
 
-### Done When
+#### Done When
 - App can detect backend availability
 - User sees a clear message if backend is unavailable
 - React does not directly access unsafe Node APIs
 - Electron remains only a shell and startup manager
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 17 — Offline Electron Startup Behavior**
 
 ---
 
-## Milestone 18: Security Review
+### Milestone 18: Security Review
 
-### Purpose
+#### Purpose
 Review the app for common frontend and Electron security mistakes.
 
-### Scope
+#### Scope
 No new features. Review and harden the app.
 
-### Topics
+#### Topics
 - JWT storage risks
 - Protected routes limitations
 - Backend authorization
@@ -2941,29 +3083,29 @@ No new features. Review and harden the app.
 - API error leakage
 - Local desktop risks
 
-### Output
+#### Output
 Security checklist and improvements.
 
-### Done When
+#### Done When
 - Electron security basics are correct
 - Auth flow is reasonably safe for V1
 - No backend business rules are trusted only in frontend
 - Sensitive data is not casually exposed
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 18 — Frontend and Electron Security Review**
 
 ---
 
-## Milestone 19: Testing and Debugging Workflow
+### Milestone 19: Testing and Debugging Workflow
 
-### Purpose
+#### Purpose
 Learn how to test and debug the application like an engineer.
 
-### Scope
+#### Scope
 Add practical testing and debugging workflows.
 
-### Topics
+#### Topics
 - Manual test checklist
 - React DevTools
 - Browser DevTools
@@ -2974,28 +3116,28 @@ Add practical testing and debugging workflows.
 - Component testing basics
 - Integration testing strategy
 
-### Output
+#### Output
 A repeatable testing checklist.
 
-### Done When
+#### Done When
 - Each module has manual test cases
 - Common bugs can be diagnosed
 - You know where to look when something fails
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 19 — Testing and Debugging Workflow**
 
 ---
 
-## Milestone 20: Packaging Preparation
+### Milestone 20: Packaging Preparation
 
-### Purpose
+#### Purpose
 Prepare HelloStay for desktop distribution.
 
-### Scope
+#### Scope
 Set up production build and packaging flow.
 
-### Topics
+#### Topics
 - React production build
 - Electron production loading
 - Environment configuration
@@ -3006,29 +3148,29 @@ Set up production build and packaging flow.
 - SQLite database location
 - Backend executable strategy
 
-### Output
+#### Output
 A production packaging plan.
 
-### Done When
+#### Done When
 - React builds successfully
 - Electron can load production build
 - Packaging strategy is clear
 - Database/backend file path issues are understood
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 20 — Electron Packaging Preparation**
 
 ---
 
-## Milestone 21: Final V1 Review and Stabilization
+### Milestone 21: Final V1 Review and Stabilization
 
-### Purpose
+#### Purpose
 Review the whole V1 application before considering it complete.
 
-### Scope
+#### Scope
 Final cleanup, refactoring, bug fixing, and quality review.
 
-### Topics
+#### Topics
 - Code cleanup
 - Folder consistency
 - Naming consistency
@@ -3039,10 +3181,10 @@ Final cleanup, refactoring, bug fixing, and quality review.
 - V1 scope review
 - Known limitations
 
-### Output
+#### Output
 HelloStay V1 frontend is stable and understandable.
 
-### Done When
+#### Done When
 - Rooms work
 - Guests work
 - Bookings work
@@ -3052,12 +3194,12 @@ HelloStay V1 frontend is stable and understandable.
 - Electron desktop shell works
 - V1 excludes employees as planned
 
-### Suggested Session Title
+#### Suggested Session Title
 **Milestone 21 — Final V1 Review and Stabilization**
 
 ---
 
-## Recommended Milestone Order
+### Recommended Milestone Order
 Use this exact order:
 
 1. Project Orientation
@@ -3085,7 +3227,7 @@ Use this exact order:
 
 ---
 
-## Completed Frontend Milestone 
+## Completed Frontend Milestones
 
 ### Frontend Milestone 0 — Frontend Orientation, Backend Contract Review, and Architecture Boundary Confirmation
 **Status:** Completed
@@ -3360,18 +3502,18 @@ Frontend Milestone 2 — Electron Desktop Shell Setup.
 
 ---
 
-## Frontend Milestone 2 — Electron Desktop Shell Setup
+### Frontend Milestone 2 — Electron Desktop Shell Setup
 **Status:** Completed
 **Milestone Number:** 2
 **Layer:** Desktop / Frontend Shell
 **Technology Used:** Electron, Vite, React, JavaScript
 
-### Objective
+#### Objective
 Set up the basic Electron desktop shell around the existing Vite React frontend without adding hotel features, routing, authentication, backend integration, packaging, or business logic.
 
 The goal of this milestone was to make HelloStay open as a desktop application while keeping React as the renderer process and Electron as the desktop shell.
 
-### Completed Work
+#### Completed Work
 * Installed Electron as the desktop runtime.
 
 * Installed `concurrently` to run Vite and Electron together during development.
@@ -3397,15 +3539,15 @@ The goal of this milestone was to make HelloStay open as a desktop application w
 
 * Verified that the React app opens inside a native Electron desktop window.
 
-### Files Added
+#### Files Added
 frontend/electron/main.js
 frontend/electron/preload.js
 
-### Files Updated
+#### Files Updated
 frontend/package.json
 
 
-### Final Electron Main Process Responsibility
+#### Final Electron Main Process Responsibility
 The Electron main process is responsible only for desktop application lifecycle concerns:
 
 * Starting the Electron app.
@@ -3417,14 +3559,14 @@ The Electron main process is responsible only for desktop application lifecycle 
 
 The Electron main process does not contain hotel business logic, database logic, authentication logic, API logic, room logic, booking logic, guest logic, or financial logic.
 
-### Final Preload Responsibility
+#### Final Preload Responsibility
 The preload file exists as a future secure bridge between Electron and React.
 
 For this milestone, the preload file intentionally exposes nothing.
 
 No IPC, desktop APIs, filesystem access, or backend logic were added.
 
-### Development Script Setup
+#### Development Script Setup
 The project now supports running the desktop app during development using:
 
 ```bash
@@ -3437,7 +3579,7 @@ Electron desktop shell
 
 Electron waits for Vite to become available before opening the desktop window.
 
-### Important Security Decisions Preserved
+#### Important Security Decisions Preserved
 * React renderer does not get direct Node.js access.
 * Electron APIs are not exposed directly to React.
 * `nodeIntegration` remains disabled.
@@ -3446,7 +3588,7 @@ Electron waits for Vite to become available before opening the desktop window.
 * Backend business logic remains in FastAPI.
 * Database operations remain outside React and Electron.
 
-### What Was Intentionally Not Added
+#### What Was Intentionally Not Added
 The following were intentionally excluded from this milestone:
 
 * React Router
@@ -3466,7 +3608,7 @@ The following were intentionally excluded from this milestone:
 * Installer setup
 * Production build configuration beyond a basic future loading branch
 
-### Verification Result
+#### Verification Result
 The command:
 
 ```bash
@@ -3475,7 +3617,7 @@ npm run desktop
 
 successfully opened the HelloStay React frontend inside an Electron desktop window.
 
-### Summary
+#### Summary
 Milestone 2 successfully introduced Electron as the desktop shell for HelloStay while preserving a clean architecture:
 
 Electron main process → desktop lifecycle
@@ -3488,19 +3630,19 @@ This milestone completed the basic desktop foundation without mixing frontend UI
 
 ---
 
-# Frontend Milestone 3: Startup Flow and Routing
+### Frontend Milestone 3: Startup Flow and Routing
 **Status:** Completed
 **Date Completed:** 2026-06-30
 **Project:** HelloStay — Offline Hotel Management System
 **Frontend Stack:** React, JavaScript, Vite
 **Desktop Shell:** Electron
 
-## 1. Milestone Objective
+#### 1. Milestone Objective
 The objective of Milestone 3 was to introduce a clean startup flow and basic routing structure inside the React renderer process.
 
 This milestone focused only on navigation between minimal placeholder pages. No hotel features, backend integration, authentication, dashboard layout, protected routes, Electron backend startup, or packaging logic were added.
 
-## 2. Scope of This Milestone
+#### 2. Scope of This Milestone
 
 Milestone 3 included:
 * Installing React Router DOM.
@@ -3513,7 +3655,7 @@ Milestone 3 included:
 * Making the app open on the startup page.
 * Adding a button on the startup page that navigates to the login page.
 
-## 3. Out of Scope
+#### 3. Out of Scope
 
 The following were intentionally not added:
 * Real authentication.
@@ -3535,7 +3677,7 @@ The following were intentionally not added:
 
 This was intentional because the milestone was only about routing foundation.
 
-## 4. Final Route Structure
+#### 4. Final Route Structure
 
 The app now supports the following routes:
 /          → StartPage
@@ -3548,7 +3690,7 @@ Example:
 /random-page → NotFoundPage
 
 
-## 5. Final Folder Structure
+#### 5. Final Folder Structure
 
 The frontend now follows this structure:
 frontend/
@@ -3567,7 +3709,7 @@ frontend/
     styles/
       global.css
 
-## 6. Files Added
+#### 6. Files Added
 
 The following files were added:
 src/routes/AppRoutes.jsx
@@ -3575,7 +3717,7 @@ src/pages/StartPage.jsx
 src/pages/LoginPage.jsx
 src/pages/NotFoundPage.jsx
 
-## 7. Files Updated
+#### 7. Files Updated
 
 The following files were updated:
 src/main.jsx
@@ -3583,7 +3725,7 @@ src/App.jsx
 src/styles/global.css
 
 
-## 8. Implementation Summary
+#### 8. Implementation Summary
 `main.jsx` now wraps the React application with `BrowserRouter`.
 
 main.jsx
@@ -3607,9 +3749,9 @@ The login page is only a placeholder.
 
 The not-found page uses `Link` to return to the startup page.
 
-## 9. Responsibilities After This Milestone
+#### 9. Responsibilities After This Milestone
 
-### React Renderer Process
+#### React Renderer Process
 
 React owns:
 * Page rendering.
@@ -3619,7 +3761,7 @@ React owns:
 * Login placeholder page.
 * Fallback route.
 
-### Electron Main Process
+#### Electron Main Process
 
 Electron owns:
 * Desktop window creation.
@@ -3629,7 +3771,7 @@ Electron owns:
 
 Electron does not know about React routes such as `/login`.
 
-### FastAPI Backend
+#### FastAPI Backend
 
 FastAPI remains responsible for:
 * Business logic.
@@ -3640,7 +3782,7 @@ FastAPI remains responsible for:
 
 No backend integration was added in this milestone.
 
-## 10. Key Concepts Learned
+#### 10. Key Concepts Learned
 
 This milestone introduced the following concepts:
 * Routing in a React single-page application.
@@ -3654,7 +3796,7 @@ This milestone introduced the following concepts:
 * What `useNavigate` does.
 * Why authentication and protected routes should wait for later milestones.
 
-## 11. Verification Steps Completed
+#### 11. Verification Steps Completed
 
 The following URLs were verified:
 http://localhost:5173/
@@ -3673,12 +3815,12 @@ The app was also verified through Electron using:
 npm run desktop
 ```
 
-## 12. Milestone Result
+#### 12. Milestone Result
 Milestone 3 was completed successfully.
 
 HelloStay now has a clean routing foundation inside the React renderer process while preserving the separation between React, Electron, and FastAPI.
 
-## 13. Suggested Next Milestone
+#### 13. Suggested Next Milestone
 
 The recommended next milestone is:
 Frontend Milestone 4: Authentication UI Foundation
@@ -3687,17 +3829,17 @@ Milestone 4 should still avoid real backend authentication at first. It should f
 
 ---
 
-# Frontend Milestone 4 Notes: UI Foundation and Layout System
+### Frontend Milestone 4 Notes: UI Foundation and Layout System
 
-## Milestone Name
+#### Milestone Name
 
 Frontend Milestone 4 — UI Foundation and Layout System
 
-## Milestone Status
+#### Milestone Status
 
 Completed / Ready to Implement
 
-## Purpose of This Milestone
+#### Purpose of This Milestone
 
 The purpose of Milestone 4 is to create the basic visual foundation for the HelloStay React frontend.
 
@@ -3711,9 +3853,9 @@ The focus is on:
 * Basic placeholder page improvement
 * Renderer-only UI responsibilities
 
-## What Was Already Completed Before This Milestone
+#### What Was Already Completed Before This Milestone
 
-### Milestone 1
+#### Milestone 1
 
 * React frontend was created using Vite.
 * JavaScript was selected instead of TypeScript.
@@ -3721,7 +3863,7 @@ The focus is on:
 * A clean minimal frontend structure was created.
 * No feature logic was added.
 
-### Milestone 2
+#### Milestone 2
 
 * Electron was installed.
 * A basic Electron desktop shell was created.
@@ -3731,7 +3873,7 @@ The focus is on:
 * `contextIsolation` remains enabled.
 * No backend startup, packaging, authentication, routing, or hotel features were added.
 
-### Milestone 3
+#### Milestone 3
 
 * React Router was introduced.
 * A basic routing structure was created.
@@ -3740,7 +3882,7 @@ The focus is on:
 * The app can navigate from the start page to the login page.
 * No real authentication, protected routes, dashboard, backend calls, or hotel features were added.
 
-## Milestone 4 Scope
+#### Milestone 4 Scope
 
 Milestone 4 adds a reusable UI foundation only.
 
@@ -3779,7 +3921,7 @@ Excluded:
 * Icon libraries
 * Animation libraries
 
-## Final Folder Direction
+#### Final Folder Direction
 
 ```txt
 frontend/
@@ -3804,7 +3946,7 @@ frontend/
       global.css
 ```
 
-## Key Concept: Design System
+#### Key Concept: Design System
 
 A design system is a reusable set of visual rules and UI building blocks.
 
@@ -3825,7 +3967,7 @@ It includes:
 
 The goal is not to create a complete enterprise design system yet. The goal is to avoid duplicated visual decisions and create a consistent foundation.
 
-## Key Concept: CSS Variables
+#### Key Concept: CSS Variables
 
 CSS variables are reusable values defined in CSS.
 
@@ -3849,7 +3991,7 @@ This helps avoid repeated hard-coded values.
 
 Instead of writing the same color many times, we define it once and reuse it.
 
-## Key Concept: Reusable UI Components
+#### Key Concept: Reusable UI Components
 
 Reusable UI components are small React components that can be used across many screens.
 
@@ -3871,7 +4013,7 @@ Instead of every page writing its own button style, every page can use:
 
 This improves consistency and makes future changes easier.
 
-## Key Concept: Page Components vs UI Components
+#### Key Concept: Page Components vs UI Components
 
 A page component represents a full screen.
 
@@ -3902,7 +4044,7 @@ Page component = screen
 UI component = reusable building block
 ```
 
-## Key Concept: Props
+#### Key Concept: Props
 
 Props are values passed into a React component.
 
@@ -3922,7 +4064,7 @@ Cancel is passed as children
 
 Props allow one component to behave slightly differently in different places.
 
-## Key Concept: Children Prop
+#### Key Concept: Children Prop
 
 The `children` prop means the content placed between opening and closing component tags.
 
@@ -3939,7 +4081,7 @@ The `Card` component receives everything inside it as `children`.
 
 This makes wrapper components flexible.
 
-## Key Concept: className
+#### Key Concept: className
 
 In normal HTML, we use:
 
@@ -3955,9 +4097,9 @@ In React JSX, we use:
 
 React uses `className` because `class` is a reserved word in JavaScript.
 
-## Files Created
+#### Files Created
 
-### `frontend/src/components/ui/Button.jsx`
+#### `frontend/src/components/ui/Button.jsx`
 
 Purpose:
 
@@ -3980,7 +4122,7 @@ Common usage:
 <Button variant="ghost">Back</Button>
 ```
 
-### `frontend/src/components/ui/Input.jsx`
+#### `frontend/src/components/ui/Input.jsx`
 
 Purpose:
 
@@ -4006,7 +4148,7 @@ Common usage:
 />
 ```
 
-### `frontend/src/components/ui/Card.jsx`
+#### `frontend/src/components/ui/Card.jsx`
 
 Purpose:
 
@@ -4021,7 +4163,7 @@ Common usage:
 </Card>
 ```
 
-### `frontend/src/components/ui/Loading.jsx`
+#### `frontend/src/components/ui/Loading.jsx`
 
 Purpose:
 
@@ -4033,7 +4175,7 @@ Common usage:
 <Loading message="Loading rooms..." />
 ```
 
-### `frontend/src/components/ui/ErrorMessage.jsx`
+#### `frontend/src/components/ui/ErrorMessage.jsx`
 
 Purpose:
 
@@ -4045,9 +4187,9 @@ Common usage:
 <ErrorMessage message="Something went wrong." />
 ```
 
-## Files Modified
+#### Files Modified
 
-### `frontend/src/styles/global.css`
+#### `frontend/src/styles/global.css`
 
 Purpose:
 
@@ -4070,7 +4212,7 @@ page layout helpers
 UI component classes
 ```
 
-### `frontend/src/pages/StartPage.jsx`
+#### `frontend/src/pages/StartPage.jsx`
 
 Purpose:
 
@@ -4080,7 +4222,7 @@ Still only navigates to the login page.
 
 No backend logic added.
 
-### `frontend/src/pages/LoginPage.jsx`
+#### `frontend/src/pages/LoginPage.jsx`
 
 Purpose:
 
@@ -4092,13 +4234,13 @@ The login form is not functional yet.
 
 No authentication is added in Milestone 4.
 
-### `frontend/src/pages/NotFoundPage.jsx`
+#### `frontend/src/pages/NotFoundPage.jsx`
 
 Purpose:
 
 Uses `Card`, `Button`, and `ErrorMessage` to display a consistent 404 page.
 
-## Important Architecture Boundary
+#### Important Architecture Boundary
 
 Milestone 4 belongs only to the React renderer process.
 
@@ -4141,7 +4283,7 @@ No Electron files should be changed in this milestone.
 
 No FastAPI files should be changed in this milestone.
 
-## Why Dashboard Layout Was Not Built
+#### Why Dashboard Layout Was Not Built
 
 Dashboard layout is intentionally delayed.
 
@@ -4159,7 +4301,7 @@ Since real authentication and protected routes are not built yet, building the d
 
 Milestone 4 only builds generic UI pieces that can support the dashboard later.
 
-## Why Tailwind or UI Libraries Were Not Added
+#### Why Tailwind or UI Libraries Were Not Added
 
 Tailwind, Material UI, Chakra UI, Ant Design, and similar tools are not used in this milestone.
 
@@ -4178,7 +4320,7 @@ Plain CSS helps teach:
 
 External libraries can be useful later, but they are unnecessary for this foundation milestone.
 
-## Verification Steps
+#### Verification Steps
 
 After implementing Milestone 4:
 
@@ -4218,9 +4360,9 @@ Expected result:
 * The same styled pages appear inside the desktop window.
 * No Electron main/preload changes are required.
 
-## Common Errors and Fixes
+#### Common Errors and Fixes
 
-### Error: Failed to resolve import
+##### Error: Failed to resolve import
 
 Cause:
 
@@ -4246,7 +4388,7 @@ the correct import path is:
 import Button from "../components/ui/Button.jsx";
 ```
 
-### Error: Styles are not applied
+##### Error: Styles are not applied
 
 Cause:
 
@@ -4264,7 +4406,7 @@ frontend/src/main.jsx
 import "./styles/global.css";
 ```
 
-### Error: Login button does nothing
+##### Error: Login button does nothing
 
 Cause:
 
@@ -4272,7 +4414,7 @@ The login button is intentionally disabled.
 
 Milestone 4 does not implement authentication.
 
-### Error: Page navigation does not work
+##### Error: Page navigation does not work
 
 Cause:
 
@@ -4282,7 +4424,7 @@ Fix:
 
 Check that `/login` exists in `AppRoutes.jsx`.
 
-## Beginner Lessons Learned
+#### Beginner Lessons Learned
 
 Milestone 4 teaches:
 
@@ -4296,7 +4438,7 @@ Milestone 4 teaches:
 * Why building features too early creates confusion.
 * Why production apps grow through small stable foundations.
 
-## Production Lessons Learned
+#### Production Lessons Learned
 
 A production frontend should not grow randomly.
 
@@ -4310,7 +4452,7 @@ Before creating many feature screens, it needs:
 
 Milestone 4 establishes those basics.
 
-## Final Milestone 4 Result
+#### Final Milestone 4 Result
 
 At the end of this milestone, HelloStay has:
 
@@ -4326,7 +4468,7 @@ No backend integration
 No Electron responsibility leakage
 ```
 
-## Suggested Next Milestone
+#### Suggested Next Milestone
 
 The next milestone should likely focus on one of these:
 
@@ -4360,13 +4502,13 @@ That would teach:
 
 ---
 
-# Milestone 5 Notes: API Client and Backend Communication
+### Frontend Milestone 5 Notes: API Client and Backend Communication
 
 **Milestone:** Frontend Milestone 5
 **Status:** Completed
 **Date Completed:** 2026-06-30
 
-## Goal
+#### Goal
 
 The goal of Milestone 5 was to introduce a clean, reusable frontend API communication layer between the React renderer and the FastAPI backend.
 
@@ -4374,7 +4516,7 @@ This milestone focused only on infrastructure.
 
 It did not build hotel features, authentication, protected routes, dashboard layout, or Electron backend startup behavior.
 
-## What Was Completed
+#### What Was Completed
 
 A new services folder was introduced:
 
@@ -4414,9 +4556,9 @@ The backend root health endpoint confirms that the backend server is running, an
 
 The `/system-info` endpoint was also used safely because it only returns basic application information from the `system_info` table.
 
-## Files Added
+#### Files Added
 
-### `frontend/src/services/apiClient.js`
+#### `frontend/src/services/apiClient.js`
 
 Purpose:
 
@@ -4439,7 +4581,7 @@ handle backend error responses
 prepare for future auth token attachment
 ```
 
-### `frontend/src/services/systemService.js`
+#### `frontend/src/services/systemService.js`
 
 Purpose:
 
@@ -4458,9 +4600,9 @@ This service was intentionally limited to system-level endpoints.
 
 No feature services were created yet.
 
-## Temporary File Change
+#### Temporary File Change
 
-### `frontend/src/pages/LoginPage.jsx`
+#### `frontend/src/pages/LoginPage.jsx`
 
 A temporary backend connection test was added to the login page.
 
@@ -4480,9 +4622,9 @@ The temporary UI confirmed the backend connection worked.
 
 After successful verification, the temporary test UI should be removed from the login page because it is not production user-facing UI.
 
-## Important Concepts Learned
+#### Important Concepts Learned
 
-### API Client
+#### API Client
 
 An API client is a reusable frontend utility that manages communication with the backend.
 
@@ -4506,7 +4648,7 @@ Incorrect pattern:
 Component directly calls fetch everywhere
 ```
 
-### Services
+#### Services
 
 Service files describe backend capabilities in frontend-friendly function names.
 
@@ -4524,7 +4666,7 @@ apiClient.get("/")
 
 directly inside many components.
 
-### HTTP Methods
+#### HTTP Methods
 
 The basic HTTP methods were introduced:
 
@@ -4537,7 +4679,7 @@ DELETE  remove data
 
 Milestone 5 only tested safe `GET` requests.
 
-### Request and Response
+#### Request and Response
 
 A request is what the frontend sends to the backend.
 
@@ -4553,7 +4695,7 @@ JSON data
 error messages
 ```
 
-### Status Codes
+#### Status Codes
 
 Important status codes discussed:
 
@@ -4569,25 +4711,25 @@ Important status codes discussed:
 500 backend error
 ```
 
-### JSON
+#### JSON
 
 JSON is the data format used between React and FastAPI.
 
 The API client safely parses JSON instead of assuming every response body is valid JSON.
 
-### Promises
+#### Promises
 
 A Promise represents a value that may be available later.
 
 `fetch()` returns a Promise because network requests are asynchronous.
 
-### async/await
+#### async/await
 
 `async/await` allows asynchronous code to be written in a readable way.
 
 It was used when calling backend service functions.
 
-### try/catch/finally
+#### try/catch/finally
 
 `try/catch/finally` was used to manage:
 
@@ -4597,7 +4739,7 @@ failed API response
 loading state cleanup
 ```
 
-### Network Error vs Backend Error
+#### Network Error vs Backend Error
 
 Network error:
 
@@ -4613,7 +4755,7 @@ React reached FastAPI, but FastAPI returned an error status.
 
 The API client now has a foundation for handling both.
 
-## Electron Boundary
+#### Electron Boundary
 
 No API service logic was placed in Electron.
 
@@ -4632,7 +4774,7 @@ FastAPI:
 
 This keeps Electron from becoming a hidden backend or business-logic layer.
 
-## Backend Boundary
+#### Backend Boundary
 
 FastAPI remains the source of truth.
 
@@ -4653,7 +4795,7 @@ history
 
 The backend already contains routers for rooms, guests, stays, guest-stays, and system info, but Milestone 5 intentionally used only safe system-level communication.
 
-## What Was Intentionally Not Done
+#### What Was Intentionally Not Done
 
 The following were not implemented:
 
@@ -4677,7 +4819,7 @@ packaging
 
 This protected the milestone boundary.
 
-## Verification Steps Completed
+#### Verification Steps Completed
 
 The following checks passed:
 
@@ -4692,7 +4834,7 @@ apiClient.js handles the request
 systemService.js exposes safe test functions
 ```
 
-## Cleanup Step
+#### Cleanup Step
 
 After successful verification, remove the temporary backend test UI from `LoginPage.jsx`.
 
@@ -4706,7 +4848,7 @@ frontend/src/services/systemService.js
 
 Remove only the temporary test UI code from the page.
 
-## Final Milestone Result
+#### Final Milestone Result
 
 Milestone 5 successfully established the frontend API communication foundation.
 
@@ -4714,7 +4856,7 @@ HelloStay now has a clean service layer that future milestones can build on.
 
 Future frontend features should not directly call `fetch()` inside page components. They should use domain service files that depend on `apiClient.js`.
 
-## Suggested Next Milestone
+#### Suggested Next Milestone
 
 The next milestone should be:
 
@@ -4736,19 +4878,19 @@ Authentication should be handled as a separate milestone because it introduces f
 
 ---
 
-# Frontend Milestone 6 Notes: Authentication UI Foundation
+### Frontend Milestone 6 Notes: Authentication UI Foundation
 
 **Status:** Completed
 **Date Completed:** 2026-06-30
 **Milestone:** Frontend Milestone 6 — Authentication UI Foundation
 
-## Goal
+#### Goal
 
 The goal of Milestone 6 was to create the authentication UI foundation for HelloStay without implementing fake authentication or assuming backend endpoint contracts that are not yet confirmed.
 
 This milestone focused on frontend form structure, React state, validation, loading states, error handling, routing, and service-layer preparation.
 
-## Completed Work
+#### Completed Work
 
 Milestone 6 completed the following:
 
@@ -4778,14 +4920,14 @@ Milestone 6 completed the following:
 * Avoided protected routes.
 * Kept Electron separate from authentication form logic.
 
-## Files Added
+#### Files Added
 
 ```text
 frontend/src/services/authService.js
 frontend/src/pages/RegisterPage.jsx
 ```
 
-## Files Updated
+#### Files Updated
 
 ```text
 frontend/src/pages/LoginPage.jsx
@@ -4800,7 +4942,7 @@ frontend/src/components/ui/Input.jsx
 frontend/src/components/ui/Button.jsx
 ```
 
-## Authentication Flow Reviewed
+#### Authentication Flow Reviewed
 
 The expected future authentication flow for HelloStay V1 is:
 
@@ -4834,7 +4976,7 @@ Protected dashboard access
 
 Milestone 6 implemented only the frontend foundation up to the service boundary.
 
-## Important Backend Finding
+#### Important Backend Finding
 
 The backend currently contains JWT/password helper functionality and token schemas, but the available FastAPI app setup does not show a registered authentication router.
 
@@ -4849,9 +4991,9 @@ This means the frontend should not yet assume endpoint paths such as:
 
 These must be confirmed or created in the backend before real frontend authentication is implemented.
 
-## Key Concepts Learned
+#### Key Concepts Learned
 
-### Authentication
+#### Authentication
 
 Authentication answers:
 
@@ -4861,7 +5003,7 @@ Who is this user?
 
 In HelloStay, this means verifying a username and password before allowing access to hotel management features.
 
-### Authorization
+#### Authorization
 
 Authorization answers:
 
@@ -4871,7 +5013,7 @@ What is this authenticated user allowed to do?
 
 Authorization is not part of Milestone 6. It will matter later when roles and permissions are introduced.
 
-### Controlled Components
+#### Controlled Components
 
 The form inputs are controlled by React state.
 
@@ -4895,7 +5037,7 @@ Component re-renders
 Input displays new value
 ```
 
-### useState
+#### useState
 
 `useState` was used to remember:
 
@@ -4904,29 +5046,29 @@ Input displays new value
 * General form error.
 * Loading/submitting state.
 
-### preventDefault
+#### preventDefault
 
 `event.preventDefault()` was used to stop the browser from refreshing the page during form submission.
 
 This is necessary because HelloStay is a React single-page application inside an Electron desktop shell.
 
-### Loading State
+#### Loading State
 
 Loading state was added so the UI can show when the app is attempting an authentication action.
 
 Even though real auth is not connected yet, this prepares the UI for real API calls.
 
-### Error State
+#### Error State
 
 Error state was added so users can see useful feedback when validation fails or when auth endpoints are not confirmed.
 
-### Service Layer
+#### Service Layer
 
 `authService.js` was created so authentication-related API behavior does not live directly inside page components.
 
 This keeps the architecture cleaner and prepares the project for future backend integration.
 
-## What Was Intentionally Not Added
+#### What Was Intentionally Not Added
 
 The following were intentionally not added in Milestone 6:
 
@@ -4946,7 +5088,7 @@ The following were intentionally not added in Milestone 6:
 * Electron backend startup.
 * Electron packaging.
 
-## Why These Were Not Added
+#### Why These Were Not Added
 
 These features depend on a confirmed authentication contract from the backend.
 
@@ -4963,7 +5105,7 @@ Before adding them, the project needs to know:
 
 Adding protected routes or token persistence before answering these questions would create unstable architecture.
 
-## Verification Checklist
+#### Verification Checklist
 
 Milestone 6 is considered complete if the following are true:
 
@@ -4986,7 +5128,7 @@ No AuthContext exists yet.
 No auth endpoint path is invented.
 ```
 
-## Current Application State After Milestone 6
+#### Current Application State After Milestone 6
 
 The frontend now has:
 
@@ -5014,7 +5156,7 @@ Electron backend startup
 Packaging
 ```
 
-## Architecture Boundary Preserved
+#### Architecture Boundary Preserved
 
 Milestone 6 preserved the correct responsibility split:
 
@@ -5035,13 +5177,13 @@ Electron:
 Desktop shell only, not authentication logic.
 ```
 
-## Milestone 6 Result
+#### Milestone 6 Result
 
 Milestone 6 successfully prepared HelloStay for real authentication without violating the source-of-truth rule.
 
 The frontend now looks and behaves like it is ready for authentication, but it correctly waits for backend contract confirmation before real login/register behavior is added.
 
-## Recommended Next Milestone
+#### Recommended Next Milestone
 
 The next milestone should be:
 
@@ -5060,3 +5202,287 @@ Milestone 7 should focus on:
 * Planning ProtectedRoute.
 * Preparing redirect-after-login behavior.
 * Still avoiding dashboard feature development until the auth foundation is stable.
+
+---
+
+### Frontend Milestone 7 Notes: Auth State and Protected Routes
+
+**Status:** Completed with backend-auth limitation documented
+**Date Completed:** 2026-07-01
+**Milestone:** Frontend Milestone 7 — Auth State and Protected Routes
+
+#### Objective
+
+The objective of this milestone was to introduce global authentication state and protected frontend routing in HelloStay without building the real dashboard or hotel modules.
+
+The milestone focused on preparing the frontend authentication foundation while respecting the rule that FastAPI remains the source of truth for real authentication, validation, token creation, and API security.
+
+#### What Was Built
+
+The following authentication foundation was added or prepared:
+
+```txt
+AuthContext.jsx
+ProtectedRoute.jsx
+DashboardPlaceholderPage.jsx
+AuthProvider wrapping
+LoginPage connection to AuthContext
+Temporary protected /dashboard route
+Logout behavior structure
+Safe authService.js placeholder
+```
+
+#### Files Added or Updated
+
+```txt
+frontend/src/context/AuthContext.jsx
+frontend/src/routes/ProtectedRoute.jsx
+frontend/src/routes/AppRoutes.jsx
+frontend/src/pages/LoginPage.jsx
+frontend/src/pages/DashboardPlaceholderPage.jsx
+frontend/src/services/authService.js
+frontend/src/main.jsx
+```
+
+#### Main Concepts Learned
+
+This milestone introduced the following React and frontend architecture concepts:
+
+```txt
+Global state
+React Context
+Context Provider
+useContext
+Custom hooks
+AuthProvider
+Protected routes
+Navigate from React Router
+Redirect behavior
+Session/token storage strategy
+Authentication vs authorization
+Frontend guards vs backend security
+```
+
+#### AuthContext Responsibility
+
+`AuthContext.jsx` became the central place for frontend authentication state.
+
+It is responsible for:
+
+```txt
+tracking the current token
+checking whether the user is authenticated
+exposing login()
+exposing logout()
+storing temporary frontend session/token data
+clearing token data on logout
+providing auth state to the rest of the app
+```
+
+This keeps authentication state out of individual page components.
+
+#### ProtectedRoute Responsibility
+
+`ProtectedRoute.jsx` protects private frontend routes.
+
+Its responsibility is simple:
+
+```txt
+If user is authenticated:
+  render the protected page
+
+If user is not authenticated:
+  redirect to /login
+```
+
+This milestone verified that unauthenticated access to `/dashboard` correctly redirects to `/login`.
+
+#### Temporary Dashboard Placeholder
+
+A temporary `DashboardPlaceholderPage.jsx` was created only for route protection testing.
+
+This page is not the real dashboard.
+
+It exists only to verify:
+
+```txt
+private route access
+auth context availability
+logout behavior structure
+redirect behavior
+```
+
+The real dashboard shell, sidebar, navigation, and hotel modules will be built in later milestones.
+
+#### LoginPage Behavior
+
+`LoginPage.jsx` was connected to the auth context structure.
+
+The page now has responsibility for:
+
+```txt
+controlled username/password form state
+basic frontend validation
+calling login() from AuthContext
+showing loading state
+showing error state
+redirecting authenticated users away from login
+```
+
+However, real login success is not yet fully testable because the confirmed backend authentication endpoint is not currently available.
+
+#### Backend Auth Limitation
+
+The current backend has authentication foundations such as password hashing, password verification, JWT creation, and token schemas.
+
+However, based on the currently available backend files, `main.py` does not register an authentication router or expose a confirmed login endpoint.
+
+Because of this, the frontend does not fake login success and does not invent endpoint contracts.
+
+#### Verified Output
+
+The following behavior was verified successfully:
+
+```txt
+Visiting /dashboard while unauthenticated redirects to /login.
+The protected route guard works.
+AuthProvider is correctly wrapping the app.
+useAuth is available inside protected routing flow.
+No fake token is created.
+No fake production login is implemented.
+```
+
+#### Not Yet Verified
+
+The following behavior is intentionally not marked complete yet:
+
+```txt
+successful backend login
+real token returned from FastAPI
+authenticated access to /dashboard after login
+logout after real authenticated login
+token validation on app startup
+role-based permission handling
+```
+
+These require a confirmed backend authentication endpoint.
+
+#### Important Rules Followed
+
+This milestone followed these project rules:
+
+```txt
+No full dashboard layout was built.
+No sidebar navigation was built.
+No rooms module was built.
+No guests module was built.
+No stays/bookings module was built.
+No finance/history module was built.
+No settings module was built.
+No Electron backend startup was added.
+No packaging was added.
+No auth logic was placed randomly inside page components.
+No backend business logic was moved into React or Electron.
+No hotel business data was stored in localStorage/sessionStorage.
+No fake production authentication was created.
+```
+
+#### Token Storage Decision
+
+For V1 frontend session state, temporary token storage may use `sessionStorage`.
+
+Reason:
+
+```txt
+It is simple.
+It survives page refresh during the current session.
+It clears when the session/window closes.
+It avoids longer-term persistence compared to localStorage.
+```
+
+This is a simple V1 decision and can be revisited later when Electron packaging and more secure desktop storage are introduced.
+
+#### Authentication vs Authorization
+
+This milestone handled authentication foundation only.
+
+Authentication answers:
+
+```txt
+Who is the user?
+```
+
+Authorization answers:
+
+```txt
+What is the user allowed to do?
+```
+
+Role-based permissions are intentionally postponed to a future milestone.
+
+#### Frontend Guard vs Backend Security
+
+A protected frontend route is useful, but it is not real backend security.
+
+Frontend protected routes:
+
+```txt
+control UI navigation
+improve user experience
+prevent normal unauthenticated access through the interface
+```
+
+Backend security:
+
+```txt
+protects actual hotel data
+validates tokens
+rejects unauthorized API requests
+prevents direct API misuse
+```
+
+FastAPI must still protect private APIs when authentication endpoints are completed.
+
+#### Electron Responsibility Reminder
+
+Electron main process does not manage login form state, token state, route access, or hotel business logic.
+
+Correct responsibility split:
+
+```txt
+React renderer:
+- auth UI
+- auth state
+- protected routes
+- redirects
+
+FastAPI:
+- credential validation
+- JWT creation
+- database access
+- API protection
+
+Electron main:
+- desktop shell
+- app lifecycle
+- native window
+- startup flow
+```
+
+#### Milestone Result
+
+Milestone 7 successfully created the frontend authentication-state foundation and verified unauthenticated protected route behavior.
+
+The milestone is complete from the frontend-structure perspective, with real login integration blocked until the backend exposes and registers a confirmed authentication endpoint.
+
+#### Suggested Next Step
+
+The next milestone should not build rooms, guests, bookings, or finance yet if backend authentication is still incomplete.
+
+Recommended next step:
+
+```txt
+Milestone 8 — Backend Auth Contract Review / Frontend Auth Integration Preparation
+```
+
+This milestone should confirm or create the real backend authentication API contract before the frontend attempts real login integration.
