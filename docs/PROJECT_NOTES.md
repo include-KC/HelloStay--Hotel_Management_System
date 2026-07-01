@@ -2271,6 +2271,226 @@ HelloStay will use React Context for global frontend authentication state and a 
 
 ---
 
+### Frontend AD 8: Protected Dashboard Shell with Nested Module Navigation
+
+**Status:** Accepted
+**Date Recorded:** 2026-07-01
+**Milestone:** Frontend Milestone 8 — Dashboard Layout and Navigation
+
+**Decision:**
+HelloStay will use a protected dashboard application shell built in React using React Router nested routes.
+
+The dashboard shell will be implemented as a layout component:
+
+```txt
+src/layouts/DashboardLayout.jsx
+```
+
+This layout is responsible for the common dashboard structure:
+
+```txt
+Sidebar navigation
+Top header
+Main content area
+Logout button
+React Router Outlet
+```
+
+The dashboard pages will be rendered inside the layout using React Router’s `Outlet`.
+
+**Route Structure Decision:**
+Dashboard routes will be grouped under a common parent route:
+
+```txt
+/dashboard
+/dashboard/rooms
+/dashboard/guests
+/dashboard/stays
+/dashboard/finance
+/dashboard/history
+```
+
+The `/dashboard` route renders the dashboard layout. The child routes render placeholder pages inside the layout.
+
+```txt
+/dashboard          → DashboardHome
+/dashboard/rooms    → RoomsPage
+/dashboard/guests   → GuestsPage
+/dashboard/stays    → StaysPage
+/dashboard/finance  → FinancePage
+/dashboard/history  → HistoryPage
+```
+
+**Protected Route Decision:**
+The existing `ProtectedRoute` will protect the dashboard parent route.
+
+This means all dashboard child routes are protected automatically.
+
+Accepted route structure:
+
+```jsx
+<Route
+  path="/dashboard"
+  element={
+    <ProtectedRoute>
+      <DashboardLayout />
+    </ProtectedRoute>
+  }
+>
+  <Route index element={<DashboardHome />} />
+  <Route path="rooms" element={<RoomsPage />} />
+  <Route path="guests" element={<GuestsPage />} />
+  <Route path="stays" element={<StaysPage />} />
+  <Route path="finance" element={<FinancePage />} />
+  <Route path="history" element={<HistoryPage />} />
+</Route>
+```
+
+This avoids repeating `ProtectedRoute` around every dashboard page.
+
+**Layout Responsibility Decision:**
+The sidebar, header, and main dashboard frame belong in `DashboardLayout.jsx`.
+
+They should not be duplicated inside every dashboard page.
+
+Accepted structure:
+
+```txt
+DashboardLayout
+├── Sidebar
+├── Top Header
+└── Outlet
+    ├── DashboardHome
+    ├── RoomsPage
+    ├── GuestsPage
+    ├── StaysPage
+    ├── FinancePage
+    └── HistoryPage
+```
+
+This keeps the application shell stable while only the inner page content changes.
+
+**Navigation Decision:**
+Sidebar navigation will use `NavLink` from React Router.
+
+`NavLink` was chosen instead of `Link` because it supports active route styling.
+
+```txt
+Link     → navigation only
+NavLink  → navigation + active route awareness
+```
+
+The dashboard home link uses `end: true` so it is active only on `/dashboard`, not on child routes like `/dashboard/rooms`.
+
+**Placeholder Page Decision:**
+Milestone 8 creates placeholder pages only.
+
+Created placeholder pages:
+
+```txt
+DashboardHome.jsx
+RoomsPage.jsx
+GuestsPage.jsx
+StaysPage.jsx
+FinancePage.jsx
+HistoryPage.jsx
+```
+
+These pages do not contain real feature logic yet.
+
+No API calls, tables, forms, modals, charts, search, filters, CRUD logic, finance calculations, or history workflows were added.
+
+This keeps Milestone 8 focused only on layout and navigation.
+
+**Electron Boundary Decision:**
+Dashboard routing and dashboard UI belong in the React renderer process.
+
+Electron should not control dashboard pages, sidebar links, React routes, or hotel module navigation.
+
+Electron remains responsible for:
+
+```txt
+Desktop shell
+BrowserWindow
+App lifecycle
+Preload security
+Native desktop integration
+Future packaging
+```
+
+React remains responsible for:
+
+```txt
+Routes
+Pages
+Layouts
+Sidebar navigation
+Header UI
+Protected dashboard rendering
+Logout interaction
+```
+
+**Backend Boundary Decision:**
+FastAPI remains the source of truth for hotel business logic, validation, database operations, and API contracts.
+
+Milestone 8 does not call backend endpoints for rooms, guests, stays, finance, or history.
+
+The dashboard pages are placeholders only. Real backend integration will happen in future milestones.
+
+**Authentication Development Decision:**
+Real backend authentication is not implemented yet.
+
+Because the backend login/register endpoints are not currently available, temporary frontend-only authentication mocks were accepted in `authService.js`.
+
+These mocks exist only to test:
+
+```txt
+Login UI flow
+Register UI flow
+Auth state
+ProtectedRoute behavior
+Dashboard access
+Logout behavior
+```
+
+These mocks are not production authentication and must be removed when real FastAPI authentication endpoints are implemented.
+
+**Auth File Organization Decision:**
+Authentication context code was split into separate files to avoid React Fast Refresh errors and improve separation of responsibilities.
+
+Accepted structure:
+
+```txt
+src/context/AuthContext.js
+src/context/AuthProvider.jsx
+src/hooks/useAuth.js
+```
+
+Responsibilities:
+
+```txt
+AuthContext.js       → creates and exports AuthContext only
+AuthProvider.jsx     → stores token, login, logout, and auth state
+useAuth.js           → exposes reusable useAuth hook
+```
+
+The old combined file was removed from active use:
+
+```txt
+src/context/AuthContext.jsx
+```
+
+This avoids the `react-refresh/only-export-components` ESLint warning.
+
+**Final Decision Summary:**
+Milestone 8 establishes the protected dashboard shell for HelloStay.
+
+The application now has a scalable dashboard layout that can host future modules such as rooms, guests, stays, finance, and history.
+
+No real hotel feature logic was added in this milestone.
+
+---
+
 ## Backend Milestone History
 
 ### Frontend Rebuild Note
@@ -5486,3 +5706,435 @@ Milestone 8 — Backend Auth Contract Review / Frontend Auth Integration Prepara
 ```
 
 This milestone should confirm or create the real backend authentication API contract before the frontend attempts real login integration.
+
+---
+
+### Milestone 8 Notes: Dashboard Layout and Navigation
+
+**Goal:**
+Milestone 8 introduced the main protected dashboard structure for HelloStay.
+
+The purpose was to replace the temporary protected placeholder page with a real dashboard shell.
+
+The milestone focused on:
+
+```txt
+Dashboard layout
+Sidebar navigation
+Top header
+Nested dashboard routes
+Protected dashboard access
+Placeholder pages for future modules
+Logout behavior
+```
+
+**Completed Work:**
+A new dashboard layout was created:
+
+```txt
+src/layouts/DashboardLayout.jsx
+```
+
+This layout contains:
+
+```txt
+Sidebar navigation
+Top header
+Main content area
+Logout button
+Outlet for nested route rendering
+```
+
+The layout is desktop-first because HelloStay is an Electron desktop application.
+
+**Dashboard Pages Created:**
+The following placeholder pages were created:
+
+```txt
+src/pages/DashboardHome.jsx
+src/pages/RoomsPage.jsx
+src/pages/GuestsPage.jsx
+src/pages/StaysPage.jsx
+src/pages/FinancePage.jsx
+src/pages/HistoryPage.jsx
+```
+
+These pages are placeholders only.
+
+They do not contain:
+
+```txt
+API calls
+Tables
+Forms
+Modals
+Charts
+CRUD logic
+Search
+Filters
+Business workflows
+```
+
+**Route Updates:**
+`AppRoutes.jsx` was updated to support protected nested dashboard routes.
+
+Final route direction:
+
+```txt
+/                   → StartPage
+/login              → LoginPage
+/register           → RegisterPage
+/dashboard          → DashboardLayout + DashboardHome
+/dashboard/rooms    → DashboardLayout + RoomsPage
+/dashboard/guests   → DashboardLayout + GuestsPage
+/dashboard/stays    → DashboardLayout + StaysPage
+/dashboard/finance  → DashboardLayout + FinancePage
+/dashboard/history  → DashboardLayout + HistoryPage
+*                   → NotFoundPage
+```
+
+The dashboard parent route is protected by `ProtectedRoute`.
+
+This means all child routes under `/dashboard` are protected automatically.
+
+**React Router Concepts Learned:**
+Nested routes were introduced.
+
+A parent route can render a layout, and child routes can render inside that layout.
+
+The `Outlet` component marks where child route content appears.
+
+Example:
+
+```txt
+DashboardLayout
+└── Outlet
+    └── Current child page
+```
+
+When the URL is `/dashboard/rooms`, the layout remains visible and only the main content changes to `RoomsPage`.
+
+**NavLink Concept Learned:**
+The sidebar uses `NavLink`.
+
+`NavLink` was used because it can detect the active route.
+
+Difference:
+
+```txt
+Link     → navigates only
+NavLink  → navigates and supports active styling
+```
+
+The dashboard home link uses `end: true` so it is active only on `/dashboard`.
+
+Without `end: true`, the dashboard link could remain active on child routes like `/dashboard/rooms`.
+
+**Layout Concept Learned:**
+A dashboard layout is an application shell.
+
+An application shell is the stable outer frame of the app.
+
+For HelloStay, the shell contains:
+
+```txt
+Sidebar
+Header
+Main content area
+```
+
+The benefit is that the sidebar and header are written once and reused across all dashboard pages.
+
+Without a layout, each page would need to duplicate sidebar and header code.
+
+**Files Added:**
+
+```txt
+src/layouts/DashboardLayout.jsx
+
+src/pages/DashboardHome.jsx
+src/pages/RoomsPage.jsx
+src/pages/GuestsPage.jsx
+src/pages/StaysPage.jsx
+src/pages/FinancePage.jsx
+src/pages/HistoryPage.jsx
+
+src/context/AuthContext.js
+src/context/AuthProvider.jsx
+src/hooks/useAuth.js
+```
+
+**Files Updated:**
+
+```txt
+src/routes/AppRoutes.jsx
+src/pages/LoginPage.jsx
+src/pages/RegisterPage.jsx
+src/services/authService.js
+src/styles/global.css
+src/App.jsx
+src/main.jsx
+src/routes/ProtectedRoute.jsx
+```
+
+**Files Removed from Active Use:**
+
+```txt
+src/pages/DashboardPlaceholderPage.jsx
+src/context/AuthContext.jsx
+```
+
+**Auth Refactor Notes:**
+The old auth file caused a React Fast Refresh warning because it exported a context object, a provider component, and a custom hook from the same file.
+
+Old structure:
+
+```txt
+AuthContext.jsx
+├── AuthContext
+├── AuthProvider
+└── useAuth
+```
+
+New structure:
+
+```txt
+AuthContext.js
+└── AuthContext only
+
+AuthProvider.jsx
+└── AuthProvider only
+
+useAuth.js
+└── useAuth only
+```
+
+This fixed the Fast Refresh warning and made the auth code easier to maintain.
+
+**Temporary Auth Mock Notes:**
+Backend authentication is not implemented yet.
+
+Because of that, real login and registration cannot be tested against FastAPI yet.
+
+Temporary frontend-only mocks were added in:
+
+```txt
+src/services/authService.js
+```
+
+Temporary login returns a fake token:
+
+```txt
+dev-token-...
+```
+
+Temporary registration allows the register page UI to load and submit without crashing.
+
+These mocks are only for frontend development.
+
+They must be removed when backend login/register endpoints are implemented.
+
+**Bug Fixed: Dashboard Redirected to Login:**
+Problem:
+
+```txt
+/dashboard always redirected to /login
+```
+
+Cause:
+
+```txt
+ProtectedRoute saw isAuthenticated as false because no backend login token was available.
+```
+
+Fix:
+
+```txt
+Temporary frontend login mock was added so AuthProvider could receive an access_token and set isAuthenticated to true.
+```
+
+**Bug Fixed: Fast Refresh AuthContext Error:**
+Problem:
+
+```txt
+Fast refresh only works when a file only exports components.
+```
+
+Cause:
+
+```txt
+AuthContext.jsx exported AuthContext, AuthProvider, and useAuth together.
+```
+
+Fix:
+
+```txt
+AuthContext.js
+AuthProvider.jsx
+useAuth.js
+```
+
+were created and imports were updated.
+
+**Bug Fixed: Missing AuthContext Import:**
+Problem:
+
+```txt
+Vite could not resolve ./AuthContext.js from AuthProvider.jsx.
+```
+
+Cause:
+
+```txt
+AuthContext.js was expected by imports but was missing or not correctly created.
+```
+
+Fix:
+
+```txt
+src/context/AuthContext.js
+```
+
+was created with only the React context export.
+
+**Bug Fixed: Old AuthContext Import:**
+Problem:
+
+```txt
+The old AuthContext.jsx error still appeared.
+```
+
+Cause:
+
+```txt
+main.jsx still imported the old AuthContext.jsx file.
+```
+
+Fix:
+
+```txt
+main.jsx was cleaned so it only renders App.
+App.jsx became responsible for wrapping AppRoutes with AuthProvider.
+```
+
+**Bug Fixed: Register Page Not Found:**
+Problem:
+
+```txt
+Clicking Create new account showed NotFoundPage.
+```
+
+Cause:
+
+```txt
+The RegisterPage existed but /register was not correctly registered in AppRoutes.jsx.
+```
+
+Fix:
+
+```txt
+RegisterPage was imported into AppRoutes.jsx.
+The /register route was added.
+The login page link was matched to /register.
+```
+
+**Bug Fixed: White Screen:**
+Problem:
+
+```txt
+Opening the frontend showed a white screen.
+```
+
+Cause:
+
+```txt
+RegisterPage.jsx imported registerAccount, but authService.js did not export registerAccount.
+```
+
+Fix:
+
+```txt
+registerAccount was added to authService.js as a temporary development mock.
+```
+
+Lesson learned:
+
+```txt
+A white screen usually means React crashed.
+The browser console usually shows the real reason.
+```
+
+**Verification Completed:**
+The following behaviors were verified:
+
+```txt
+Frontend opens at http://localhost:5173
+StartPage loads
+LoginPage loads
+RegisterPage loads
+Temporary login works
+sessionStorage stores hellostay_access_token
+ProtectedRoute allows dashboard after login
+/dashboard opens DashboardLayout
+Sidebar appears
+Top header appears
+DashboardHome placeholder appears
+Rooms placeholder opens
+Guests placeholder opens
+Stays placeholder opens
+Finance placeholder opens
+History placeholder opens
+Active sidebar link styling works
+Logout clears token
+/dashboard redirects to /login after logout
+```
+
+**What Was Not Added:**
+Milestone 8 intentionally did not add:
+
+```txt
+Real backend authentication
+Backend startup from Electron
+Dashboard metrics
+Charts
+Rooms CRUD
+Guests CRUD
+Stays or bookings workflow
+Finance logic
+History logic
+Role-based permissions
+Settings
+Packaging
+Production auth persistence
+```
+
+**Current Final Frontend Direction:**
+The frontend now has a protected dashboard foundation.
+
+Future module pages can be added inside the dashboard layout without changing the core shell.
+
+Current structure:
+
+```txt
+DashboardLayout
+└── Outlet
+    └── Feature module page
+```
+
+**Suggested Next Step:**
+The next milestone should be:
+
+```txt
+Milestone 9 — Rooms Module Read-Only Foundation
+```
+
+Recommended focus:
+
+```txt
+Create room service functions
+Connect to the existing backend /rooms endpoint
+Display a simple read-only rooms list
+Add loading state
+Add error state
+Do not add create/edit/delete yet
+```

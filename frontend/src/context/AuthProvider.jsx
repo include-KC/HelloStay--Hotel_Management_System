@@ -1,8 +1,7 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { loginRequest } from "../services/authService.js";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./AuthContext.js";
 
 const TOKEN_STORAGE_KEY = "hellostay_access_token";
 
@@ -30,13 +29,13 @@ function removeToken() {
   }
 }
 
-export function AuthProvider({ children }) {
+function AuthProvider({ children }) {
   const [token, setToken] = useState(() => readStoredToken());
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const isAuthenticated = Boolean(token);
 
-  async function login(credentials) {
+  const login = useCallback(async (credentials) => {
     setIsAuthenticating(true);
 
     try {
@@ -53,12 +52,12 @@ export function AuthProvider({ children }) {
     } finally {
       setIsAuthenticating(false);
     }
-  }
+  }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     removeToken();
     setToken(null);
-  }
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -68,18 +67,10 @@ export function AuthProvider({ children }) {
       login,
       logout,
     }),
-    [token, isAuthenticated, isAuthenticating]
+    [token, isAuthenticated, isAuthenticating, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-
-  if (context === null) {
-    throw new Error("useAuth must be used inside AuthProvider.");
-  }
-
-  return context;
-}
+export default AuthProvider;

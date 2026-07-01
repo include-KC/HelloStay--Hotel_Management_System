@@ -5,7 +5,7 @@ import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import ErrorMessage from "../components/ui/ErrorMessage.jsx";
 import Input from "../components/ui/Input.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../hooks/useAuth.js";
 
 function LoginPage() {
   const navigate = useNavigate();
