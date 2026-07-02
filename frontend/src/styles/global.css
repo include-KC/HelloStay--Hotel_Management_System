@@ -597,3 +597,72 @@ a {
   color: #6b7280;
   line-height: 1.6;
 }
+
+.rooms-page {
+  display: grid;
+  gap: 24px;
+}
+
+.rooms-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 16px;
+}
+
+.room-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.room-title {
+  margin: 0;
+  font-size: 20px;
+  color: #172033;
+}
+
+.room-subtitle {
+  margin: 6px 0 0;
+  color: #667085;
+}
+
+.room-status {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eef2ff;
+  color: #3538cd;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.room-details {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.room-details div {
+  display: grid;
+  gap: 4px;
+}
+
+.room-details dt {
+  color: #667085;
+  font-size: 13px;
+}
+
+.room-details dd {
+  margin: 0;
+  color: #172033;
+  font-weight: 600;
+}

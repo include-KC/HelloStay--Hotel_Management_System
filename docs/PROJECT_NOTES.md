@@ -2491,6 +2491,274 @@ No real hotel feature logic was added in this milestone.
 
 ---
 
+### Frontend AD 9 — Rooms Read-Only Data Fetching Through Service Layer
+
+**Status:** Accepted
+**Date Recorded:** 2026-07-02
+**Milestone:** Frontend Milestone 9 — Rooms Module Read-Only Foundation
+**Project:** HelloStay — Offline Hotel Management System
+
+#### Decision
+
+The HelloStay frontend will fetch room data through a dedicated room service file instead of calling the backend directly from `RoomsPage.jsx`.
+
+A new service file was introduced:
+
+```txt
+frontend/src/services/roomService.js
+```
+
+This service contains a `getRooms` function that calls the backend `GET /rooms` endpoint through the existing shared `apiClient.js`.
+
+The Rooms page uses this service function to load and display room data in a read-only format.
+
+#### Reason for the Decision
+
+Rooms is the first real hotel module connected to backend data.
+
+Because of that, it is important to establish a clean frontend pattern before adding more complex workflows.
+
+Calling the backend directly inside `RoomsPage.jsx` would mix UI logic and API communication logic in the same file. That may look simple at first, but it becomes harder to maintain as the application grows.
+
+Using a service layer keeps responsibilities clear:
+
+```txt
+RoomsPage.jsx
+- displays UI
+- manages loading, error, empty, and success states
+- calls getRooms()
+
+roomService.js
+- owns room-related API functions
+- knows that rooms are fetched from /rooms
+
+apiClient.js
+- owns common request logic
+- owns base URL handling
+- owns shared error and response handling
+
+FastAPI backend
+- owns validation
+- owns business rules
+- owns database operations
+- owns the room API contract
+```
+
+This pattern supports future growth when more room functions are added, such as create, edit, delete, and status update.
+
+#### Architecture Rule Established
+
+Frontend feature modules should not call raw backend endpoints directly from page components.
+
+Instead, API calls should flow through feature-specific service files.
+
+For the Rooms module, the rule is:
+
+```txt
+RoomsPage.jsx must call roomService.js.
+roomService.js must call apiClient.js.
+apiClient.js must communicate with FastAPI.
+```
+
+#### Data Flow
+
+```txt
+RoomsPage.jsx
+  ↓
+getRooms()
+  ↓
+roomService.js
+  ↓
+apiRequest("/rooms")
+  ↓
+apiClient.js
+  ↓
+FastAPI GET /rooms
+  ↓
+SQLite database
+```
+
+#### Why Read-Only First
+
+The Rooms module starts with read-only functionality because reading data is safer and simpler than modifying data.
+
+The frontend must first prove that it can:
+
+```txt
+Connect to the backend
+Handle API responses
+Render backend data
+Handle loading states
+Handle errors
+Handle empty results
+Keep UI readable
+```
+
+Only after this foundation is stable should the module add write operations such as create, edit, and delete.
+
+This reduces complexity and avoids mixing too many concepts in one milestone.
+
+#### React State Decision
+
+`RoomsPage.jsx` manages three local states:
+
+```js
+rooms
+isLoading
+error
+```
+
+This decision keeps the module simple.
+
+Global state is not needed yet because room data is only used inside the Rooms page in this milestone.
+
+A custom hook such as `useRooms()` was intentionally not introduced yet because the logic is still small and beginner-friendly.
+
+#### useEffect Decision
+
+`useEffect` is used to fetch rooms when the `RoomsPage` component loads.
+
+This is appropriate because fetching room data is a side effect.
+
+The effect uses an inner async function instead of making the `useEffect` callback directly async.
+
+Accepted pattern:
+
+```js
+useEffect(() => {
+  async function loadRooms() {
+    // fetch rooms here
+  }
+
+  loadRooms();
+}, []);
+```
+
+Rejected pattern:
+
+```js
+useEffect(async () => {
+  // do not do this
+}, []);
+```
+
+The rejected pattern is avoided because React expects the effect callback to return either nothing or a cleanup function, not a Promise.
+
+#### UI State Decision
+
+The Rooms page must handle four UI states:
+
+```txt
+Loading
+Error
+Empty
+Success
+```
+
+This is accepted as the standard pattern for future backend-connected pages in HelloStay.
+
+A production-quality page should not assume that data will always load successfully.
+
+#### Electron Responsibility Decision
+
+No room data fetching logic should be added to the Electron main process or preload layer.
+
+Electron is responsible for:
+
+```txt
+Desktop shell
+Application lifecycle
+Native window
+Safe desktop integration
+Future packaging
+```
+
+React is responsible for:
+
+```txt
+Screens
+Components
+User interaction
+Calling frontend services
+Displaying API data
+```
+
+FastAPI is responsible for:
+
+```txt
+Room business logic
+Validation
+Database queries
+API contracts
+```
+
+Therefore, room API calls belong in the React renderer process service layer, not in Electron.
+
+#### Backend Source of Truth Decision
+
+FastAPI remains the source of truth for room data.
+
+The frontend must not use `localStorage` or `sessionStorage` as the source of truth for rooms.
+
+The frontend may temporarily store fetched room data in React state for rendering, but the actual room records come from the backend database through `GET /rooms`.
+
+#### Affected Files
+
+```txt
+frontend/src/services/roomService.js
+frontend/src/pages/RoomsPage.jsx
+frontend/src/styles/global.css
+```
+
+#### Not Included in This Decision
+
+This architecture decision does not cover:
+
+```txt
+Creating rooms
+Editing rooms
+Deleting rooms
+Room forms
+Room modals
+Room status update
+Room availability calculation
+Room filtering
+Room sorting
+Room pagination
+Booking integration
+Stay integration
+Finance integration
+History integration
+```
+
+These will be handled in later milestones.
+
+#### Consequences
+
+This decision creates a clean and repeatable pattern for future modules.
+
+The same structure can later be used for:
+
+```txt
+guestService.js
+stayService.js
+financeService.js
+historyService.js
+```
+
+It also makes the Rooms module easier to expand because new room API functions can be added to `roomService.js` without making `RoomsPage.jsx` messy.
+
+#### Final Decision Summary
+
+HelloStay accepts a service-layer-based approach for room data fetching.
+
+For Milestone 9, the Rooms page reads room records from FastAPI through `roomService.js` and `apiClient.js`, displays them in a read-only UI, and handles loading, error, empty, and success states.
+
+This decision keeps the frontend modular, beginner-friendly, production-oriented, and aligned with the project rule that FastAPI remains the source of truth.
+
+
+---
+
 ## Backend Milestone History
 
 ### Frontend Rebuild Note
@@ -6138,3 +6406,217 @@ Add loading state
 Add error state
 Do not add create/edit/delete yet
 ```
+
+---
+
+### Milestone 9 Notes — Rooms Module Read-Only Foundation
+
+**Status:** Completed
+**Milestone:** Frontend Milestone 9
+**Project:** HelloStay — Offline Hotel Management System
+**Date Recorded:** 2026-07-02
+
+#### Purpose
+
+Milestone 9 introduced the first real backend-connected hotel module in the HelloStay frontend: the Rooms module read-only foundation.
+
+The goal of this milestone was to connect the existing React frontend to the FastAPI backend `GET /rooms` endpoint and display room records in the dashboard without adding create, edit, delete, forms, modals, filters, pagination, or booking-related availability logic.
+
+This milestone marks the transition from placeholder dashboard pages to real API-driven frontend behavior.
+
+#### What Was Built
+
+The Rooms page was updated from a placeholder page into a real read-only data page.
+
+The frontend now:
+
+* Uses the existing shared API client.
+* Adds a room-specific service file.
+* Calls the backend `GET /rooms` endpoint.
+* Fetches rooms when the Rooms page loads.
+* Stores room data in React state.
+* Shows a loading state while the request is running.
+* Shows an error state if the backend request fails.
+* Shows an empty state if no rooms exist.
+* Shows a read-only room list/card layout when rooms are available.
+
+#### Files Added
+
+```txt
+frontend/src/services/roomService.js
+```
+
+#### Files Updated
+
+```txt
+frontend/src/pages/RoomsPage.jsx
+frontend/src/styles/global.css
+```
+
+#### Main Implementation Details
+
+A new `roomService.js` file was created inside the `services` folder.
+
+The service exposes a `getRooms` function that calls:
+
+```txt
+GET /rooms
+```
+
+through the existing `apiRequest` helper from `apiClient.js`.
+
+The `RoomsPage.jsx` file was updated to use:
+
+```js
+useState
+useEffect
+getRooms
+```
+
+The page manages three main pieces of state:
+
+```js
+rooms
+isLoading
+error
+```
+
+The page now handles four important UI states:
+
+```txt
+Loading state
+Error state
+Empty state
+Success state
+```
+
+#### Data Flow
+
+```txt
+RoomsPage.jsx
+  ↓ calls
+getRooms()
+  ↓ calls
+apiRequest("/rooms")
+  ↓ sends request to
+FastAPI GET /rooms
+  ↓ returns
+Room records from SQLite database
+  ↓ displayed in
+RoomsPage.jsx
+```
+
+#### Backend Endpoint Used
+
+```txt
+GET /rooms
+```
+
+Expected room fields:
+
+```txt
+id
+room_number
+price_per_night
+room_status
+room_type
+max_occupancy
+facilities
+```
+
+#### What Was Intentionally Not Added
+
+The following were intentionally not added in this milestone:
+
+```txt
+Create room
+Edit room
+Delete room
+Room forms
+Room modals
+Inline room status update
+Room image support
+Pagination
+Sorting
+Advanced filters
+Booking-based availability
+Guest logic
+Stay logic
+Finance logic
+History logic
+Electron backend startup
+Packaging
+```
+
+#### React Concepts Practiced
+
+This milestone introduced and practiced important React concepts:
+
+```txt
+Component state with useState
+Side effects with useEffect
+Async data fetching
+Conditional rendering
+Loading UI
+Error UI
+Empty UI
+Success UI
+Rendering lists with map()
+Using keys in lists
+Separating API logic from UI logic
+```
+
+#### JavaScript Concepts Practiced
+
+This milestone also reinforced JavaScript concepts:
+
+```txt
+ES module imports and exports
+Async functions
+await
+try/catch/finally
+Arrays
+Array.isArray()
+Conditional checks
+Nullish coalescing
+Template-friendly data rendering
+```
+
+#### Architecture Lessons
+
+The key architecture lesson was that UI pages should not directly know all backend request details.
+
+Instead:
+
+```txt
+RoomsPage.jsx handles UI.
+roomService.js handles room-related API functions.
+apiClient.js handles common HTTP request behavior.
+FastAPI handles business logic, validation, and database access.
+Electron remains only the desktop shell.
+```
+
+This keeps the application clean, testable, and easier to maintain.
+
+#### Verification Completed
+
+The milestone is considered complete because:
+
+* The room service file was created.
+* The `getRooms` function calls the existing API client.
+* `RoomsPage.jsx` fetches room data on page load.
+* Loading state appears while data is being fetched.
+* Error state appears when the backend request fails.
+* Empty state appears when no rooms exist.
+* Room records display successfully when backend data exists.
+* No CRUD functionality was added.
+* Electron files were not modified.
+* Backend business logic remained inside FastAPI.
+
+#### Final Outcome
+
+Milestone 9 successfully established the read-only foundation for the Rooms module.
+
+HelloStay now has its first real dashboard module connected to the backend through the frontend service layer.
+
+This creates a safe foundation for future room workflows such as creating, editing, deleting, and managing room availability.
