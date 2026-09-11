@@ -1533,3 +1533,30 @@ a {
 .data-table tbody tr:hover {
   background: #fafbfc;
 }
+
+.guest-stay-form {
+  display: grid;
+  gap: 20px;
+}
+
+.guest-stay-primary-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guest-stay-primary-checkbox label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.guest-stay-primary-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}

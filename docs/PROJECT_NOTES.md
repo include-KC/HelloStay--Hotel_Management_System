@@ -5194,6 +5194,718 @@ This architecture is accepted as the foundation for subsequent GuestStay milesto
 
 ---
 
+### Frontend AD 22 — GuestStay Creation Through Existing Entity Selection
+
+#### Status
+
+**Accepted**
+
+#### Context
+
+HelloStay represents the relationship between a Guest and a Stay through the GuestStay junction model.
+
+The backend architecture explicitly separates Guest identity from Stay records and uses GuestStay to represent their relationship.
+
+The backend GuestStay model supports:
+
+```text
+Guest
+  ↕
+GuestStay
+  ↕
+Stay
+```
+
+and includes `is_primary_guest` to identify the Primary Guest associated with a Stay.
+
+The frontend already established a read-only GuestStay page in Milestone 21.
+
+Milestone 22 required the first GuestStay mutation workflow.
+
+The frontend therefore needed an architectural decision for:
+
+* Selecting existing Guests.
+* Selecting existing Stays.
+* Building the GuestStay payload.
+* Sending the creation request.
+* Handling validation.
+* Handling mutation state.
+* Refreshing the GuestStay collection.
+* Keeping the backend as the source of truth.
+
+#### Decision
+
+The GuestStay module will create relationships by selecting existing Guest and Stay records rather than creating or modifying those entities during GuestStay creation.
+
+`GuestStaysPage.jsx` will own:
+
+* Form state.
+* User interaction.
+* Basic client-side validation.
+* Submission state.
+* Success feedback.
+* Submission error feedback.
+* GuestStay list refresh orchestration.
+
+`guestStayService.js` will own GuestStay API operations.
+
+`apiClient.js` will continue to own shared HTTP communication.
+
+FastAPI will remain the authoritative source of:
+
+* GuestStay validation.
+* Relationship persistence.
+* Business rules.
+* Database integrity.
+* API response contracts.
+
+The accepted communication flow is:
+
+```text
+GuestStaysPage.jsx
+        ↓
+guestStayService.js
+        ↓
+apiClient.js
+        ↓
+FastAPI
+        ↓
+GuestStay database relationship
+```
+
+#### Backend Contract
+
+GuestStay creation uses:
+
+```text
+POST /guest-stays
+```
+
+The frontend sends:
+
+```json
+{
+  "guest_id": 12,
+  "stay_id": 7,
+  "is_primary_guest": false
+}
+```
+
+The backend schema defines:
+
+```text
+guest_id: int
+stay_id: int
+is_primary_guest: bool
+```
+
+The frontend therefore converts HTML selection values to numbers before submission.
+
+#### Existing Guest Selection Decision
+
+The GuestStay form will use the existing Guest collection.
+
+Guest data is retrieved through:
+
+```text
+guestService.js
+        ↓
+GET /guests
+```
+
+The frontend uses:
+
+```text
+guest.id
+```
+
+as the Guest identifier.
+
+The user-facing selector displays:
+
+```text
+guest.guest_name
+```
+
+The GuestStay workflow does not create a new Guest.
+
+This preserves the architectural distinction between:
+
+```text
+Guest identity
+```
+
+and:
+
+```text
+Guest–Stay relationship
+```
+
+#### Existing Stay Selection Decision
+
+The GuestStay form will use the existing Stay collection.
+
+Stay data is retrieved through:
+
+```text
+stayService.js
+        ↓
+GET /stay
+```
+
+The frontend uses:
+
+```text
+stay.stay_id
+```
+
+as the Stay identifier.
+
+The selector provides additional contextual information such as:
+
+```text
+Stay ID
+Room ID
+Stay status
+```
+
+The GuestStay workflow does not create or modify the selected Stay.
+
+#### Primary Guest Decision
+
+The GuestStay form exposes:
+
+```text
+is_primary_guest
+```
+
+through a controlled checkbox.
+
+The corresponding React state is:
+
+```text
+isPrimaryGuest
+```
+
+The frontend sends the boolean value to the backend.
+
+The frontend does not implement billing rules or independently determine the business meaning of Primary Guest.
+
+It only collects the value defined by the backend contract.
+
+#### Controlled Form Decision
+
+The GuestStay form uses controlled React inputs.
+
+The following values are maintained by React:
+
+```text
+selectedGuestId
+selectedStayId
+isPrimaryGuest
+```
+
+The flow is:
+
+```text
+User interaction
+      ↓
+React event handler
+      ↓
+State update
+      ↓
+Controlled input value
+```
+
+This gives the component a predictable source of truth for the form.
+
+#### Validation Decision
+
+The frontend performs basic validation before submitting the request.
+
+The following are required:
+
+```text
+Guest
+Stay
+```
+
+If either is missing:
+
+* The request is not sent.
+* A user-facing validation message is displayed.
+* The submission state does not begin.
+
+Frontend validation exists for usability.
+
+Backend validation remains authoritative.
+
+This preserves the principle:
+
+```text
+Frontend validation
+        ↓
+Immediate user feedback
+
+Backend validation
+        ↓
+Authoritative correctness
+```
+
+#### Submission State Decision
+
+GuestStay creation uses a dedicated:
+
+```text
+isSubmitting
+```
+
+state.
+
+While the request is active:
+
+* The submit button is disabled.
+* The button communicates that creation is in progress.
+* Duplicate submissions are prevented.
+
+The GuestStay form does not use the general page-loading state to represent mutation activity.
+
+This keeps:
+
+```text
+Initial data loading
+```
+
+separate from:
+
+```text
+GuestStay creation
+```
+
+#### Error State Decision
+
+GuestStay creation uses:
+
+```text
+submitError
+```
+
+for mutation-specific errors.
+
+The existing page-level loading error remains responsible for initial GuestStay collection loading.
+
+This keeps errors tied to the operation that actually failed.
+
+The architecture therefore distinguishes:
+
+```text
+Page load error
+        ≠
+GuestStay creation error
+```
+
+This follows the same operation-specific state principle already established elsewhere in the frontend.
+
+#### Success Feedback Decision
+
+Successful GuestStay creation produces explicit success feedback.
+
+The page uses the existing HelloStay alert styling rather than introducing a new notification system.
+
+The success state is represented through:
+
+```text
+successMessage
+```
+
+The success message is displayed after the relationship has been successfully created and the updated GuestStay collection has been retrieved.
+
+#### Collection Refresh Decision
+
+After successful creation, the GuestStay collection will be fetched again.
+
+The selected approach is:
+
+```text
+POST /guest-stays
+       ↓
+Successful creation
+       ↓
+GET /guest-stays
+       ↓
+Replace GuestStay state
+```
+
+The frontend will not rely on an optimistic local append for this milestone.
+
+#### Reason for Refetching
+
+Refetching keeps the frontend aligned with the backend source of truth.
+
+The frontend does not need to assume:
+
+* How the backend stores the relationship.
+* Whether the backend modifies returned values.
+* Whether additional records or ordering changes exist.
+* How the backend ultimately represents the newly created relationship.
+
+The backend collection remains authoritative.
+
+#### Refresh Helper Decision
+
+The GuestStay retrieval operation used after mutation is encapsulated in a small helper:
+
+```text
+loadGuestStays()
+```
+
+The helper retrieves the collection and verifies that the response is an array.
+
+This prevents duplication of the request and response-validation logic.
+
+The abstraction remains deliberately small.
+
+A generic data-fetching hook is not required for this workflow.
+
+#### API Response Validation Decision
+
+The frontend verifies that collection responses are arrays before storing them.
+
+This protects the page from unexpected backend responses.
+
+Without this validation, a response such as:
+
+```text
+null
+object
+string
+```
+
+could eventually cause rendering errors when the page executes:
+
+```text
+guestStays.map(...)
+```
+
+Response validation therefore forms a defensive boundary between external data and React rendering.
+
+#### Service Layer Decision
+
+GuestStay API operations remain inside:
+
+```text
+guestStayService.js
+```
+
+The service currently provides:
+
+```text
+getGuestStays()
+createGuestStay()
+```
+
+The page does not call `fetch()` directly.
+
+This keeps GuestStay HTTP behavior consistent with:
+
+```text
+roomService.js
+guestService.js
+stayService.js
+```
+
+and preserves the established domain-service architecture.
+
+#### Central API Client Decision
+
+`apiClient.js` remains the single shared HTTP mechanism.
+
+The GuestStay service does not duplicate:
+
+* API base URL logic.
+* Headers.
+* JSON serialization.
+* Response parsing.
+* HTTP error conversion.
+* Network error conversion.
+
+The architecture remains:
+
+```text
+Domain service
+      ↓
+Central API client
+      ↓
+FastAPI
+```
+
+#### React Renderer Responsibility
+
+The GuestStay workflow belongs entirely to the React renderer for normal application behavior.
+
+React is responsible for:
+
+* Rendering the form.
+* Managing controlled input values.
+* Managing local UI state.
+* Handling user interaction.
+* Performing basic client-side validation.
+* Calling the GuestStay service.
+* Displaying loading feedback.
+* Displaying success feedback.
+* Displaying mutation errors.
+* Rendering the updated GuestStay collection.
+
+#### FastAPI Responsibility
+
+FastAPI remains responsible for:
+
+* GuestStay request validation.
+* GuestStay relationship persistence.
+* Database operations.
+* Backend business rules.
+* Relationship integrity.
+* Response generation.
+
+React does not become a second backend.
+
+#### Electron Responsibility
+
+No Electron code is required for GuestStay creation.
+
+Electron remains responsible for:
+
+* Desktop lifecycle.
+* Native window management.
+* Startup behavior.
+* Future desktop integrations.
+
+Electron main does not contain GuestStay API logic.
+
+Preload and IPC do not participate in ordinary GuestStay HTTP requests.
+
+The boundary remains:
+
+```text
+Electron Main
+      ↓
+Desktop shell
+
+Preload / IPC
+      ↓
+Controlled desktop capabilities
+
+React Renderer
+      ↓
+GuestStay UI and API communication
+
+FastAPI
+      ↓
+GuestStay business logic
+```
+
+#### Styling Decision
+
+GuestStay-specific form styling will reuse the existing global UI foundation.
+
+Existing classes are preferred for:
+
+```text
+Cards
+Form fields
+Buttons
+Alerts
+Tables
+Empty states
+```
+
+GuestStay-specific classes are used only where the page needs unique layout behavior.
+
+This prevents unnecessary global CSS duplication.
+
+#### Maintainability Decision
+
+The implementation favors explicit state and readable handlers over premature abstraction.
+
+The current GuestStay workflow is small enough that introducing:
+
+* Redux
+* Zustand
+* Context
+* Generic CRUD hooks
+* Generic form frameworks
+* Generic mutation abstractions
+
+would add complexity without solving an immediate problem.
+
+The architecture can be reconsidered when the GuestStay module becomes significantly more complex.
+
+#### Alternatives Considered
+
+##### Create Guest During GuestStay Creation
+
+Rejected.
+
+A GuestStay form should connect existing entities.
+
+Combining Guest creation and relationship creation would mix two domain responsibilities and make validation and error handling more complicated.
+
+##### Create Stay During GuestStay Creation
+
+Rejected.
+
+Stay creation is an independent workflow and should remain controlled by the Stays module.
+
+##### Call `fetch()` Directly from `GuestStaysPage.jsx`
+
+Rejected.
+
+This would bypass the established service layer and central API client.
+
+##### Call FastAPI Through Electron IPC
+
+Rejected.
+
+GuestStay HTTP communication is normal renderer-to-backend communication and does not require desktop privileges.
+
+IPC should remain reserved for controlled desktop capabilities.
+
+##### Use Global State Management
+
+Rejected for the current workflow.
+
+Guest, Stay, and GuestStay data are required by this page but do not currently justify a global state library.
+
+##### Optimistically Append the Created GuestStay
+
+Rejected for this milestone.
+
+Refetching provides a simpler and more authoritative synchronization strategy.
+
+##### Introduce a Generic CRUD Hook
+
+Rejected.
+
+The GuestStay workflow is intentionally small and the explicit implementation is easier to understand, debug, and maintain.
+
+#### Consequences
+
+##### Positive Consequences
+
+* Guest and Stay responsibilities remain separate.
+* GuestStay relationships are explicitly represented.
+* API communication remains centralized.
+* FastAPI remains the source of truth.
+* The form is predictable because it uses controlled inputs.
+* Required fields are validated before unnecessary requests.
+* Duplicate submissions are prevented.
+* Successful relationships are immediately reflected in the list.
+* Backend-generated data remains authoritative.
+* Error messages remain associated with the correct operation.
+* GuestStay styling remains consistent with the rest of HelloStay.
+* The implementation remains understandable for the current learning stage.
+* Future GuestStay mutation operations can reuse the same service boundary.
+
+##### Trade-offs
+
+* Creating a GuestStay requires an additional `GET /guest-stays` request after the successful POST.
+* `GuestStaysPage.jsx` contains additional local form and mutation state.
+* Guest and Stay collections must be loaded before the creation form can be used.
+* The GuestStay page currently uses direct page-level orchestration rather than extracting a separate form component.
+* The implementation does not yet optimize for large Guest or Stay collections.
+
+These trade-offs are acceptable for the current milestone.
+
+#### Explicit Non-Decisions
+
+The following were intentionally not introduced:
+
+```text
+GuestStay update
+GuestStay delete
+GuestStay detail editing
+GuestStay filtering
+GuestStay pagination
+Guest search
+Stay search
+Guest history
+Check-in
+Check-out
+Stay lifecycle management
+Room status automation
+Billing
+Payment processing
+Booking workflow
+Optimistic synchronization
+Global GuestStay state
+Electron IPC
+Electron backend startup
+Electron packaging
+```
+
+These concerns remain outside Frontend AD 22.
+
+#### Future Reconsideration Triggers
+
+This decision may be revisited when:
+
+* GuestStay editing is introduced.
+* GuestStay deletion is introduced.
+* GuestStay collections become large.
+* Search or filtering becomes necessary.
+* Multiple pages require shared GuestStay state.
+* GuestStay history is implemented.
+* Billing consumes Primary Guest relationships.
+* Check-in/check-out workflows depend on GuestStay.
+* The GuestStay form becomes large enough to justify component extraction.
+* Backend APIs introduce more complex relationship validation.
+* Optimistic updates become necessary for UX performance.
+
+#### Final Decision Summary
+
+HelloStay will implement GuestStay creation by selecting existing Guest and Stay records and submitting their identifiers through the established GuestStay service layer.
+
+The final architecture is:
+
+```text
+Existing Guest
+      +
+Existing Stay
+      +
+Primary Guest selection
+      ↓
+GuestStaysPage.jsx
+      ↓
+guestStayService.js
+      ↓
+apiClient.js
+      ↓
+POST /guest-stays
+      ↓
+FastAPI
+      ↓
+Database
+      ↓
+GET /guest-stays
+      ↓
+Updated GuestStay list
+```
+
+This decision preserves the separation between Guest identity, Stay records, and GuestStay relationships.
+
+It also preserves the project's central architectural principle:
+
+```text
+React manages the interface.
+Services manage API operations.
+FastAPI manages business truth.
+Electron manages the desktop shell.
+```
+
+The GuestStay module is therefore ready for future relationship-management functionality without requiring a redesign of the current architecture.
+
+---
+
 ## Backend Milestone History
 
 ### Frontend Rebuild Note
@@ -11251,5 +11963,838 @@ M21 reinforced several important frontend engineering principles:
 **M21 — GuestStay Read-Only Foundation: COMPLETE**
 
 The GuestStay module now has a working read-only frontend foundation and is ready for the next planned GuestStay milestone.
+
+---
+
+### Frontend Milestone 22 — GuestStay Create and Guest Assignment Foundation
+
+#### Status
+
+**Completed**
+
+#### Milestone Objective
+
+Milestone 22 extends the GuestStay module from its read-only foundation into its first write workflow.
+
+The objective was to allow the user to create a GuestStay relationship by selecting:
+
+* An existing Guest
+* An existing Stay
+* Whether the selected Guest is the Primary Guest
+
+The new relationship is created through the existing FastAPI backend using:
+
+`POST /guest-stays`
+
+The milestone also establishes the required frontend behavior around validation, submission state, success feedback, API errors, list refresh, form reset, and GuestStay form UI refinement.
+
+The implementation continues to follow the backend-contract-first architecture established throughout the frontend rebuild.
+
+#### Starting Point
+
+Milestone 21 established the read-only GuestStay foundation.
+
+Before Milestone 22:
+
+* `GuestStaysPage.jsx` could retrieve GuestStay records.
+* `guestStayService.js` exposed `getGuestStays()`.
+* GuestStay records were displayed in a read-only table.
+* The page handled loading, error, empty, and successful data states.
+* GuestStay UI styling had been refined.
+* No GuestStay mutation workflow existed.
+
+Milestone 22 builds directly on that foundation rather than replacing it.
+
+#### GuestStay Domain Purpose
+
+GuestStay represents the relationship between Guests and Stays.
+
+The backend architecture defines GuestStay as a junction table supporting:
+
+* Multiple Guests belonging to one Stay.
+* One Guest participating in multiple Stays.
+* Identification of the Primary Guest for a Stay.
+
+The relationship can therefore be represented as:
+
+```text
+Guest
+  │
+  │
+  ▼
+GuestStay
+  ▲
+  │
+  │
+Stay
+```
+
+The frontend must therefore select existing Guest and Stay records rather than creating duplicate Guest or Stay records during GuestStay creation.
+
+This preserves the separation between:
+
+* Guest identity
+* Stay records
+* Guest–Stay relationships
+
+#### Milestone Scope
+
+The milestone included:
+
+* GuestStay creation.
+* Existing Guest selection.
+* Existing Stay selection.
+* Primary Guest selection.
+* `POST /guest-stays` integration.
+* Required-field validation.
+* Submission/loading feedback.
+* Submission error feedback.
+* Success feedback.
+* GuestStay list refresh after successful creation.
+* Form reset after successful creation.
+* GuestStay form UI refinement.
+* Reuse of existing global UI styles where appropriate.
+
+#### Backend Contract
+
+The GuestStay creation endpoint is:
+
+```text
+POST /guest-stays
+```
+
+The request body follows the existing backend contract:
+
+```json
+{
+  "guest_id": 12,
+  "stay_id": 7,
+  "is_primary_guest": false
+}
+```
+
+The frontend explicitly sends all three values.
+
+The backend remains responsible for:
+
+* Request validation.
+* Database operations.
+* Relationship persistence.
+* Business rules.
+* Final data integrity.
+
+The frontend does not attempt to reproduce backend persistence or relationship logic.
+
+#### Guest Data Integration
+
+The Guest selector obtains Guest records through the existing Guest service:
+
+```text
+guestService.js
+      ↓
+GET /guests
+```
+
+Guest records provide:
+
+```text
+id
+guest_name
+guest_phone_number
+guest_address
+id_proof_type
+id_proof_number
+```
+
+For GuestStay creation:
+
+* `guest.id` is used as the identifier.
+* `guest.guest_name` is displayed to the user.
+
+The GuestStay form does not create or modify Guest records.
+
+#### Stay Data Integration
+
+The Stay selector obtains Stay records through the existing Stay service:
+
+```text
+stayService.js
+      ↓
+GET /stay
+```
+
+The Stay response uses:
+
+```text
+stay_id
+room_id
+price_per_night
+check_in_datetime
+check_out_datetime
+stay_status
+```
+
+For GuestStay creation:
+
+* `stay.stay_id` is used as the identifier.
+* Stay ID, Room ID, and Stay status provide useful selection context.
+
+The implementation correctly uses `stay_id` rather than assuming the Stay object contains an `id` field.
+
+The Stay itself is not modified during GuestStay creation.
+
+#### GuestStay Service
+
+The existing `guestStayService.js` was extended with:
+
+```js
+createGuestStay(guestStayData)
+```
+
+The service delegates the request to the existing centralized API client.
+
+The resulting service responsibility is:
+
+```text
+guestStayService.js
+
+getGuestStays()
+createGuestStay()
+```
+
+The page does not perform low-level HTTP requests directly.
+
+The communication flow remains:
+
+```text
+GuestStaysPage.jsx
+        ↓
+guestStayService.js
+        ↓
+apiClient.js
+        ↓
+FastAPI
+        ↓
+Database
+```
+
+#### Form State
+
+The GuestStay creation form uses React local state.
+
+The form maintains state for:
+
+```text
+selectedGuestId
+selectedStayId
+isPrimaryGuest
+```
+
+Additional operation state is maintained for:
+
+```text
+isSubmitting
+submitError
+successMessage
+```
+
+This keeps the form values separate from the state describing the status of the API operation.
+
+#### Controlled Inputs
+
+The Guest and Stay `<select>` elements are controlled React inputs.
+
+Their values are connected to React state.
+
+For example:
+
+```text
+<select>
+     ↓
+selectedGuestId
+     ↓
+React state
+```
+
+When the user changes a selection:
+
+```text
+User selection
+      ↓
+onChange event
+      ↓
+setSelectedGuestId()
+      ↓
+React state update
+      ↓
+select displays new value
+```
+
+The Primary Guest checkbox follows the same controlled-input principle.
+
+Its checked state is represented by:
+
+```text
+isPrimaryGuest
+```
+
+#### Identifier Conversion
+
+HTML form controls provide selected values as strings.
+
+The backend expects integer identifiers.
+
+Therefore, immediately before submission, the selected identifiers are converted using:
+
+```js
+Number(selectedGuestId)
+Number(selectedStayId)
+```
+
+The final payload therefore contains numeric IDs:
+
+```js
+{
+  guest_id: Number(selectedGuestId),
+  stay_id: Number(selectedStayId),
+  is_primary_guest: isPrimaryGuest,
+}
+```
+
+This keeps the frontend payload aligned with the backend Pydantic schema.
+
+#### Client-Side Validation
+
+The frontend performs basic required-field validation before making the API request.
+
+The Guest selection is required.
+
+The Stay selection is required.
+
+If no Guest has been selected:
+
+```text
+Please select a guest.
+```
+
+is displayed and the API request is not made.
+
+If no Stay has been selected:
+
+```text
+Please select a stay.
+```
+
+is displayed and the API request is not made.
+
+Client-side validation exists for immediate user feedback.
+
+It does not replace backend validation.
+
+FastAPI remains authoritative.
+
+#### Submission Workflow
+
+The completed submission flow is:
+
+```text
+User selects Guest
+        ↓
+User selects Stay
+        ↓
+User optionally selects Primary Guest
+        ↓
+Submit
+        ↓
+Validate required fields
+        ↓
+Build GuestStay payload
+        ↓
+createGuestStay()
+        ↓
+POST /guest-stays
+        ↓
+Successful response
+        ↓
+Reload GuestStay collection
+        ↓
+Update displayed list
+        ↓
+Reset form
+        ↓
+Show success message
+```
+
+#### Submission Loading State
+
+While GuestStay creation is in progress:
+
+* `isSubmitting` becomes `true`.
+* The submit button becomes disabled.
+* The button text changes from the normal creation action to an in-progress state.
+* Duplicate submissions are prevented.
+
+The button uses the existing HelloStay button styling rather than introducing a new button system.
+
+#### Success Handling
+
+After the backend successfully creates the GuestStay relationship:
+
+1. The GuestStay collection is requested again.
+2. The returned collection replaces the current GuestStay state.
+3. The selected Guest is cleared.
+4. The selected Stay is cleared.
+5. Primary Guest selection is reset.
+6. A success message is displayed.
+
+The success message communicates that the relationship was created successfully.
+
+#### Why the List Is Refreshed
+
+The implementation deliberately refreshes the GuestStay list after creation rather than manually constructing a new frontend record and appending it to local state.
+
+The flow is:
+
+```text
+POST /guest-stays
+       ↓
+Creation confirmed by backend
+       ↓
+GET /guest-stays
+       ↓
+Backend becomes source of displayed collection
+```
+
+This keeps the frontend synchronized with the backend.
+
+It also avoids making assumptions about backend-generated values or response behavior.
+
+#### Refresh Helper
+
+The GuestStay retrieval operation used after creation was separated into a small helper:
+
+```js
+loadGuestStays()
+```
+
+The helper:
+
+* Requests GuestStay records.
+* Validates that the response is an array.
+* Returns the validated collection.
+
+This allows the post-creation refresh logic to reuse the same response validation without duplicating the request logic.
+
+#### Response Validation
+
+The frontend validates that the GuestStay collection returned from the backend is an array.
+
+If an unexpected response is received, the frontend throws a meaningful error instead of allowing invalid data to reach:
+
+```js
+guestStays.map(...)
+```
+
+This protects the page from common runtime errors caused by unexpected API responses.
+
+#### Error Handling
+
+GuestStay creation errors are stored separately from the initial page-loading error.
+
+The page therefore distinguishes between:
+
+```text
+Initial GuestStay loading
+        ↓
+error
+
+GuestStay creation
+        ↓
+submitError
+```
+
+This makes the user-facing feedback more accurate.
+
+The API client's existing error-handling behavior remains responsible for converting backend and network failures into usable JavaScript errors.
+
+#### Success and Error Feedback
+
+The form now supports:
+
+```text
+Validation error
+Submission error
+Success message
+```
+
+Success feedback uses the existing application alert styling:
+
+```text
+alert
+alert-success
+```
+
+This avoids introducing a separate styling convention for GuestStay notifications.
+
+#### Form Reset
+
+After successful creation, the form is reset.
+
+The following values return to their initial states:
+
+```text
+selectedGuestId → ""
+selectedStayId → ""
+isPrimaryGuest → false
+```
+
+The reset occurs only after successful creation and successful GuestStay collection refresh.
+
+This prevents the interface from clearing the user's input when the creation request itself fails.
+
+#### UI Refinement
+
+The GuestStay creation form was refined after its functional behavior was completed.
+
+The refinement focused on consistency with the existing HelloStay UI rather than introducing a new visual system.
+
+The form now uses:
+
+```text
+guest-stay-form
+```
+
+for overall form spacing.
+
+Individual fields use the existing:
+
+```text
+form-field
+```
+
+class.
+
+The Primary Guest control uses a dedicated GuestStay-specific class for alignment.
+
+The submit button reuses:
+
+```text
+button
+button-primary
+```
+
+The success message reuses:
+
+```text
+alert
+alert-success
+```
+
+This keeps the GuestStay interface consistent with the rest of the application.
+
+#### Existing CSS Reuse
+
+The milestone intentionally reused existing CSS where possible.
+
+Existing styles for:
+
+* Cards
+* Form fields
+* Buttons
+* Alerts
+* Tables
+* Empty states
+
+were not unnecessarily duplicated.
+
+Only GuestStay-specific layout styling was introduced where required.
+
+No broad global CSS redesign was performed as part of this milestone.
+
+#### Files Involved
+
+The primary files involved were:
+
+```text
+frontend/
+└── src/
+    ├── pages/
+    │   └── guestStaysPage.jsx
+    │
+    ├── services/
+    │   ├── guestStayService.js
+    │   ├── guestService.js
+    │   └── stayService.js
+    │
+    └── styles/
+        └── global.css
+```
+
+The existing `apiClient.js` continued to provide the shared HTTP behavior.
+
+#### React Concepts Practiced
+
+This milestone reinforced:
+
+```text
+useState
+Controlled inputs
+<select>
+<input type="checkbox">
+onChange
+onSubmit
+preventDefault()
+Conditional rendering
+Async event handlers
+try/catch/finally
+Loading state
+Error state
+Success state
+List rendering
+State reset
+```
+
+It also reinforced the difference between:
+
+```text
+Form state
+```
+
+and:
+
+```text
+Request state
+```
+
+Form state represents what the user has entered.
+
+Request state represents what the application is currently doing.
+
+#### JavaScript Concepts Practiced
+
+The milestone reinforced:
+
+```text
+async / await
+Promises
+try / catch / finally
+Objects
+Array validation
+Number()
+Boolean values
+Event objects
+Function extraction
+Reusable async helpers
+```
+
+`Number()` is particularly important because HTML form controls return string values even when the underlying backend field is numeric.
+
+#### Existing Architecture Preserved
+
+The milestone did not introduce a new frontend architecture.
+
+It continued the established pattern:
+
+```text
+React page
+    ↓
+Domain service
+    ↓
+Central API client
+    ↓
+FastAPI
+    ↓
+Database
+```
+
+The GuestStay page remains responsible for:
+
+* User interaction
+* Form state
+* Validation feedback
+* Loading state
+* Error state
+* Success state
+* Rendering
+
+The GuestStay service remains responsible for:
+
+* GuestStay API operations
+
+The API client remains responsible for:
+
+* HTTP communication
+* Request configuration
+* Response parsing
+* Error conversion
+
+FastAPI remains responsible for:
+
+* Validation
+* Business logic
+* Database persistence
+* Relationship integrity
+* Backend truth
+
+#### Electron Boundary
+
+No Electron changes were required.
+
+GuestStay is a normal renderer-to-FastAPI workflow.
+
+The architecture remains:
+
+```text
+Electron Main
+    ↓
+Desktop responsibilities
+
+Preload / IPC
+    ↓
+Only required for controlled desktop capabilities
+
+React Renderer
+    ↓
+GuestStay UI and API service calls
+
+FastAPI
+    ↓
+GuestStay business logic and persistence
+```
+
+No GuestStay API calls were moved into Electron main or preload.
+
+#### Important Boundaries
+
+This milestone intentionally did not add:
+
+* GuestStay editing
+* GuestStay deletion
+* `PUT /guest-stays`
+* `DELETE /guest-stays`
+* Check-in
+* Check-out
+* Stay lifecycle transitions
+* Booking lifecycle
+* Room status automation
+* Guest history
+* Billing
+* Payment processing
+* Advanced filtering
+* Pagination
+* Sorting
+* Guest search
+* Stay search
+* Guest profile creation inside GuestStay
+* Stay creation inside GuestStay
+* Electron backend startup
+* Electron packaging
+* New authentication architecture
+* Global state management
+* Unrelated CSS refactoring
+
+These features remain outside the scope of Milestone 22.
+
+#### Verification Completed
+
+The completed GuestStay workflow was verified for:
+
+* GuestStay page loading.
+* Guest records loading into the Guest selector.
+* Stay records loading into the Stay selector.
+* Guest selection.
+* Stay selection.
+* Primary Guest selection.
+* Required Guest validation.
+* Required Stay validation.
+* Correct numeric ID conversion.
+* Correct GuestStay request payload.
+* Successful `POST /guest-stays`.
+* Submission/loading feedback.
+* Duplicate-submission prevention.
+* Success feedback.
+* GuestStay list refresh.
+* Newly created GuestStay appearing in the list.
+* Form reset after successful creation.
+* API error handling.
+* Refined form styling.
+* Existing Guest and Stay functionality remaining unaffected.
+
+#### Regression Considerations
+
+Milestone 22 builds on the existing Rooms, Guests, and Stays modules.
+
+The implementation does not change their backend contracts or service behavior.
+
+The GuestStay page consumes their existing read APIs:
+
+```text
+GET /guests
+GET /stay
+```
+
+and uses their existing identifier structures.
+
+This means the GuestStay workflow remains dependent on valid Guest and Stay records rather than duplicating those entities.
+
+#### Engineering Lessons
+
+Milestone 22 reinforces several important engineering principles.
+
+##### Relationships Should Be Modeled Explicitly
+
+A GuestStay relationship should not be inferred from unrelated Guest or Stay data.
+
+The backend explicitly models the relationship, so the frontend should also explicitly select the two participating entities.
+
+##### The Backend Remains the Source of Truth
+
+The frontend does not decide whether a GuestStay can ultimately be persisted.
+
+It submits the request and uses the backend response as the authoritative result.
+
+##### UI State and Server State Are Different
+
+The selected Guest and selected Stay are temporary UI state.
+
+The actual GuestStay relationship is server/database state.
+
+The frontend should not confuse the two.
+
+##### Refreshing Is Sometimes Better Than Optimistic Updates
+
+After creation, the application requests the authoritative GuestStay collection again.
+
+This is simpler and safer than manually predicting how the server-side collection should look.
+
+##### Small Helpers Can Improve Readability
+
+The `loadGuestStays()` helper removes duplicated retrieval and response-validation logic without introducing a large abstraction.
+
+#### Milestone Result
+
+Milestone 22 successfully establishes the **GuestStay creation and Guest assignment foundation**.
+
+The GuestStay module now supports:
+
+```text
+Read GuestStay relationships
+        +
+Select existing Guest
+        +
+Select existing Stay
+        +
+Mark Primary Guest
+        +
+Create GuestStay relationship
+        +
+Refresh GuestStay collection
+        +
+Provide mutation feedback
+```
+
+The module now has its first complete read-and-create workflow while preserving the existing separation between Guest identity, Stay records, and GuestStay relationships.
+
+The implementation remains intentionally small and prepares the GuestStay module for future functionality without prematurely introducing lifecycle, editing, deletion, billing, or advanced relationship management.
 
 ---

@@ -155,8 +155,8 @@ function GuestStaysPage() {
       </div>
 
       <Card>
-        <form onSubmit={handleCreateGuestStay}>
-          <div className="form-group">
+        <form className="guest-stay-form" onSubmit={handleCreateGuestStay}>
+          <div className="form-field">
             <label htmlFor="guest-select">Guest</label>
 
             <select
@@ -174,7 +174,7 @@ function GuestStaysPage() {
             </select>
           </div>
 
-          <div className="form-group">
+          <div className="form-field">
             <label htmlFor="stay-select">Stay</label>
 
             <select
@@ -193,7 +193,7 @@ function GuestStaysPage() {
             </select>
           </div>
 
-          <div className="form-checkbox">
+          <div className="guest-stay-primary-checkbox">
             <label>
               <input
                 type="checkbox"
@@ -208,12 +208,12 @@ function GuestStaysPage() {
           {submitError && <ErrorMessage message={submitError} />}
 
           {successMessage && (
-            <div className="success-message" role="status">
+            <div className="alert alert-success" role="status">
               {successMessage}
             </div>
           )}
 
-          <button type="submit" disabled={isSubmitting}>
+          <button className="button button-primary" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Creating..." : "Create GuestStay"}
           </button>
         </form>
