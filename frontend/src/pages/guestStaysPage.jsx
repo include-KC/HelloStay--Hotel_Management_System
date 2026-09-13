@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 
 import Card from "../components/ui/Card.jsx";
 import ErrorMessage from "../components/ui/ErrorMessage.jsx";
-import Loading from "../components/ui/Loading.jsx";
 
 import {
   createGuestStay,
   getGuestStays,
+  updateGuestStay,
 } from "../services/guestStayService.js";
 import { getGuests } from "../services/guestService.js";
 import { getStays } from "../services/stayService.js";
@@ -32,6 +32,8 @@ function GuestStaysPage() {
   const [selectedGuestId, setSelectedGuestId] = useState("");
   const [selectedStayId, setSelectedStayId] = useState("");
   const [isPrimaryGuest, setIsPrimaryGuest] = useState(false);
+
+  const [editingGuestStayId, setEditingGuestStayId] = useState(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -96,7 +98,7 @@ function GuestStaysPage() {
     };
   }, []);
 
-  async function handleCreateGuestStay(event) {
+  async function handleSubmitGuestStay(event) {
     event.preventDefault();
 
     setSubmitError("");
@@ -121,7 +123,11 @@ function GuestStaysPage() {
         is_primary_guest: isPrimaryGuest,
       };
 
-      await createGuestStay(guestStayData);
+      if (editingGuestStayId === null) {
+        await createGuestStay(guestStayData);
+      } else {
+        await updateGuestStay(editingGuestStayId, guestStayData);
+      }
 
       const guestStaysData = await loadGuestStays();
 
@@ -130,8 +136,13 @@ function GuestStaysPage() {
       setSelectedGuestId("");
       setSelectedStayId("");
       setIsPrimaryGuest(false);
+      setEditingGuestStayId(null);
 
-      setSuccessMessage("GuestStay created successfully.");
+      setSuccessMessage(
+        editingGuestStayId === null
+          ? "GuestStay created successfully."
+          : "GuestStay updated successfully.",
+      );
     } catch (requestError) {
       setSubmitError(
         requestError.message ||
@@ -140,6 +151,28 @@ function GuestStaysPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleEditGuestStay(guestStay) {
+    setEditingGuestStayId(guestStay.id);
+
+    setSelectedGuestId(String(guestStay.guest_id));
+    setSelectedStayId(String(guestStay.stay_id));
+    setIsPrimaryGuest(guestStay.is_primary_guest);
+
+    setSubmitError("");
+    setSuccessMessage("");
+  }
+
+  function handleCancelEdit() {
+    setEditingGuestStayId(null);
+
+    setSelectedGuestId("");
+    setSelectedStayId("");
+    setIsPrimaryGuest(false);
+
+    setSubmitError("");
+    setSuccessMessage("");
   }
 
   return (
@@ -155,7 +188,22 @@ function GuestStaysPage() {
       </div>
 
       <Card>
-        <form className="guest-stay-form" onSubmit={handleCreateGuestStay}>
+        <div className="form-section-header">
+          <h2>
+            {editingGuestStayId === null
+              ? "Create GuestStay"
+              : "Edit GuestStay"}
+          </h2>
+
+          <p>
+            {editingGuestStayId === null
+              ? "Assign a guest to a stay."
+              : "Update the guest and stay relationship."}
+          </p>
+        </div>
+
+
+        <form className="guest-stay-form" onSubmit={handleSubmitGuestStay}>
           <div className="form-field">
             <label htmlFor="guest-select">Guest</label>
 
@@ -213,14 +261,28 @@ function GuestStaysPage() {
             </div>
           )}
 
+          {editingGuestStayId !== null && (
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={handleCancelEdit}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          )}
+
           <button className="button button-primary" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create GuestStay"}
+            {isSubmitting 
+            ? editingGuestStayId === null
+              ? "Creating GuestStay..."
+              : "Updating GuestStay..."
+            : editingGuestStayId === null
+              ? "Create GuestStay"
+              : "Update GuestStay"}
           </button>
         </form>
-      </Card>
-
-      {isLoading && <Loading message="Loading guest stays..." />}
-
+      </Card> 
       {!isLoading && error && <ErrorMessage message={error} />}
 
       {!isLoading && !error && guestStays.length === 0 && (
@@ -245,6 +307,7 @@ function GuestStaysPage() {
                   <th scope="col">Guest ID</th>
                   <th scope="col">Stay ID</th>
                   <th scope="col">Primary Guest</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
 
@@ -255,6 +318,16 @@ function GuestStaysPage() {
                     <td>{guestStay.guest_id}</td>
                     <td>{guestStay.stay_id}</td>
                     <td>{guestStay.is_primary_guest ? "Yes" : "No"}</td>
+
+                    <td>
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={() => handleEditGuestStay(guestStay)}
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

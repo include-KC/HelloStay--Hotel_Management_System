@@ -10,3 +10,16 @@ export async function createGuestStay(guestStayData) {
     body: guestStayData,
   });
 }
+
+export async function updateGuestStay(guestStayId, guestStayData) {
+  return apiRequest(`/guest-stays/${guestStayId}`, {
+    method: "PUT",
+    body: guestStayData,
+  });
+}
+
+export async function deleteGuestStay(guestStayId) {
+  return apiRequest(`/guest-stays/${guestStayId}`, {
+    method: "DELETE",
+  });
+}
